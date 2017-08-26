@@ -7,131 +7,299 @@ import org.apache.log4j.*;
 
 
 parser code {:
-	
-	int printCallCount = 0;
-	
-	Logger log = Logger.getLogger(getClass());
-   
-   
+    Logger log = Logger.getLogger(getClass());
+
     // slede redefinisani metodi za prijavu gresaka radi izmene teksta poruke
-     
+
     public void report_fatal_error(String message, Object info) throws java.lang.Exception {
       done_parsing();
       report_error(message, info);
     }
-  
+
     public void syntax_error(Symbol cur_token) {
         report_error("\nSintaksna greska", cur_token);
     }
-  
+
     public void unrecovered_syntax_error(Symbol cur_token) throws java.lang.Exception {
         report_fatal_error("Fatalna greska, parsiranje se ne moze nastaviti", cur_token);
     }
 
     public void report_error(String message, Object info) {
-    	StringBuilder msg = new StringBuilder(message); 
-    	if (info instanceof Symbol)
+        StringBuilder msg = new StringBuilder(message); 
+        if (info instanceof Symbol)
             msg.append (" na liniji ").append(((Symbol)info).left);
         log.error(msg.toString());
     }
+
+    public void report_info(String message, Object info) {
+        StringBuilder msg = new StringBuilder(message); 
+        if (info instanceof Symbol)
+            msg.append (" na liniji ").append(((Symbol)info).left);
+        log.info(msg.toString());
+    }
+    
 :}
 
 scan with {:
-	Symbol s = this.getScanner().next_token();
-	if (s != null && s.value != null) 
-		log.info(s.toString() + " " + s.value.toString());
-	return s;
+    Symbol s = this.getScanner().next_token();
+    if (s != null && s.value != null) 
+        log.info(s.toString() + " " + s.value.toString());
+    return s;
 :}
 
-terminal PROG, LBRACE, RBRACE, SEMI, LPAREN, RPAREN, COMMA, PRINT, RETURN, PLUS, EQUAL, VOID;
-terminal Integer NUMBER ;
-terminal String IDENT ;
-terminal IF, ELSE;
+terminal BREAK, CLASS, CONST, CONTINUE, ELSE, EXTENDS, FOR, IF, NEW, PRINT, PROG, READ, RETURN, STATIC, VOID;
+terminal LBRACE, RBRACE, LBRACK, RBRACK, LPAREN, RPAREN;
+terminal ADD, SUB, MUL, DIV, MOD;
+terminal ASSIGN, ASSIGN_ADD, ASSIGN_SUB, ASSIGN_MUL, ASSIGN_DIV, ASSIGN_MOD;
+terminal EQUAL, NOT_EQUAL, GREATER_EQUAL, LESS_EQUAL, GREATER, LESS;
+terminal DEC, INC, OR, AND;
+terminal SEMI, COMMA, DOT;
+terminal BOOL, CHAR, NUMBER, IDENT;
 
-non terminal Program, VarDeclList, MethodDeclList, VarDecl, Type, MethodDecl;
-non terminal FormalParamList, FormalParamDecl, FormPars, ActualPars, ActualParamList; 
-non terminal StatementList, Statement, Designator, Expr, Term, Addop, Factor;
-non terminal Unmatched, Matched;
+non terminal Program, DesOpt, ConOpt, NumOpt, Expr, Term, Factor, Type ;
+non terminal VarDeclList, VarDecl, Decl ;
+non terminal FormalParamList, FormalParamDecl, FormPars ; 
+non terminal Designator, DesignatorStatement, DesigListOpt, DesigIdent ;
+non terminal StatementListOpt, Statement ;
+non terminal ConstDeclList, ConstIdent, VarIdent, ConstDecl, Const, ExtendsOpt, TypeVoid, VarArgs, StaticOpt;
+non terminal Assignop, ActParsListOpt, ActPars, Condition, CondTerm, CondFact, AddopTermCombList, AddopTermList ;
+non terminal AddopRight, AddopLeft, MulopFactorList, MulopRight, MulopLeft, Addop, Relop, Mulop, DeclListOpt ; 
+non terminal MethodVarDeclListOpt, MethodVarDecl, MethodIdentList, MethodDeclListOpt, MethodDecl, MethodDeclOpt, MethodName;
+non terminal ClassVarDeclListOpt, ClassDecl, ClassVarDecl ;
+non terminal InClassStart, InClassEnd, InMethodStart, InMethodEnd;
 
 
-Program ::= PROG IDENT VarDeclList LBRACE MethodDeclList RBRACE ;
+precedence left ELSE;
 
-VarDeclList ::= VarDeclList VarDecl  
-				|
-				/* epsilon */ 
-				;
-				
-VarDecl ::= Type IDENT SEMI ;
+Program ::= PROG IDENT DeclListOpt LBRACE MethodDeclListOpt RBRACE;
 
-Type ::= IDENT ;
+DeclListOpt ::= DeclListOpt Decl
+                | /* epsilon */ 
+                ;
 
-MethodDeclList ::= MethodDeclList MethodDecl
-					|
-					/* epsilon */
-					;
 
-MethodDecl ::= Type IDENT LPAREN FormPars RPAREN VarDeclList LBRACE StatementList RBRACE ;
+Decl ::=    ClassDecl 
+            | ConstDecl 
+            | VarDecl 
+            ;
 
-FormPars ::= FormalParamList | /* epsilon */ ;
+//CONST DECLARATION
+ConstDecl ::= CONST Type ConstDeclList SEMI;
+
+ConstDeclList ::=   ConstDeclList COMMA ConstIdent 
+                    | ConstIdent
+                    ;
+                
+ConstIdent ::= IDENT ASSIGN Const;
+
+Const ::=   BOOL
+            | CHAR
+            | NUMBER
+            ;
+
+//VAR DECLARATION
+VarDecl ::= Type VarDeclList SEMI;
+
+VarDeclList ::= VarDeclList COMMA VarIdent
+                | VarIdent
+                ;
+
+VarIdent ::=    IDENT LBRACK RBRACK
+                | IDENT
+                ;
+
+Type ::= IDENT;
+
+//CLASS VAR DECLARATION
+ClassVarDeclListOpt ::= ClassVarDeclListOpt ClassVarDecl
+                        | /*epsilon*/
+                        ;
+
+ClassVarDecl ::=    STATIC VarDecl
+                    | VarDecl
+                    ;
+
+//CLASS DECLARATION
+ClassDecl ::= CLASS IDENT ExtendsOpt LBRACE ClassVarDeclListOpt MethodDeclOpt RBRACE;
+
+ExtendsOpt ::=  EXTENDS Type
+                | /* epsilon */
+                ;
+            
+//METHOD VAR DECLARATION
+MethodVarDeclListOpt ::= MethodVarDeclListOpt MethodVarDecl
+                        | /* epsilon */
+                        ;
+
+MethodVarDecl ::= Type MethodIdentList SEMI ;
+                
+MethodIdentList ::= MethodIdentList COMMA VarIdent
+                    | VarIdent
+                    ;
+
+//METHOD DECLARATION
+MethodDeclOpt ::=   LBRACE MethodDeclListOpt RBRACE
+                    | /*epsilon*/
+                    ;
+
+MethodDeclListOpt ::= MethodDeclListOpt MethodDecl
+                    | /* epsilon */
+                    ;
+
+MethodDecl ::= StaticOpt TypeVoid IDENT LPAREN FormPars RPAREN MethodVarDeclListOpt LBRACE StatementListOpt RBRACE;
+
+StaticOpt ::= STATIC
+            | /*epsilon*/
+            ;
+
+TypeVoid ::= Type
+            | VOID
+            ;
+
+VarArgs ::= Type DOT DOT DOT IDENT;
+
+FormPars ::= FormalParamList 
+            | FormalParamList COMMA VarArgs
+            | COMMA VarArgs
+            | /* epsilon */ 
+             ;
 
 FormalParamList ::= FormalParamList COMMA FormalParamDecl
-					|
-					FormalParamDecl
-					;
-					
-FormalParamDecl ::= Type IDENT ;
+                    | FormalParamDecl;
 
-StatementList ::= StatementList Statement 
-					|
-				  /* epsilon */
-				  ;
+FormalParamDecl ::= Type IDENT LBRACK RBRACK
+                    | Type IDENT
+                    ;
 
-Statement ::= Matched | Unmatched ;
+StatementListOpt ::= StatementListOpt Statement
+                    | /* epsilon */
+                    ;
 
-Unmatched ::= IF Expr Statement | IF Expr Matched ELSE Unmatched;
-	
-				  
-Matched ::= Designator EQUAL Expr SEMI 
-			  |
-			  Designator EQUAL error SEMI
-			  {: parser.log.debug("Uspesan oporavak od greske pri dodeli vrednosti."); :}
-			  |
-			  PRINT LPAREN Expr RPAREN SEMI 
-			  {: parser.printCallCount++; :}
-			  |
-			  RETURN Expr SEMI
-			  |
-			  RETURN SEMI
-			  |
-			  IF Expr Matched ELSE Matched
-			  ;
-			  
-Expr ::= Expr Addop Term
-		 |
-		 Term
-		 ;
+Statement ::=   Designator DesignatorStatement SEMI
+                | IF LPAREN Condition RPAREN Statement 
+                | IF LPAREN Condition RPAREN Statement ELSE Statement 
+                | FOR LPAREN DesOpt SEMI ConOpt SEMI DesOpt RPAREN Statement
+                | BREAK SEMI
+                | CONTINUE SEMI
+                | RETURN SEMI
+                | RETURN Expr SEMI
+                | READ LPAREN Designator RPAREN SEMI
+                | PRINT LPAREN Expr NumOpt RPAREN SEMI
+                | LBRACE StatementListOpt RBRACE
+                ;
 
-Term ::= Factor ;
+NumOpt ::= COMMA NUMBER | /* epsilon */;
 
-Factor ::= NUMBER 
-			|
-		   Designator
-		    |
-		   Designator LPAREN ActualPars RPAREN
-		   ;
+DesOpt ::= Designator DesignatorStatement 
+            | /* epsilon */
+            ;
 
-ActualPars ::= ActualParamList 
-				| 
-			   /* epsilon */ 
-			   ;
-			   
-ActualParamList ::= ActualParamList COMMA Expr
-					|
-					Expr
-					;
+ConOpt ::= Condition 
+        | /* epsilon */ 
+        ;
 
-Designator ::= IDENT ;
+DesignatorStatement ::= Assignop Expr
+                        | LPAREN ActParsListOpt RPAREN
+                        | INC
+                        | DEC
+                        ;
 
-Addop ::= PLUS ;
- 
-			  
+ActParsListOpt ::= ActPars 
+                | /* epsilon */ 
+                ;
+
+ActPars ::= ActPars COMMA Expr
+            | Expr
+            ;
+            
+Designator ::= IDENT DesigListOpt ;
+
+DesigListOpt ::= DesigListOpt DesigIdent
+                | /* epsilon */
+                ;
+
+DesigIdent ::=  DOT IDENT
+                | LBRACK Expr RBRACK
+                ;
+            
+
+Condition ::=   Condition OR CondTerm
+                | CondTerm
+                ;
+                          
+CondTerm ::=    CondTerm AND CondFact
+                | CondFact
+                ;
+
+CondFact ::=    Expr
+                | Expr Relop Expr
+                ;
+    
+                
+Expr ::=    SUB AddopTermCombList
+            | AddopTermCombList
+            ;
+
+AddopTermCombList ::=   AddopTermList    AddopRight  AddopTermCombList
+                        | AddopTermList
+                        ;
+
+AddopTermList ::=   AddopTermList AddopLeft Term
+                    | Term
+                    ;
+
+Term ::=    MulopFactorList MulopRight Term
+            | MulopFactorList
+            ;
+
+MulopFactorList ::= MulopFactorList MulopLeft Factor
+                    | Factor
+                    ;
+
+Factor ::=  Designator
+            | Designator LPAREN ActParsListOpt RPAREN
+            | NUMBER
+            | CHAR
+            | BOOL
+            | NEW Type
+            | NEW Type LBRACK Expr RBRACK
+            | LPAREN Expr RPAREN
+            ;
+            
+Assignop ::= ASSIGN 
+            | AddopRight
+            | MulopRight
+            ;
+
+Relop ::=   EQUAL
+            | NOT_EQUAL
+            | GREATER
+            | GREATER_EQUAL 
+            | LESS
+            | LESS_EQUAL
+            ;
+
+Addop ::=   AddopLeft 
+            | AddopRight 
+            ;
+
+AddopLeft ::=   ADD 
+                | SUB 
+                ;
+
+AddopRight ::=  ASSIGN_ADD 
+                | ASSIGN_SUB 
+                ;
+
+Mulop ::=   MulopLeft 
+            | MulopRight 
+            ;
+
+MulopLeft ::=   MUL 
+                | DIV 
+                | MOD 
+                ;
+
+MulopRight ::=  ASSIGN_MUL 
+                | ASSIGN_DIV 
+                | ASSIGN_MOD ;
