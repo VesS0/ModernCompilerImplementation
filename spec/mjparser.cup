@@ -66,7 +66,7 @@ non terminal Assignop, ActParsListOpt, ActPars, Condition, CondTerm, CondFact, A
 non terminal AddopRight, AddopLeft, MulopFactorList, MulopRight, MulopLeft, Addop, Relop, Mulop, DeclListOpt ; 
 non terminal MethodVarDeclListOpt, MethodVarDecl, MethodIdentList, MethodDeclListOpt, MethodDecl, MethodDeclOpt, MethodName;
 non terminal ClassVarDeclListOpt, ClassDecl, ClassVarDecl ;
-non terminal InClassStart, InClassEnd, InMethodStart, InMethodEnd;
+non terminal InClassStart, InClassEnd, InMethodStart, InMethodEnd, IfElseStatement;
 
 
 precedence left ELSE;
@@ -156,11 +156,11 @@ TypeVoid ::= Type
             | VOID
             ;
 
-VarArgs ::= Type DOT DOT DOT IDENT;
+VarArgs ::= COMMA Type DOT DOT DOT IDENT;
 
 FormPars ::= FormalParamList 
-            | FormalParamList COMMA VarArgs
-            | COMMA VarArgs
+            | FormalParamList VarArgs
+            | VarArgs
             | /* epsilon */ 
              ;
 
@@ -176,8 +176,7 @@ StatementListOpt ::= StatementListOpt Statement
                     ;
 
 Statement ::=   Designator DesignatorStatement SEMI
-                | IF LPAREN Condition RPAREN Statement 
-                | IF LPAREN Condition RPAREN Statement ELSE Statement 
+                | IfElseStatement
                 | FOR LPAREN DesOpt SEMI ConOpt SEMI DesOpt RPAREN Statement
                 | BREAK SEMI
                 | CONTINUE SEMI
@@ -188,15 +187,20 @@ Statement ::=   Designator DesignatorStatement SEMI
                 | LBRACE StatementListOpt RBRACE
                 ;
 
-NumOpt ::= COMMA NUMBER | /* epsilon */;
+IfElseStatement ::= IF LPAREN Condition RPAREN Statement 
+                    | IF LPAREN Condition RPAREN Statement ELSE Statement 
+                    ;
+                    
+NumOpt ::=  COMMA NUMBER
+            | /* epsilon */;
 
-DesOpt ::= Designator DesignatorStatement 
+DesOpt ::=  Designator DesignatorStatement 
             | /* epsilon */
             ;
 
-ConOpt ::= Condition 
-        | /* epsilon */ 
-        ;
+ConOpt ::=  Condition 
+            | /* epsilon */ 
+            ;
 
 DesignatorStatement ::= Assignop Expr
                         | LPAREN ActParsListOpt RPAREN
@@ -204,19 +208,19 @@ DesignatorStatement ::= Assignop Expr
                         | DEC
                         ;
 
-ActParsListOpt ::= ActPars 
-                | /* epsilon */ 
-                ;
+ActParsListOpt ::=  ActPars 
+                    | /* epsilon */ 
+                    ;
 
 ActPars ::= ActPars COMMA Expr
             | Expr
             ;
             
-Designator ::= IDENT DesigListOpt ;
+Designator ::= IDENT DesigListOpt;
 
 DesigListOpt ::= DesigListOpt DesigIdent
-                | /* epsilon */
-                ;
+                 | /* epsilon */
+                 ;
 
 DesigIdent ::=  DOT IDENT
                 | LBRACK Expr RBRACK
@@ -302,4 +306,5 @@ MulopLeft ::=   MUL
 
 MulopRight ::=  ASSIGN_MUL 
                 | ASSIGN_DIV 
-                | ASSIGN_MOD ;
+                | ASSIGN_MOD 
+                ;
