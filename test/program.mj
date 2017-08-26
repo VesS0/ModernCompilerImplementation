@@ -1,0 +1,8 @@
+program MJProgram
+	int x, y;
+{
+	void main() {
+		x = -y;
+		// ja vladovlja
+	}
+}

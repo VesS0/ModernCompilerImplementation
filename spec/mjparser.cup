@@ -1,0 +1,137 @@
+package rs.ac.bg.etf.pp1;
+
+import java_cup.runtime.*;
+import org.apache.log4j.*;
+
+// import java.io.*;
+
+
+parser code {:
+	
+	int printCallCount = 0;
+	
+	Logger log = Logger.getLogger(getClass());
+   
+   
+    // slede redefinisani metodi za prijavu gresaka radi izmene teksta poruke
+     
+    public void report_fatal_error(String message, Object info) throws java.lang.Exception {
+      done_parsing();
+      report_error(message, info);
+    }
+  
+    public void syntax_error(Symbol cur_token) {
+        report_error("\nSintaksna greska", cur_token);
+    }
+  
+    public void unrecovered_syntax_error(Symbol cur_token) throws java.lang.Exception {
+        report_fatal_error("Fatalna greska, parsiranje se ne moze nastaviti", cur_token);
+    }
+
+    public void report_error(String message, Object info) {
+    	StringBuilder msg = new StringBuilder(message); 
+    	if (info instanceof Symbol)
+            msg.append (" na liniji ").append(((Symbol)info).left);
+        log.error(msg.toString());
+    }
+:}
+
+scan with {:
+	Symbol s = this.getScanner().next_token();
+	if (s != null && s.value != null) 
+		log.info(s.toString() + " " + s.value.toString());
+	return s;
+:}
+
+terminal PROG, LBRACE, RBRACE, SEMI, LPAREN, RPAREN, COMMA, PRINT, RETURN, PLUS, EQUAL, VOID;
+terminal Integer NUMBER ;
+terminal String IDENT ;
+terminal IF, ELSE;
+
+non terminal Program, VarDeclList, MethodDeclList, VarDecl, Type, MethodDecl;
+non terminal FormalParamList, FormalParamDecl, FormPars, ActualPars, ActualParamList; 
+non terminal StatementList, Statement, Designator, Expr, Term, Addop, Factor;
+non terminal Unmatched, Matched;
+
+
+Program ::= PROG IDENT VarDeclList LBRACE MethodDeclList RBRACE ;
+
+VarDeclList ::= VarDeclList VarDecl  
+				|
+				/* epsilon */ 
+				;
+				
+VarDecl ::= Type IDENT SEMI ;
+
+Type ::= IDENT ;
+
+MethodDeclList ::= MethodDeclList MethodDecl
+					|
+					/* epsilon */
+					;
+
+MethodDecl ::= Type IDENT LPAREN FormPars RPAREN VarDeclList LBRACE StatementList RBRACE ;
+
+FormPars ::= FormalParamList | /* epsilon */ ;
+
+FormalParamList ::= FormalParamList COMMA FormalParamDecl
+					|
+					FormalParamDecl
+					;
+					
+FormalParamDecl ::= Type IDENT ;
+
+StatementList ::= StatementList Statement 
+					|
+				  /* epsilon */
+				  ;
+
+Statement ::= Matched | Unmatched ;
+
+Unmatched ::= IF Expr Statement | IF Expr Matched ELSE Unmatched;
+	
+				  
+Matched ::= Designator EQUAL Expr SEMI 
+			  |
+			  Designator EQUAL error SEMI
+			  {: parser.log.debug("Uspesan oporavak od greske pri dodeli vrednosti."); :}
+			  |
+			  PRINT LPAREN Expr RPAREN SEMI 
+			  {: parser.printCallCount++; :}
+			  |
+			  RETURN Expr SEMI
+			  |
+			  RETURN SEMI
+			  |
+			  IF Expr Matched ELSE Matched
+			  ;
+			  
+Expr ::= Expr Addop Term
+		 |
+		 Term
+		 ;
+
+Term ::= Factor ;
+
+Factor ::= NUMBER 
+			|
+		   Designator
+		    |
+		   Designator LPAREN ActualPars RPAREN
+		   ;
+
+ActualPars ::= ActualParamList 
+				| 
+			   /* epsilon */ 
+			   ;
+			   
+ActualParamList ::= ActualParamList COMMA Expr
+					|
+					Expr
+					;
+
+Designator ::= IDENT ;
+
+Addop ::= PLUS ;
+ 
+			  

@@ -1,0 +1,22 @@
+INFO  15:52:59,767 - Compiling source file: C:\Users\Jelena\workspace\ModernJavaCompiler\test\program.mj
+INFO  15:52:59,771 - #1 program
+INFO  15:52:59,771 - #16 MJProgram
+INFO  15:52:59,771 - #16 int
+INFO  15:52:59,771 - #16 x
+INFO  15:52:59,771 - #41 ,
+INFO  15:52:59,771 - #16 y
+INFO  15:52:59,771 - #42 ;
+INFO  15:52:59,771 - #46 {
+INFO  15:52:59,771 - #11 void
+INFO  15:52:59,771 - #16 main
+INFO  15:52:59,772 - #44 (
+INFO  15:52:59,772 - #45 )
+INFO  15:52:59,772 - #46 {
+INFO  15:52:59,772 - #16 x
+INFO  15:52:59,772 - #33 =
+INFO  15:52:59,772 - #21 -
+INFO  15:52:59,772 - #16 y
+INFO  15:52:59,772 - #42 ;
+INFO  15:52:59,772 - #23 /
+INFO  15:52:59,772 - #47 }
+INFO  15:52:59,772 - #47 }
