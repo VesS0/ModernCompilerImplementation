@@ -200,7 +200,9 @@ VarDeclList ::= VarDeclList COMMA Var
                 | Var 
                 ;
 
-Var ::=    ( IDENT LBRACK RBRACK | IDENT  )
+Var ::=     IDENT LBRACK RBRACK 
+           {: parser.IncreaseVariableCount(); :}
+            | IDENT  
            {: parser.IncreaseVariableCount(); :}
            ;
 
@@ -249,11 +251,10 @@ MethodDeclListOpt ::= MethodDeclListOpt MethodDecl
                     | /* epsilon */
                     ;
 
-MethodDecl ::= StaticOpt TypeVoid IDENT LPAREN FormParamsOpt RPAREN MethodVarDeclListOpt LBRACE 
-{: 
-    parser.InScope(SCOPE.METHOD_SCOPE);
-:}
-StatementListOpt RBRACE 
+MethodDecl ::= 
+StaticOpt TypeVoid IDENT LPAREN 
+{: parser.InScope(SCOPE.METHOD_SCOPE); :}
+FormParamsOpt RPAREN MethodVarDeclListOpt LBRACE StatementListOpt RBRACE 
 {: parser.OutOfCurrentScope(); :};
 
 StaticOpt ::= 
