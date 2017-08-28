@@ -1,0 +1,31 @@
+INFO  22:33:21,005 - Compiling source file: C:\Users\Jelena\workspace\ModernJavaCompiler\test\program.mj
+INFO  22:33:21,012 - #12 program
+INFO  22:33:21,013 - #50 MJProgram
+INFO  22:33:21,013 - #4 const
+INFO  22:33:21,013 - #50 int
+INFO  22:33:21,013 - #50 x
+INFO  22:33:21,013 - #28 =
+INFO  22:33:21,013 - #49 5
+INFO  22:33:21,013 - #44 ;
+INFO  22:33:21,013 - #50 int
+INFO  22:33:21,013 - #50 x
+INFO  22:33:21,013 - #45 ,
+INFO  22:33:21,013 - #50 y
+INFO  22:33:21,014 - #44 ;
+INFO  22:33:21,014 - #50 double
+INFO  22:33:21,014 - #50 k
+INFO  22:33:21,014 - #44 ;
+INFO  22:33:21,014 - #17 {
+INFO  22:33:21,014 - #16 void
+INFO  22:33:21,014 - #50 main
+INFO  22:33:21,014 - #21 (
+INFO  22:33:21,014 - #22 )
+INFO  22:33:21,014 - #17 {
+INFO  22:33:21,014 - #50 x
+INFO  22:33:21,014 - #28 =
+INFO  22:33:21,014 - #24 -
+INFO  22:33:21,015 - #50 y
+INFO  22:33:21,015 - #44 ;
+INFO  22:33:21,015 - #18 }
+INFO  22:33:21,015 - #18 }
+INFO  22:33:21,015 - Print global variables = 3

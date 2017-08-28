@@ -36,8 +36,15 @@ public class MJParserTest {
 			MJParser p = new MJParser(lexer);
 	        Symbol s = p.parse();  //pocetak parsiranja
 	        
-	        //log.info("Print calls = " + p.printCallCount);
-	        
+	        log.info("globalVariableCount = " + p.globalVariableCount);
+	        log.info("globalConstVariableCount = " + p.globalConstVariableCount);
+	        log.info("mainVariableCount = " + p.mainVariableCount);
+	        log.info("formalParamsCount = " + p.formalParamsCount);
+	        log.info("globalClassFunctionCount = " + p.globalClassFunctionCount);
+	        log.info("staticClassFunctionCount = " + p.staticClassFunctionCount);
+	        log.info("globalFunctionCount = " + p.globalFunctionCount);
+	        log.info("classVariableCount = " + p.classVariableCount);
+	        log.info("classCount = " + p.classCount);
 		} 
 		finally {
 			if (br != null) try { br.close(); } catch (IOException e1) { log.error(e1.getMessage(), e1); }

@@ -2,11 +2,104 @@ package rs.ac.bg.etf.pp1;
 
 import java_cup.runtime.*;
 import org.apache.log4j.*;
+import rs.ac.bg.etf.pp1.MJParser.SCOPE;
 
 // import java.io.*;
 
 
 parser code {:
+    public static enum SCOPE
+    {
+        GLOBAL_SCOPE,
+        METHOD_SCOPE,
+        CLASS_SCOPE,
+        CLASS_METHOD_SCOPE,
+        MAIN_SCOPE
+    }
+    
+    SCOPE currentScope = SCOPE.GLOBAL_SCOPE;
+    
+    int globalVariableCount = 0;
+    int globalConstVariableCount = 0;
+    int mainVariableCount = 0;
+    int globalClassFunctionCount = 0;
+    int staticClassFunctionCount = 0;
+    int formalParamsCount = 0;
+    int globalFunctionCount = 0;
+    int classCount = 0;
+    int classVariableCount = 0;
+    
+    void IncreaseVariableCount()
+    {
+        if (currentScope == SCOPE.GLOBAL_SCOPE) 
+        {
+            globalVariableCount++;
+            return;
+        }
+        if (currentScope == SCOPE.MAIN_SCOPE)
+        {
+            mainVariableCount++;
+            return;
+        }
+        if (currentScope == SCOPE.CLASS_SCOPE)
+        {
+            classVariableCount++;
+        }
+    }
+    
+    void IncreaseConstVariableCount()
+    {
+        if (currentScope == SCOPE.GLOBAL_SCOPE)
+        {
+            globalConstVariableCount++;
+        }
+    }
+    
+    void IncreaseStaticFunctionNumber()
+    {
+        if (currentScope == SCOPE.CLASS_SCOPE)
+        {
+            staticClassFunctionCount++;
+        }
+        /*if (currentScope == SCOPE.GLOBAL_SCOPE)
+        {
+            globalFunctionCount++;
+        }*/
+    }
+    
+    void IncreaseFunctionNumber()
+    {
+        if (currentScope == SCOPE.CLASS_SCOPE)
+        {
+            globalClassFunctionCount++;
+        }
+        if (currentScope == SCOPE.GLOBAL_SCOPE)
+        {
+            globalFunctionCount++;
+        }
+        
+    }
+    
+    void InScope(SCOPE newScope)
+    {
+        if (currentScope == SCOPE.CLASS_SCOPE && newScope == SCOPE.METHOD_SCOPE)
+        {
+            currentScope = SCOPE.CLASS_METHOD_SCOPE;
+            return;
+        }
+        currentScope = newScope;   
+    }
+    
+    void OutOfCurrentScope()
+    {
+        if (currentScope == SCOPE.CLASS_METHOD_SCOPE)
+        {
+            currentScope = SCOPE.CLASS_SCOPE;
+            return;
+        }
+        currentScope = SCOPE.GLOBAL_SCOPE;
+    }
+    
     Logger log = Logger.getLogger(getClass());
 
     // slede redefinisani metodi za prijavu gresaka radi izmene teksta poruke
@@ -62,7 +155,7 @@ non terminal MethodDecl, MethodDeclOpt, MethodDeclListOpt, MethodVarDecl, Method
 non terminal Designator, DesignatorOpt, DesignatorListOpt, DesignatorStatement, DesignatorIdent;
 non terminal Addop, AddopLeft, AddopRight, AddopTermList, AddopTermCombList; 
 non terminal Mulop, MulopLeft, MulopRight, MulopFactorList;       
-non terminal VarArgs, VarDecl, VarDeclList, VarIdent;
+non terminal VarArgs, VarDecl, VarDeclList, Var;
 non terminal Const, ConstIdent, ConstDecl, ConstDeclList;
 non terminal FormalParamDecl, FormParamsOpt, FormalParamList;
 non terminal Statement, StatementListOpt, StatementIfElse;
@@ -90,9 +183,8 @@ Decl ::=    ClassDecl
 //CONST DECLARATION
 ConstDecl ::= CONST Type ConstDeclList SEMI;
 
-ConstDeclList ::=   ConstDeclList COMMA ConstIdent 
-                    | ConstIdent
-                    ;
+ConstDeclList ::=   ( ConstDeclList COMMA ConstIdent | ConstIdent )
+                    {: parser.IncreaseConstVariableCount(); :};
                 
 ConstIdent ::= IDENT ASSIGN Const;
 
@@ -104,13 +196,13 @@ Const ::=   BOOL
 //VAR DECLARATION
 VarDecl ::= Type VarDeclList SEMI;
 
-VarDeclList ::= VarDeclList COMMA VarIdent
-                | VarIdent
+VarDeclList ::= VarDeclList COMMA Var
+                | Var 
                 ;
 
-VarIdent ::=    IDENT LBRACK RBRACK
-                | IDENT
-                ;
+Var ::=    ( IDENT LBRACK RBRACK | IDENT  )
+           {: parser.IncreaseVariableCount(); :}
+           ;
 
 Type ::= IDENT;
 
@@ -124,7 +216,14 @@ ClassVarDecl ::=    STATIC VarDecl
                     ;
 
 //CLASS DECLARATION
-ClassDecl ::= CLASS IDENT ExtendsOpt LBRACE ClassVarDeclListOpt MethodDeclOpt RBRACE;
+ClassDecl ::= CLASS IDENT ExtendsOpt LBRACE
+{: 
+    parser.InScope(SCOPE.CLASS_SCOPE);
+    parser.classCount++;
+:}
+ ClassVarDeclListOpt MethodDeclOpt RBRACE
+{: parser.OutOfCurrentScope(); :};
+
 
 ExtendsOpt ::=  EXTENDS Type
                 | /* epsilon */
@@ -137,8 +236,8 @@ MethodVarDeclListOpt ::= MethodVarDeclListOpt MethodVarDecl
 
 MethodVarDecl ::= Type MethodIdentList SEMI ;
                 
-MethodIdentList ::= MethodIdentList COMMA VarIdent
-                    | VarIdent
+MethodIdentList ::= MethodIdentList COMMA Var
+                    | Var
                     ;
 
 //METHOD DECLARATION
@@ -150,10 +249,18 @@ MethodDeclListOpt ::= MethodDeclListOpt MethodDecl
                     | /* epsilon */
                     ;
 
-MethodDecl ::= StaticOpt TypeVoid IDENT LPAREN FormParamsOpt RPAREN MethodVarDeclListOpt LBRACE StatementListOpt RBRACE;
+MethodDecl ::= StaticOpt TypeVoid IDENT LPAREN FormParamsOpt RPAREN MethodVarDeclListOpt LBRACE 
+{: 
+    parser.InScope(SCOPE.METHOD_SCOPE);
+:}
+StatementListOpt RBRACE 
+{: parser.OutOfCurrentScope(); :};
 
-StaticOpt ::= STATIC
-            | /*epsilon*/
+StaticOpt ::= 
+            STATIC 
+            {: parser.IncreaseStaticFunctionNumber(); :}
+            | /*epsilon*/ 
+            {: parser.IncreaseFunctionNumber(); :}
             ;
 
 TypeVoid ::= Type
@@ -162,14 +269,15 @@ TypeVoid ::= Type
 
 VarArgs ::= COMMA Type DOT DOT DOT IDENT;
 
-FormParamsOpt ::= FormalParamList 
-            | FormalParamList VarArgs
-            | VarArgs
-            | /* epsilon */ 
-             ;
+FormParamsOpt ::=   FormalParamList 
+                    | 
+                    ( FormalParamList VarArgs | VarArgs )
+                    {: parser.formalParamsCount++; :}
+                    | /* epsilon */ 
+                    ;
 
-FormalParamList ::= FormalParamList COMMA FormalParamDecl
-                    | FormalParamDecl;
+FormalParamList ::= (FormalParamList COMMA FormalParamDecl | FormalParamDecl)
+                    {: parser.formalParamsCount++; :};
 
 FormalParamDecl ::= Type IDENT LBRACK RBRACK
                     | Type IDENT
