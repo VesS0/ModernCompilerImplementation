@@ -267,20 +267,19 @@ TypeVoid ::= Type
             | VOID
             ;
 
-VarArgs ::= COMMA Type DOT DOT DOT IDENT;
+VarArgs ::= COMMA Type DOT DOT DOT IDENT {: parser.formalParamsCount++; :};
 
 FormParamsOpt ::=   FormalParamList 
-                    | 
-                    ( FormalParamList VarArgs | VarArgs )
-                    {: parser.formalParamsCount++; :}
+                    | FormalParamList VarArgs 
+                    | VarArgs 
                     | /* epsilon */ 
                     ;
 
-FormalParamList ::= (FormalParamList COMMA FormalParamDecl | FormalParamDecl)
-                    {: parser.formalParamsCount++; :};
+FormalParamList ::= FormalParamList COMMA FormalParamDecl | FormalParamDecl;
+                    
 
-FormalParamDecl ::= Type IDENT LBRACK RBRACK
-                    | Type IDENT
+FormalParamDecl ::= (Type IDENT LBRACK RBRACK | Type IDENT)
+                    {: parser.formalParamsCount++; :}
                     ;
 
 StatementListOpt ::= StatementListOpt Statement

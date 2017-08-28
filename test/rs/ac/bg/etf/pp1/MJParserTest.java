@@ -38,12 +38,12 @@ public class MJParserTest {
 	        
 	        log.info("globalVariableCount = " + p.globalVariableCount);
 	        log.info("globalConstVariableCount = " + p.globalConstVariableCount);
+	        log.info("classVariableCount = " + p.classVariableCount);
 	        log.info("mainVariableCount = " + p.mainVariableCount);
-	        log.info("formalParamsCount = " + p.formalParamsCount);
 	        log.info("globalClassFunctionCount = " + p.globalClassFunctionCount);
 	        log.info("staticClassFunctionCount = " + p.staticClassFunctionCount);
 	        log.info("globalFunctionCount = " + p.globalFunctionCount);
-	        log.info("classVariableCount = " + p.classVariableCount);
+	        log.info("formalParamsCount = " + p.formalParamsCount);
 	        log.info("classCount = " + p.classCount);
 		} 
 		finally {
