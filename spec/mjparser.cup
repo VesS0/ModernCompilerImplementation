@@ -2,6 +2,7 @@ package rs.ac.bg.etf.pp1;
 
 import java_cup.runtime.*;
 import org.apache.log4j.*;
+import java.util.Stack;
 import rs.ac.bg.etf.pp1.MJParser.SCOPE;
 
 // import java.io.*;
@@ -10,18 +11,17 @@ import rs.ac.bg.etf.pp1.MJParser.SCOPE;
 parser code {:
     public static enum SCOPE
     {
-        GLOBAL_SCOPE,
         METHOD_SCOPE,
         CLASS_SCOPE,
         CLASS_METHOD_SCOPE,
         MAIN_SCOPE
     }
-    
-    SCOPE currentScope = SCOPE.GLOBAL_SCOPE;
+    Stack<SCOPE> nestedScopes = new Stack<SCOPE>();
     
     int globalVariableCount = 0;
     int globalConstVariableCount = 0;
     int mainVariableCount = 0;
+    int mainFunctionCallsCount = 0;
     int globalClassFunctionCount = 0;
     int staticClassFunctionCount = 0;
     int formalParamsCount = 0;
@@ -31,73 +31,91 @@ parser code {:
     
     void IncreaseVariableCount()
     {
-        if (currentScope == SCOPE.GLOBAL_SCOPE) 
+        
+        if (nestedScopes.empty()) // Global scope
         {
             globalVariableCount++;
             return;
         }
-        if (currentScope == SCOPE.MAIN_SCOPE)
+        if (nestedScopes.peek() == SCOPE.MAIN_SCOPE)
         {
             mainVariableCount++;
             return;
         }
-        if (currentScope == SCOPE.CLASS_SCOPE)
+        if (nestedScopes.peek() == SCOPE.CLASS_SCOPE)
         {
             classVariableCount++;
+            return;
         }
     }
     
     void IncreaseConstVariableCount()
     {
-        if (currentScope == SCOPE.GLOBAL_SCOPE)
+        if (nestedScopes.empty()) // Global scope
         {
             globalConstVariableCount++;
         }
     }
     
-    void IncreaseStaticFunctionNumber()
+    void IncreaseFunctionCount()
     {
-        if (currentScope == SCOPE.CLASS_SCOPE)
-        {
-            staticClassFunctionCount++;
-        }
-        /*if (currentScope == SCOPE.GLOBAL_SCOPE)
+        if (nestedScopes.empty())
         {
             globalFunctionCount++;
-        }*/
-    }
-    
-    void IncreaseFunctionNumber()
-    {
-        if (currentScope == SCOPE.CLASS_SCOPE)
+            return;
+        }
+        if (nestedScopes.peek() == SCOPE.CLASS_SCOPE)
         {
             globalClassFunctionCount++;
         }
-        if (currentScope == SCOPE.GLOBAL_SCOPE)
+    }
+    
+    void IncreaseStaticFunctionCount()
+    {
+        if (nestedScopes.empty()) // Global Scope
         {
-            globalFunctionCount++;
+            // globalFunctionCount++;
+            return;
+        }
+        if (nestedScopes.peek() == SCOPE.CLASS_SCOPE)
+        {
+            staticClassFunctionCount++;
+        }
+    }
+    
+    void IncreaseFunctionCallsCount()
+    {
+        if (nestedScopes.empty()) // Global scope
+        {
+            return;
         }
         
+        if (nestedScopes.peek() == SCOPE.MAIN_SCOPE)
+        {
+            mainFunctionCallsCount++;   
+            return;
+        }
     }
     
     void InScope(SCOPE newScope)
     {
-        if (currentScope == SCOPE.CLASS_SCOPE && newScope == SCOPE.METHOD_SCOPE)
+        if (nestedScopes.empty())
         {
-            currentScope = SCOPE.CLASS_METHOD_SCOPE;
+            nestedScopes.push(newScope);
             return;
         }
-        currentScope = newScope;   
+        
+        if (nestedScopes.peek() == SCOPE.CLASS_SCOPE && newScope == SCOPE.METHOD_SCOPE)
+        {
+            nestedScopes.push(SCOPE.CLASS_METHOD_SCOPE);
+            return;
+        }
+        nestedScopes.push(newScope);   
     }
     
     void OutOfCurrentScope()
     {
-        if (currentScope == SCOPE.CLASS_METHOD_SCOPE)
-        {
-            currentScope = SCOPE.CLASS_SCOPE;
-            return;
-        }
-        currentScope = SCOPE.GLOBAL_SCOPE;
+        nestedScopes.pop();
     }
     
     Logger log = Logger.getLogger(getClass());
@@ -252,16 +270,21 @@ MethodDeclListOpt ::= MethodDeclListOpt MethodDecl
                     ;
 
 MethodDecl ::= 
-StaticOpt TypeVoid IDENT LPAREN 
-{: parser.InScope(SCOPE.METHOD_SCOPE); :}
+StaticOpt TypeVoid IDENT:methodName LPAREN 
+{:
+if (methodName.equals("main"))
+    parser.InScope(SCOPE.MAIN_SCOPE);
+else
+    parser.InScope(SCOPE.METHOD_SCOPE); 
+:}
 FormParamsOpt RPAREN MethodVarDeclListOpt LBRACE StatementListOpt RBRACE 
 {: parser.OutOfCurrentScope(); :};
 
 StaticOpt ::= 
             STATIC 
-            {: parser.IncreaseStaticFunctionNumber(); :}
+            {: parser.IncreaseStaticFunctionCount(); :}
             | /*epsilon*/ 
-            {: parser.IncreaseFunctionNumber(); :}
+            {: parser.IncreaseFunctionCount(); :}
             ;
 
 TypeVoid ::= Type
@@ -296,7 +319,9 @@ Statement ::=   Designator DesignatorStatement SEMI
                 | RETURN SEMI
                 | RETURN Expression SEMI
                 | READ LPAREN Designator RPAREN SEMI
+                {: parser.IncreaseFunctionCallsCount(); :}
                 | PRINT LPAREN Expression NumOpt RPAREN SEMI
+                {: parser.IncreaseFunctionCallsCount(); :}
                 | LBRACE StatementListOpt RBRACE
                 ;
 
@@ -375,6 +400,7 @@ MulopFactorList ::= MulopFactorList MulopLeft Factor
 
 Factor ::=  Designator
             | Designator LPAREN ActParsListOpt RPAREN
+            {: parser.IncreaseFunctionCallsCount(); :}
             | NUMBER
             | CHAR
             | BOOL

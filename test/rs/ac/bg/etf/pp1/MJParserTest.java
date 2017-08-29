@@ -40,6 +40,7 @@ public class MJParserTest {
 	        log.info("globalConstVariableCount = " + p.globalConstVariableCount);
 	        log.info("classVariableCount = " + p.classVariableCount);
 	        log.info("mainVariableCount = " + p.mainVariableCount);
+	        log.info("mainFunctionCallsCount = " + p.mainFunctionCallsCount);
 	        log.info("globalClassFunctionCount = " + p.globalClassFunctionCount);
 	        log.info("staticClassFunctionCount = " + p.staticClassFunctionCount);
 	        log.info("globalFunctionCount = " + p.globalFunctionCount);
