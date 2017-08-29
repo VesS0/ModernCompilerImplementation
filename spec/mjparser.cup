@@ -29,6 +29,30 @@ parser code {:
     int classCount = 0;
     int classVariableCount = 0;
     
+    boolean errorEncountered = false;
+    boolean errorHandled = false;
+    
+    void ReportError(String errorMessage)
+    {
+        errorEncountered = true;
+        log.debug(errorMessage);
+    }
+    
+    void ReportVarDeclError(char errorChar)
+    {
+        errorEncountered = true;
+        if (nestedScopes.empty())
+        {
+            log.debug("Doslo je do greske prilikom deklaracije globalne promenljive pre znaka \""+errorChar + '\"');
+            return;
+        }
+        if (nestedScopes.peek() == SCOPE.CLASS_SCOPE)
+        {
+            log.debug("Doslo je do greske prilikom definicije lokalne promenljive unutrasnje klase pre znaka \"" +errorChar+ '\"');
+            return;
+        }
+    }
+    
     void IncreaseVariableCount()
     {
         
@@ -167,9 +191,8 @@ terminal DEC, INC, OR, AND;
 terminal SEMI, COMMA, DOT;
 terminal BOOL, CHAR, NUMBER, IDENT;
 
-non terminal ClassDecl, ClassVarDecl, ClassVarDeclListOpt, InClassStart, InClassEnd;
-non terminal MethodDecl, MethodDeclOpt, MethodDeclListOpt, MethodVarDecl, MethodVarDeclListOpt, MethodIdentList,
-             InMethodStart, InMethodEnd;
+non terminal ClassDecl, ClassVarDecl, ClassVarDeclListOpt;
+non terminal MethodDecl, MethodDeclOpt, MethodDeclListOpt, MethodVarDecl, MethodVarDeclListOpt, MethodIdentList;
 non terminal Designator, DesignatorOpt, DesignatorListOpt, DesignatorStatement, DesignatorIdent;
 non terminal Addop, AddopLeft, AddopRight, AddopTermList, AddopTermCombList; 
 non terminal Mulop, MulopLeft, MulopRight, MulopFactorList;       
@@ -181,7 +204,7 @@ non terminal Condition, CondTerm, CondFact, CondOpt;
 
 non terminal Decl, DeclListOpt;
 non terminal ExtendsOpt, StaticOpt, NumOpt;
-non terminal Assignop, ActPars ,ActParsListOpt, Relop;
+non terminal Assignop, AssignopError, ActPars ,ActParsListOpt, Relop;
 non terminal Program, Expression, Term, Type, TypeVoid, Factor;
 
 precedence left ELSE;
@@ -214,9 +237,14 @@ Const ::=   BOOL
             ;
 
 //VAR DECLARATION
-VarDecl ::= Type VarDeclList SEMI;
+VarDecl ::= Type VarDeclList SEMI
+            | Type error SEMI
+            {: parser.ReportVarDeclError(';'); :}
+            ;
 
 VarDeclList ::= VarDeclList COMMA Var
+                | error COMMA Var
+                {: parser.ReportVarDeclError(','); :}
                 | Var 
                 ;
 
@@ -246,6 +274,8 @@ ClassDecl ::= CLASS IDENT ExtendsOpt LBRACE
 
 
 ExtendsOpt ::=  EXTENDS Type
+                | EXTENDS error
+                {: parser.ReportError("Doslo je do greske prilikom deklaracije prosirenja natklase"); :}
                 | /* epsilon */
                 ;
             
@@ -296,15 +326,18 @@ VarArgs ::= COMMA Type DOT DOT DOT IDENT {: parser.formalParamsCount++; :};
 FormParamsOpt ::=   FormalParamList 
                     | FormalParamList VarArgs 
                     | VarArgs 
+                    | error
+                    {: parser.ReportError("Doslo je do greske prilikom deklaracije formalnog parametra funkcije pre znaka \")\""); :}
                     | /* epsilon */ 
                     ;
 
-FormalParamList ::= FormalParamList COMMA FormalParamDecl | FormalParamDecl;
+FormalParamList ::= FormalParamList COMMA FormalParamDecl 
+                    | error COMMA FormalParamDecl {: parser.ReportError("Doslo je do greske prilikom deklaracije formalnog parametra funkcije pre znaka \",\""); :}
+                    | FormalParamDecl;
                     
 
 FormalParamDecl ::= Type IDENT LBRACK RBRACK {: parser.formalParamsCount++; :}
                     | Type IDENT {: parser.formalParamsCount++; :}
-                    
                     ;
 
 StatementListOpt ::= StatementListOpt Statement
@@ -327,16 +360,25 @@ Statement ::=   Designator DesignatorStatement SEMI
 
 StatementIfElse ::= IF LPAREN Condition RPAREN Statement 
                     | IF LPAREN Condition RPAREN Statement ELSE Statement 
+                    | IF LPAREN error RPAREN Statement
+                    {: parser.ReportError("Doslo je do greske u logickom izrazu unutar IF konstrukcije"); :}
+                    | IF LPAREN error RPAREN Statement ELSE Statement 
+                    {: parser.ReportError("Doslo je do greske u logickom izrazu unutar IF-ELSE konstrukcije"); :}
                     ;
                     
 NumOpt ::=  COMMA NUMBER
-            | /* epsilon */;
-
-DesignatorOpt ::=  Designator DesignatorStatement 
             | /* epsilon */
             ;
 
-CondOpt ::=  Condition 
+DesignatorOpt ::=  Designator DesignatorStatement 
+            | error
+            {: parser.ReportError("Doslo je do greske unutar FOR(...) konstrukcije"); :}
+            | /* epsilon */
+            ;
+
+CondOpt ::=  Condition
+            | error
+            {: parser.ReportError("Doslo je do greske u logickom iskazu unutar FOR(...) konstrukcije"); :}
             | /* epsilon */ 
             ;
 
@@ -344,7 +386,18 @@ DesignatorStatement ::= Assignop Expression
                         | LPAREN ActParsListOpt RPAREN
                         | INC
                         | DEC
+                        | Assignop error 
+                        {: parser.ReportError("Doslo je do prilikom dodele vrednosti pre znaka ;"); :}
                         ;
+/*
+AssignopError ::= ASSIGN error {: parser.ReportError("Doslo je do prilikom dodele vrednosti pre znaka ;"); :}
+                | ASSIGN_ADD error {: parser.ReportError("Doslo je do prilikom dodele vrednosti pre znaka ;"); :}
+                | ASSIGN_SUB error {: parser.ReportError("Doslo je do prilikom dodele vrednosti pre znaka ;"); :}
+                | ASSIGN_MUL error {: parser.ReportError("Doslo je do prilikom dodele vrednosti pre znaka ;"); :}
+                | ASSIGN_DIV error {: parser.ReportError("Doslo je do prilikom dodele vrednosti pre znaka ;"); :}
+                | ASSIGN_MOD error {: parser.ReportError("Doslo je do prilikom dodele vrednosti pre znaka ;"); :}
+                ;
+*/
 
 ActParsListOpt ::=  ActPars 
                     | /* epsilon */ 
