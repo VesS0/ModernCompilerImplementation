@@ -183,8 +183,10 @@ Decl ::=    ClassDecl
 //CONST DECLARATION
 ConstDecl ::= CONST Type ConstDeclList SEMI;
 
-ConstDeclList ::=   ( ConstDeclList COMMA ConstIdent | ConstIdent )
-                    {: parser.IncreaseConstVariableCount(); :};
+ConstDeclList ::=   ConstDeclList COMMA ConstIdent {: parser.IncreaseConstVariableCount(); :}
+                    | ConstIdent {: parser.IncreaseConstVariableCount(); :}
+                    ;
+                    
                 
 ConstIdent ::= IDENT ASSIGN Const;
 
@@ -200,10 +202,8 @@ VarDeclList ::= VarDeclList COMMA Var
                 | Var 
                 ;
 
-Var ::=     IDENT LBRACK RBRACK 
-           {: parser.IncreaseVariableCount(); :}
-            | IDENT  
-           {: parser.IncreaseVariableCount(); :}
+Var ::= IDENT LBRACK RBRACK  {: parser.IncreaseVariableCount(); :}
+        | IDENT {: parser.IncreaseVariableCount(); :}
            ;
 
 Type ::= IDENT;
@@ -279,8 +279,9 @@ FormParamsOpt ::=   FormalParamList
 FormalParamList ::= FormalParamList COMMA FormalParamDecl | FormalParamDecl;
                     
 
-FormalParamDecl ::= (Type IDENT LBRACK RBRACK | Type IDENT)
-                    {: parser.formalParamsCount++; :}
+FormalParamDecl ::= Type IDENT LBRACK RBRACK {: parser.formalParamsCount++; :}
+                    | Type IDENT {: parser.formalParamsCount++; :}
+                    
                     ;
 
 StatementListOpt ::= StatementListOpt Statement
