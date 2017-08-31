@@ -3,6 +3,7 @@ package rs.ac.bg.etf.pp1;
 import java_cup.runtime.*;
 import org.apache.log4j.*;
 import java.util.Stack;
+import java.util.stream.IntStream;
 import rs.ac.bg.etf.pp1.MJParser.SCOPE;
 
 // import java.io.*;
@@ -241,7 +242,7 @@ parser code {:
                 return;
             }
             InScope(SCOPE.MAIN_SCOPE);
-            InsertMethod(methodName, methodLocation, 7);
+            InsertMethod(methodName, methodLocation, type.getKind());
             Tab.openScope();
             return;
         } 
@@ -252,7 +253,7 @@ parser code {:
        }
        else 
        {
-           InsertMethod(methodName, methodLocation, 7);
+           InsertMethod(methodName, methodLocation, type.getKind());
        }
        
        InScope(SCOPE.METHOD_SCOPE);
@@ -360,6 +361,27 @@ scan with {:
 action code {:
 int numberOfNestedFors = 0;
 
+    String StructToTypeName(int kind)
+    {
+        switch(kind)
+        {
+            case 0:
+            return "None";
+            case 1:
+            return "Int";
+            case 2:
+            return "Char";
+            case 3:
+            return "Array";
+            case 4:
+            return "Class";
+            case 5:
+            return "Bool";
+            default:
+            return "No such kind";
+        }
+    }
+    
     public void EnteredFor()
     {
         ++numberOfNestedFors;
@@ -373,7 +395,47 @@ int numberOfNestedFors = 0;
         return numberOfNestedFors == 0;
     }
     
+    void ReturnCallCheck(Object returnCall, int returnLocation, Struct expr)
+    {
+        if(parser.lastMethod == null )
+        {
+            parser.report_error("Return mora biti iz funkcije pozvan ", returnLocation);
+            return;
+        }
+        
+        if(parser.lastMethod.getType() != Tab.noType)
+        {
+            parser.report_error("Funkcija mora vracati tip "+ StructToTypeName(parser.lastMethod.getType().getKind()), returnLocation);
+            return;
+        }
+        
+        if (expr != null && expr.getKind() != parser.lastMethod.getType().getKind())
+        {
+            parser.report_error("Funkcija vraca tip "+ StructToTypeName(expr.getKind()) +" A mora vracati tip "+ 
+            StructToTypeName(parser.lastMethod.getType().getKind()), returnLocation);
+        }
+    }
+    
+int [] correctObjTypes = {Obj.Var, Obj.Elem, Obj.Fld };
+int [] correctStructTypes = {Struct.Int, Struct.Char, Struct.None};
+        
+    public void CheckAvailableDesignatorTypes(Obj designator, int designatorLocation)
+    {
+        if (!IntStream.of(correctObjTypes).anyMatch(x -> x == designator.getKind()))
+        {
+            parser.report_error(" " + designator.getName() + 
+            " mora biti  promenljiva, element niza ili polje unutar objekta", designatorLocation);
+            return;
+        }
+        if (!IntStream.of(correctStructTypes).anyMatch(x -> x == designator.getType().getKind()))
+        {       
+            parser.report_error(" " + designator.getName() + " mora biti tipa int, char ili bool.", designatorLocation);                
+            return;
+        }
+        parser.IncreaseFunctionCallsCount(); 
+    }
 :}
+
 terminal BREAK, CLASS, CONST, CONTINUE, ELSE, EXTENDS, FOR, IF, NEW, PRINT, PROG, READ, RETURN, STATIC, VOID;
 terminal LBRACE, RBRACE, LBRACK, RBRACK, LPAREN, RPAREN;
 terminal ADD, SUB, MUL, DIV, MOD;
@@ -387,7 +449,7 @@ terminal String IDENT;
 
 non terminal ClassDecl, ClassVarDecl, ClassVarDeclListOpt;
 non terminal MethodDecl, MethodDeclOpt, MethodDeclListOpt, MethodVarDecl, MethodVarDeclListOpt, MethodIdentList;
-non terminal Designator, DesignatorOpt, DesignatorListOpt, DesignatorStatement, DesignatorIdent;
+non terminal DesignatorOpt, DesignatorListOpt, DesignatorStatement, DesignatorIdent;
 non terminal Addop, AddopLeft, AddopRight, AddopTermList, AddopTermCombList; 
 non terminal Mulop, MulopLeft, MulopRight, MulopFactorList;       
 non terminal VarArgs, VarDecl, VarDeclList, Var;
@@ -399,11 +461,11 @@ non terminal Condition, CondTerm, CondFact, CondOpt;
 non terminal Decl, DeclListOpt;
 non terminal ExtendsOpt, NumOpt;
 non terminal Assignop, AssignopError, ActPars ,ActParsListOpt, Relop;
-non terminal Program, Expression, Term, Factor;
+non terminal Program, Term, Factor;
 
-non terminal Obj ProgramName, Const;
+non terminal Obj ProgramName, Const, Designator;
 non terminal Boolean StaticOpt;
-non terminal Struct Type, TypeVoid;
+non terminal Struct Type, TypeVoid, Expression;
 
 precedence left ELSE;
 
@@ -596,10 +658,19 @@ Statement ::=   Designator DesignatorStatement SEMI
                     if (IsNotInForLoop())
                         parser.report_error("Continue naredba se moze izvrsiti samo iz unutar for petlje ", semleft);
                 :}
-                | RETURN SEMI
-                | RETURN Expression SEMI
-                | READ LPAREN Designator RPAREN SEMI
-                {: parser.IncreaseFunctionCallsCount(); :}
+                | RETURN:ret SEMI
+                {:
+                    ReturnCallCheck(ret, retleft, null);
+                :}
+                | RETURN:ret Expression:expr SEMI
+                {:
+                    ReturnCallCheck(ret, retleft, expr);
+                :}
+                | READ LPAREN Designator:designator RPAREN SEMI
+                {:
+                    CheckAvailableDesignatorTypes(designator, designatorleft);
+                    parser.IncreaseFunctionCallsCount(); 
+                :}
                 | PRINT LPAREN Expression NumOpt RPAREN SEMI
                 {: parser.IncreaseFunctionCallsCount(); :}
                 | LBRACE StatementListOpt RBRACE
