@@ -59,6 +59,9 @@ public class MJParserTest {
 	        log.info("globalFunctionCount = " + p.globalFunctionCount);
 	        log.info("formalParamsCount = " + p.formalParamsCount);
 	        log.info("classCount = " + p.classCount);
+	        
+	        
+	        
 		} 
 		finally {
 			if (br != null) try { br.close(); } catch (IOException e1) { log.error(e1.getMessage(), e1); }

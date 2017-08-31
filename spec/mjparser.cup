@@ -6,7 +6,8 @@ import java.util.Stack;
 import rs.ac.bg.etf.pp1.MJParser.SCOPE;
 
 // import java.io.*;
-
+import rs.etf.pp1.symboltable.Tab;
+import rs.etf.pp1.symboltable.concepts.*;
 
 parser code {:
     public static enum SCOPE
@@ -16,6 +17,7 @@ parser code {:
         CLASS_METHOD_SCOPE,
         MAIN_SCOPE
     }
+    
     Stack<SCOPE> nestedScopes = new Stack<SCOPE>();
     
     int globalVariableCount = 0;
@@ -31,6 +33,10 @@ parser code {:
     
     boolean errorEncountered = false;
     boolean errorHandled = false;
+    
+    Struct lastType = null;
+    Obj lastClass = null;
+    Obj lastMethod = null;
     
     void ReportError(String errorMessage)
     {
@@ -71,6 +77,10 @@ parser code {:
             classVariableCount++;
             return;
         }
+        if (nestedScopes.peek() == SCOPE.METHOD_SCOPE)
+        {
+            return;
+        }
     }
     
     void IncreaseConstVariableCount()
@@ -83,7 +93,7 @@ parser code {:
     
     void IncreaseFunctionCount()
     {
-        if (nestedScopes.empty())
+        if (nestedScopes.empty()) // Global Scope
         {
             globalFunctionCount++;
             return;
@@ -139,9 +149,174 @@ parser code {:
     
     void OutOfCurrentScope()
     {
-        nestedScopes.pop();
+        if (!nestedScopes.empty())
+        {
+            nestedScopes.pop();
+        }
     }
     
+    void VariableDeclaration(String name, int nameLocation, int objectType, 
+        Obj assignedType, int assignLocation, boolean isConst)
+    {
+        if( Tab.currentScope.findSymbol(name) != null)
+        {
+             report_error(" " + name + " je vec deklarisano", nameLocation);
+             return;
+        }
+        
+        if(assignedType != null && assignedType.getType() != lastType)
+        {
+            report_error("neispravan tip promenljive koja se dodeljuje ", assignLocation);
+            return;
+        }
+        
+        if (lastType == null || lastType == Tab.noType)
+        {
+            report_error("Greska pri deklaraciji promenljive", null);
+            return; 
+        }
+        
+        Tab.insert(objectType, name, lastType);
+        
+        if (isConst) IncreaseConstVariableCount();
+        else IncreaseVariableCount();
+        
+        report_info("Definisana promenljiva " + name + " tipa: "+lastType.getKind()+ " na liniji ", nameLocation);
+    }
+
+    // Overloading
+    void VariableDeclaration(String name, int nameLocation, int objectType)
+    {
+        VariableDeclaration(name, nameLocation, objectType, null, 0, false);
+    }
+    
+    void VariableDeclaration(String name, int nameLocation, int objectType, Obj assignedType, int assignedLocation)
+    {
+        VariableDeclaration(name, nameLocation, objectType, assignedType, assignedLocation, false);
+    }
+
+    void ClassDeclaration(String className, int classLocation)
+    {
+        if(Tab.currentScope.findSymbol(className) != null)
+        {
+            report_error("Klasa sa imenom " + className + "je vec deklarisana ", classLocation);
+            return;
+        }
+        
+        lastClass = Tab.insert(Obj.Type, className, new Struct(Struct.Class));
+        InScope(SCOPE.CLASS_SCOPE);
+        Tab.openScope();
+        classCount++;
+        
+        report_info("Definisana klasa " + className + " na liniji ", classLocation);
+    }
+    
+    void ClassEnding()
+    {
+        // if (!nestedScopes.empty() && nestedScopes.peek() == SCOPE.CLASS_SCOPE)
+        {
+            HandleScopeEnd(lastClass); 
+            lastClass = null;
+        }          
+    }
+    
+    void MethodDeclaration(String methodName, int methodLocation, Struct type, int typeLocation, boolean isStaticMethod)
+    {
+        if(Tab.currentScope.findSymbol(methodName) != null)
+        {
+              report_error("Naziv metode "+methodName + "je vec u upotrebi", methodLocation);
+              return;
+        }
+        
+        if (methodName.equals("main"))
+        {
+            if(type != Tab.noType)
+            {
+                report_error("Main mora biti tipa \"void\"",typeLocation);
+                return;
+            }
+            if (isStaticMethod)
+            {
+                report_error("Main ne sme biti staticka metoda",methodLocation);
+                return;
+            }
+            InScope(SCOPE.MAIN_SCOPE);
+            InsertMethod(methodName, methodLocation, 7);
+            Tab.openScope();
+            return;
+        } 
+        
+       if(isStaticMethod) 
+       {
+           InsertMethod(methodName, methodLocation, 6);
+       }
+       else 
+       {
+           InsertMethod(methodName, methodLocation, 7);
+       }
+       
+       InScope(SCOPE.METHOD_SCOPE);
+       Tab.openScope();
+    }
+    
+    void InsertMethod(String methodName, int methodLocation, int methodType)
+    {
+           if (methodType == 7 ) IncreaseFunctionCount();
+           else IncreaseStaticFunctionCount();
+           Struct s = new Struct(lastType.getKind()); s.setElementType(new Struct(methodType));
+           lastMethod = Tab.insert(Obj.Meth, methodName, s);
+           report_info("Ubacena metoda "+methodName+" u tabelu simbola", methodLocation);
+    }
+    
+    void MethodEnding()
+    {
+        // if (!nestedScopes.empty() &&
+        // nestedScopes.peek() == SCOPE.METHOD_SCOPE ||
+        // nestedScopes.peek() == SCOPE.MAIN_SCOPE || 
+        // nestedScopes.peek() == SCOPE.CLASS_METHOD_SCOPE)
+        {
+            HandleScopeEnd(lastMethod);
+            lastMethod = null;
+        }
+    }
+    
+    void HandleScopeEnd(Obj scopeName)
+    {
+        OutOfCurrentScope();
+        Tab.chainLocalSymbols(scopeName);
+        Tab.closeScope();
+    }
+
+    void HandleProgramEnd(Obj progName, int programLocation)
+    {
+        if(Tab.find("main") == Tab.noObj)
+        {
+            report_error("Metoda \"main\" nije pronadjena!", programLocation);
+        }
+        
+        HandleScopeEnd(progName);
+    }
+    
+    Struct CheckTypeAndUpdateLastType(String typeName, int nameLocation)
+    {
+        Obj typeNode = Tab.find(typeName);
+        
+        if (Obj.Type == typeNode.getKind()) 
+        {
+             return lastType = typeNode.getType();
+        }
+        
+        lastType = Tab.noType;
+        if (typeNode == Tab.noObj) 
+        {
+            report_error("U tabeli simbola nije pronadjen tip " + typeName + " referenciran na lokaciji", nameLocation);            
+            return Tab.noType;
+        }
+        
+        report_error(" ime " + typeName + " ne predstavlja tip ", nameLocation);
+        return Tab.noType;
+    }
+
     Logger log = Logger.getLogger(getClass());
 
     // slede redefinisani metodi za prijavu gresaka radi izmene teksta poruke
@@ -182,6 +357,23 @@ scan with {:
     return s;
 :}
 
+action code {:
+int numberOfNestedFors = 0;
+
+    public void EnteredFor()
+    {
+        ++numberOfNestedFors;
+    }
+    public void ExitedFor()
+    {
+        --numberOfNestedFors;
+    }
+    public boolean IsNotInForLoop()
+    {
+        return numberOfNestedFors == 0;
+    }
+    
+:}
 terminal BREAK, CLASS, CONST, CONTINUE, ELSE, EXTENDS, FOR, IF, NEW, PRINT, PROG, READ, RETURN, STATIC, VOID;
 terminal LBRACE, RBRACE, LBRACK, RBRACK, LPAREN, RPAREN;
 terminal ADD, SUB, MUL, DIV, MOD;
@@ -189,7 +381,9 @@ terminal ASSIGN, ASSIGN_ADD, ASSIGN_SUB, ASSIGN_MUL, ASSIGN_DIV, ASSIGN_MOD;
 terminal EQUAL, NOT_EQUAL, GREATER_EQUAL, LESS_EQUAL, GREATER, LESS;
 terminal DEC, INC, OR, AND;
 terminal SEMI, COMMA, DOT;
-terminal BOOL, CHAR, NUMBER, IDENT;
+terminal BOOL, CHAR, NUMBER;
+
+terminal String IDENT;
 
 non terminal ClassDecl, ClassVarDecl, ClassVarDeclListOpt;
 non terminal MethodDecl, MethodDeclOpt, MethodDeclListOpt, MethodVarDecl, MethodVarDeclListOpt, MethodIdentList;
@@ -197,19 +391,32 @@ non terminal Designator, DesignatorOpt, DesignatorListOpt, DesignatorStatement, 
 non terminal Addop, AddopLeft, AddopRight, AddopTermList, AddopTermCombList; 
 non terminal Mulop, MulopLeft, MulopRight, MulopFactorList;       
 non terminal VarArgs, VarDecl, VarDeclList, Var;
-non terminal Const, ConstIdent, ConstDecl, ConstDeclList;
+non terminal ConstIdent, ConstDecl, ConstDeclList;
 non terminal FormalParamDecl, FormParamsOpt, FormalParamList;
 non terminal Statement, StatementListOpt, StatementIfElse;
 non terminal Condition, CondTerm, CondFact, CondOpt;
 
 non terminal Decl, DeclListOpt;
-non terminal ExtendsOpt, StaticOpt, NumOpt;
+non terminal ExtendsOpt, NumOpt;
 non terminal Assignop, AssignopError, ActPars ,ActParsListOpt, Relop;
-non terminal Program, Expression, Term, Type, TypeVoid, Factor;
+non terminal Program, Expression, Term, Factor;
+
+non terminal Obj ProgramName, Const;
+non terminal Boolean StaticOpt;
+non terminal Struct Type, TypeVoid;
 
 precedence left ELSE;
 
-Program ::= PROG IDENT DeclListOpt LBRACE MethodDeclListOpt RBRACE;
+Program ::= PROG ProgramName:progName DeclListOpt LBRACE MethodDeclListOpt RBRACE
+{:
+    parser.HandleProgramEnd(progName, progNameleft);
+:};
+
+ProgramName ::= IDENT:progName
+{:
+    RESULT = Tab.insert(Obj.Prog, progName, Tab.noType);
+    Tab.openScope();
+:};
 
 DeclListOpt ::= DeclListOpt Decl
                 | /* epsilon */ 
@@ -224,16 +431,20 @@ Decl ::=    ClassDecl
 //CONST DECLARATION
 ConstDecl ::= CONST Type ConstDeclList SEMI;
 
-ConstDeclList ::=   ConstDeclList COMMA ConstIdent {: parser.IncreaseConstVariableCount(); :}
-                    | ConstIdent {: parser.IncreaseConstVariableCount(); :}
+ConstDeclList ::=   ConstDeclList COMMA ConstIdent
+                    | ConstIdent
                     ;
                     
                 
-ConstIdent ::= IDENT ASSIGN Const;
+ConstIdent ::= IDENT:name ASSIGN Const:type
+{: 
+    parser.VariableDeclaration(name, nameleft, Obj.Con, type, typeleft);
+:}
+;
 
-Const ::=   BOOL
-            | CHAR
-            | NUMBER
+Const ::=   BOOL  {: RESULT = new Obj(Obj.Con, "", Tab.intType); :}
+            | CHAR {: RESULT = new Obj(Obj.Con, "", Tab.charType); :}
+            | NUMBER {: RESULT = new Obj(Obj.Con, "", Tab.intType); :} // EEEEEEEEEEEEEEEEEE
             ;
 
 //VAR DECLARATION
@@ -248,11 +459,19 @@ VarDeclList ::= VarDeclList COMMA Var
                 | Var 
                 ;
 
-Var ::= IDENT LBRACK RBRACK  {: parser.IncreaseVariableCount(); :}
-        | IDENT {: parser.IncreaseVariableCount(); :}
+Var ::= IDENT:name LBRACK RBRACK  
+{: 
+    parser.lastType = new Struct(Struct.Array, parser.lastType);
+    parser.VariableDeclaration(name, nameleft, Obj.Var); 
+:}
+        | IDENT:name {: parser.VariableDeclaration(name, nameleft, Obj.Var); :}
            ;
 
-Type ::= IDENT;
+Type ::= IDENT:name
+{:
+    RESULT = parser.CheckTypeAndUpdateLastType(name, nameleft);
+:}
+;
 
 //CLASS VAR DECLARATION
 ClassVarDeclListOpt ::= ClassVarDeclListOpt ClassVarDecl
@@ -264,16 +483,22 @@ ClassVarDecl ::=    STATIC VarDecl
                     ;
 
 //CLASS DECLARATION
-ClassDecl ::= CLASS IDENT ExtendsOpt LBRACE
+ClassDecl ::= CLASS IDENT:className ExtendsOpt LBRACE
 {: 
-    parser.InScope(SCOPE.CLASS_SCOPE);
-    parser.classCount++;
+    parser.ClassDeclaration(className, classNameleft);
 :}
+
  ClassVarDeclListOpt MethodDeclOpt RBRACE
-{: parser.OutOfCurrentScope(); :};
+{:  
+    parser.ClassEnding();
+:};
 
 
-ExtendsOpt ::=  EXTENDS Type
+ExtendsOpt ::=  EXTENDS Type:type 
+            {: 
+                if(!(type.getKind() == Struct.Class))
+                    parser.report_error(" TIp objekta iz kog se pokusava izvodjenje mora biti klasa! ", typeleft); 
+            :}
                 | EXTENDS error
                 {: parser.ReportError("Doslo je do greske prilikom deklaracije prosirenja natklase"); :}
                 | /* epsilon */
@@ -299,29 +524,34 @@ MethodDeclListOpt ::= MethodDeclListOpt MethodDecl
                     | /* epsilon */
                     ;
 
-MethodDecl ::= 
-StaticOpt TypeVoid IDENT:methodName LPAREN 
+MethodDecl ::= StaticOpt:isStaticMethod TypeVoid:type IDENT:methodName LPAREN 
 {:
-if (methodName.equals("main"))
-    parser.InScope(SCOPE.MAIN_SCOPE);
-else
-    parser.InScope(SCOPE.METHOD_SCOPE); 
+    parser.MethodDeclaration(methodName, methodNameleft, type, typeleft, isStaticMethod);
 :}
 FormParamsOpt RPAREN MethodVarDeclListOpt LBRACE StatementListOpt RBRACE 
-{: parser.OutOfCurrentScope(); :};
+{: 
+    parser.MethodEnding();
+:};
 
 StaticOpt ::= 
             STATIC 
-            {: parser.IncreaseStaticFunctionCount(); :}
+            {: RESULT = true; :}
             | /*epsilon*/ 
-            {: parser.IncreaseFunctionCount(); :}
+            {: RESULT = false;:}
             ;
 
-TypeVoid ::= Type
+TypeVoid ::= Type: type
+            {: RESULT = type; // = parser.lastType:}
             | VOID
+            {: RESULT = parser.lastType = Tab.noType;:}
             ;
 
-VarArgs ::= COMMA Type DOT DOT DOT IDENT {: parser.formalParamsCount++; :};
+VarArgs ::= COMMA Type:type DOT DOT DOT IDENT:name
+{:
+    parser.lastType = new Struct(Struct.Array, parser.lastType);
+    parser.VariableDeclaration(name, nameleft, Obj.Var);    
+    parser.formalParamsCount++; 
+:};
 
 FormParamsOpt ::=   FormalParamList 
                     | FormalParamList VarArgs 
@@ -336,9 +566,18 @@ FormalParamList ::= FormalParamList COMMA FormalParamDecl
                     | FormalParamDecl;
                     
 
-FormalParamDecl ::= Type IDENT LBRACK RBRACK {: parser.formalParamsCount++; :}
-                    | Type IDENT {: parser.formalParamsCount++; :}
-                    ;
+FormalParamDecl ::= Type IDENT:name LBRACK RBRACK 
+{: 
+    parser.lastType = new Struct(Struct.Array, parser.lastType);
+    parser.VariableDeclaration(name, nameleft, Obj.Var);
+    parser.formalParamsCount++; 
+:}
+                    | Type IDENT:name
+{: 
+    parser.VariableDeclaration(name, nameleft, Obj.Var);
+    parser.formalParamsCount++; 
+:}
+                     ;
 
 StatementListOpt ::= StatementListOpt Statement
                     | /* epsilon */
@@ -346,9 +585,17 @@ StatementListOpt ::= StatementListOpt Statement
 
 Statement ::=   Designator DesignatorStatement SEMI
                 | StatementIfElse
-                | FOR LPAREN DesignatorOpt SEMI CondOpt SEMI DesignatorOpt RPAREN Statement
-                | BREAK SEMI
-                | CONTINUE SEMI
+                | FOR LPAREN DesignatorOpt SEMI CondOpt SEMI DesignatorOpt RPAREN {: EnteredFor(); :} Statement {: ExitedFor(); :}
+                | BREAK SEMI:sem
+                {: 
+                if (IsNotInForLoop())
+                        parser.report_error("Breakovati se moze samo iz unutar for petlje ", semleft);
+                :}
+                | CONTINUE SEMI:sem
+                {:
+                    if (IsNotInForLoop())
+                        parser.report_error("Continue naredba se moze izvrsiti samo iz unutar for petlje ", semleft);
+                :}
                 | RETURN SEMI
                 | RETURN Expression SEMI
                 | READ LPAREN Designator RPAREN SEMI
@@ -389,15 +636,6 @@ DesignatorStatement ::= Assignop Expression
                         | Assignop error 
                         {: parser.ReportError("Doslo je do prilikom dodele vrednosti pre znaka ;"); :}
                         ;
-/*
-AssignopError ::= ASSIGN error {: parser.ReportError("Doslo je do prilikom dodele vrednosti pre znaka ;"); :}
-                | ASSIGN_ADD error {: parser.ReportError("Doslo je do prilikom dodele vrednosti pre znaka ;"); :}
-                | ASSIGN_SUB error {: parser.ReportError("Doslo je do prilikom dodele vrednosti pre znaka ;"); :}
-                | ASSIGN_MUL error {: parser.ReportError("Doslo je do prilikom dodele vrednosti pre znaka ;"); :}
-                | ASSIGN_DIV error {: parser.ReportError("Doslo je do prilikom dodele vrednosti pre znaka ;"); :}
-                | ASSIGN_MOD error {: parser.ReportError("Doslo je do prilikom dodele vrednosti pre znaka ;"); :}
-                ;
-*/
 
 ActParsListOpt ::=  ActPars 
                     | /* epsilon */ 
