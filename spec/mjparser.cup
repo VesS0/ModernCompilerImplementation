@@ -418,7 +418,8 @@ Obj lastDesignator = null;
 
 Collection<Obj> classFields = null;
 List<Struct> actParams= new LinkedList<Struct>();
-
+String desigName;
+    
     public void EnteredFor()
     {
         ++numberOfNestedFors;
@@ -946,7 +947,7 @@ Designator ::= IDENT:name
                         Obj o1 = Tab.find(name);
                         if(o1 != Tab.noObj) {
                             if(o1.getType().getKind() == Struct.Array)
-                                lastDesignator = o1;
+                                desigName = name;
                     }
                     else {
                             Obj found = null;
@@ -958,7 +959,7 @@ Designator ::= IDENT:name
                             }
                             if(found != null) {
                                 if(found.getType().getKind() == Struct.Array) {
-                                    lastDesignator = found;
+                                    desigName = name;
                                     if(lastDesignator != null && lastDesignator.getType() != null)
                                         classFields = lastDesignator.getType().getMembers();
                                 }
@@ -972,7 +973,7 @@ Designator ::= IDENT:name
                     else {
                       if(parser.lastMethod != null) {
                         if(o.getType().getKind() == Struct.Array)
-                            lastDesignator = o;                       
+                            desigName = name;                       
                       }
                         RESULT = lastDesignator = o;
                     }  
@@ -1064,7 +1065,7 @@ DesignatorIdent ::=  DOT IDENT:name
                         Obj o = Tab.currentScope().getOuter().findSymbol(name);
                         if(o != null) {
                             if(o.getType().getKind() == Struct.Array) {
-                                lastDesignator = o;
+                                desigName = name;
                                 if(lastDesignator != null && lastDesignator.getType() != null)
                                     classFields = lastDesignator.getType().getMembers();
                             }
@@ -1081,7 +1082,7 @@ DesignatorIdent ::=  DOT IDENT:name
                             }
                             if(found != null) {
                                 if(found.getType().getKind() == Struct.Array) {
-                                    lastDesignator = found;
+                                    desigName = name;
                                     if(lastDesignator != null && lastDesignator.getType() != null)
                                         classFields = lastDesignator.getType().getMembers();
                                 }
@@ -1098,7 +1099,7 @@ DesignatorIdent ::=  DOT IDENT:name
                             }
                             if(found != null){
                                 if(found.getType().getKind() == Struct.Array) {
-                                     lastDesignator = found;
+                                     desigName = name;
                                     if(lastDesignator != null && lastDesignator.getType() != null)
                                         classFields = lastDesignator.getType().getMembers();
                                 }
@@ -1284,10 +1285,10 @@ Factor ::=  Designator:designator
             {:
                 Obj obj = Tab.noObj;
                 if(classFields == null)
-                    obj = Tab.find(lastDesignator.getName());      
+                    obj = Tab.find(desigName);      
                 else  { 
                     for (Obj o : classFields) { 
-                        if(o.getName().equals(lastDesignator.getName()))
+                        if(o.getName().equals(desigName))
                             obj = o;
                     }
                 } 
