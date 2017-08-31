@@ -189,7 +189,7 @@ parser code {:
         
         if(assignedType != null && assignedType.getType() != lastType)
         {
-            report_error("neispravan tip promenljive koja se dodeljuje "+ StructToTypeName(assignedType.getType()) +" = "+ StructToTypeName(lastType) +"("+assignLocation+")",null );
+            report_error("neispravan tip promenljive koja se dodeljuje "+ StructToTypeName(lastType) +" = "+ StructToTypeName(assignedType.getType()) +"("+assignLocation+")",null );
             return;
         }
         
@@ -204,7 +204,7 @@ parser code {:
         if (isConst) IncreaseConstVariableCount();
         else IncreaseVariableCount();
         
-        report_info("Definisana promenljiva " + name + " tipa: "+lastType.getKind()+ " na liniji ", nameLocation);
+        report_info("Definisana promenljiva " + name + " tipa: "+StructToTypeName(lastType)+ " na liniji "+nameLocation, null);
     }
 
     // Overloading
@@ -231,7 +231,7 @@ parser code {:
         Tab.openScope();
         classCount++;
         
-        report_info("Definisana klasa " + className + " na liniji ", classLocation);
+        report_info("Definisana klasa " + className + " na liniji "+classLocation,null );
     }
     
     void ClassEnding()
@@ -309,7 +309,7 @@ parser code {:
            else IncreaseStaticFunctionCount();
            Struct s = new Struct(lastType.getKind()); s.setElementType(new Struct(methodType));
            lastMethod = Tab.insert(Obj.Meth, methodName, s);
-           report_info("Ubacena metoda "+methodName+" u tabelu simbola", methodLocation);
+           report_info("Ubacena metoda "+methodName+" u tabelu simbola na liniji"+ methodLocation,null );
     }
     
     void MethodEnding()
@@ -418,7 +418,7 @@ Obj lastDesignator = null;
 
 Collection<Obj> classFields = null;
 List<Struct> actParams= new LinkedList<Struct>();
-    
+
     public void EnteredFor()
     {
         ++numberOfNestedFors;
@@ -571,7 +571,7 @@ int [] correctStructTypes = {Struct.Int, Struct.Char, Struct.None};
         return true;
     }
     
-    boolean ThisIsSpecified(String name, int nameLocation)
+    public boolean ThisIsSpecified(String name, int nameLocation)
     {
         if(!"this".equals(name)) return false;
      
@@ -659,9 +659,9 @@ ConstIdent ::= IDENT:name ASSIGN Const:type
 :}
 ;
 
-Const ::=   BOOL  {: RESULT = new Obj(Obj.Con, "", Tab.intType); :}
+Const ::=   BOOL  {: RESULT = new Obj(Obj.Con, "", boolType); :}
             | CHAR {: RESULT = new Obj(Obj.Con, "", Tab.charType); :}
-            | NUMBER {: RESULT = new Obj(Obj.Con, "", new Struct(Struct.Bool)); :}
+            | NUMBER {: RESULT = new Obj(Obj.Con, "", Tab.intType); :}
             ;
 
 //VAR DECLARATION
@@ -886,7 +886,7 @@ DesignatorStatement ::= Designator:designator Assignop Expression:expr
                             {
                                 if (!IsAssignable(designator, expr))
                                 {
-                                    parser.report_error("Nemoguce je dodeliti vrednost tipa "+parser.StructToTypeName(expr) + "variabli tipa " +parser.StructToTypeName(designator.getType()) , designatorleft);
+                                    parser.report_error("Nemoguce je dodeliti vrednost tipa "+parser.StructToTypeName(expr) + " variabli tipa " +parser.StructToTypeName(designator.getType())+"("+designatorleft+")" ,null );
                                 }
                             }
                         :}
@@ -938,8 +938,9 @@ ActPars ::= ActPars:args COMMA Expression:expr
             
 Designator ::= IDENT:name 
                 {:
-                  if (!ThisIsSpecified(name, nameleft));
+                  if (ThisIsSpecified(name, nameleft))
                   {
+                  } else {
                     Obj o = Tab.currentScope.findSymbol(name);
                     if(o == null) {
                         Obj o1 = Tab.find(name);
@@ -1295,7 +1296,7 @@ Factor ::=  Designator:designator
                     RESULT = new Obj(Obj.NO_VALUE, "", Tab.noType);
                 else {
                     if(obj.getType().getElemType() != type) {
-                        parser.report_error("Ne podudaraju se tipovi. ", typeleft);
+                        parser.report_error("Ne podudaraju se tipovi." +type+ " i "+ obj.getType().getElemType()+"("+typeleft+")",null );
                         RESULT = new Obj(Obj.NO_VALUE, "", Tab.noType);
                     }
                 } 
