@@ -418,8 +418,8 @@ int numberOfNestedFors = 0;
     
 int [] correctObjTypes = {Obj.Var, Obj.Elem, Obj.Fld };
 int [] correctStructTypes = {Struct.Int, Struct.Char, Struct.None};
-        
-    public void CheckAvailableDesignatorTypes(Obj designator, int designatorLocation)
+    
+    public void CorrectTypesForFunctionCalls(Obj designator, int designatorLocation)
     {
         if (!IntStream.of(correctObjTypes).anyMatch(x -> x == designator.getKind()))
         {
@@ -668,11 +668,19 @@ Statement ::=   Designator DesignatorStatement SEMI
                 :}
                 | READ LPAREN Designator:designator RPAREN SEMI
                 {:
-                    CheckAvailableDesignatorTypes(designator, designatorleft);
-                    parser.IncreaseFunctionCallsCount(); 
+                    CorrectTypesForFunctionCalls(designator, designatorleft);
                 :}
-                | PRINT LPAREN Expression NumOpt RPAREN SEMI
-                {: parser.IncreaseFunctionCallsCount(); :}
+                | PRINT LPAREN Expression:expr NumOpt RPAREN SEMI
+                {: 
+                if (!IntStream.of(correctStructTypes).anyMatch(x -> x == expr.getKind()))
+                {       
+                    parser.report_error(" " + expr.getKind() + " mora biti tipa int, char ili bool.", exprleft);                
+                } else
+                {
+                    parser.IncreaseFunctionCallsCount(); 
+                }
+                
+                :}
                 | LBRACE StatementListOpt RBRACE
                 ;
 
