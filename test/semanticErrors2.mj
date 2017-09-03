@@ -1,0 +1,64 @@
+program SemanticAnalysis
+
+const bool iconst1 = false;
+const int iconst2 = 2;
+
+//incorrect constant type
+const int iconst3 = true, inconst4 = 'a';
+const char cconst3 = 1, cconst4 = true;
+const bool bconst3 = 1, bconst4 = 'a';
+
+
+//Errors
+//same name
+char ivar1;
+int ivar1;
+
+//mixed error for const and vars
+int iconst1;
+const int ivar1 = 1;
+
+//Type error
+MyType mtvar1;
+iconst1 mtvar1;
+
+{
+	int global1(int a, int b, int c) {
+		return 0;
+	}
+	
+	void global2(char a, char b, char c) 
+		int l1, l2;
+	{
+	
+	}
+
+	
+	//Formal parameter redefinition
+	void global3(int p1, int p1, int p2) 
+		char p2;
+	{
+	
+	}
+	int main(int x) 
+		bool fact1, fact2, fact3;
+		int number1, number2, number3;
+		char char1, char2, char3;
+		int x2[];
+	{
+		number1 = - 'c';
+		x2=new char[2];
+		iconst1 *= 5;
+		number1 = true + 'c';
+		read(iconst);
+		
+		if ((fact1 && number3 != number1) || (true && false) || (number3 > number1)) {
+		
+		}
+		
+		if (number1 || char1 && fact1) {
+		
+		}
+	
+	}
+}

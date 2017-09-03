@@ -1,0 +1,109 @@
+program Test
+
+const int iconst1 = 5;
+
+class class1 {
+
+}
+
+class class2 {
+	{
+		void method1() {
+			return 0;	
+		}
+		
+		int method2() {
+	
+		}
+		
+		char method3() {
+			return;
+		}
+		
+		bool method4() {
+			return 'a';
+		}
+		
+	}
+}
+
+class class3 extends class2 {
+	int fld3;
+	{
+		void method5() {
+			method4();
+			this.method2(1, 1);
+			method3();
+			class2.method3();
+			this.method3();
+			fld1 = fld3;
+			this.fld2 = this.fld1;
+		}
+	}
+}
+
+{
+
+	int globalFunction1(int a, char b, bool c, class1 d) {
+		return 0;
+	}
+	
+	void main() 
+		int array[], size;
+		int n;
+		char c;
+		bool f;
+		class1 instance;
+		bool fact1, fact2, fact3;
+		int number1, number2, number3;
+		char char1, char2, char3;
+		class1 instance1, instance2;
+		class2 instance3, instance4;
+		int l1[];
+		char l2;
+	{
+		
+		instance = new int;
+		array = new int[true];
+		
+		n = - 'c';
+		n += true;
+		c += true;
+		iconst1 *= 5;
+		n = true + 'c';
+		
+		globalFunction1(1, 'a', true, globalFunction1(1, 'a', true, new class3));
+		globalFunction1(1, null, true);
+		globalFunction1(1, true);
+		globalFunction1(1, 'a', true, 'a');
+		
+		
+		if (1 && fact1 && (number1 + number2)) {
+		
+		}
+		
+		if ( char1 < number1 && char2) {
+		
+		}
+		
+		if (number1 || char1 && fact1) {
+		
+		}
+		
+		if (instance1 < instance2 || instance1 == instance3) {
+		
+		}
+		
+		if (instance1 == null || instance1 < null) {
+		
+		}
+		
+		break;
+		continue;
+		
+		c3var.a = 2;
+		l1[0] = 'a';
+		l1[0] = true;
+		l2++;
+	}
+}

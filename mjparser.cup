@@ -1,16 +1,41 @@
 package rs.ac.bg.etf.pp1;
-import rs.etf.pp1.mj.runtime.Code;
+
 import java_cup.runtime.*;
 import org.apache.log4j.*;
 import java.util.*;
 import java.util.stream.IntStream;
 import rs.ac.bg.etf.pp1.MJParser.SCOPE;
+import rs.etf.pp1.mj.runtime.Code;
 
 // import java.io.*;
 import rs.etf.pp1.symboltable.Tab;
 import rs.etf.pp1.symboltable.concepts.*;
 
 parser code {:
+///
+    boolean errorDetected = false;    
+    boolean errorRecovery = false;
+    
+    //NIVO A
+    int globalVarCount = 0; //
+    int localVarCount = 0;
+    int globalConstCount = 0; //
+    //NIVO B
+    int globalFuncClassCount = 0; //
+    int staticFuncClassCount = 0; //
+    int funcMainCount = 0;
+    int formArgsCount = 0;//
+    //NIVO C
+    int methodClassCount = 0; //
+    int varClassDeclCount = 0; //
+    
+    Boolean inMain = false;
+    Boolean inClass = false;
+    Boolean inMethod = false;
+    
+    
+    int printCallCount = 0;
+///
     public static enum SCOPE
     {
         METHOD_SCOPE,
@@ -132,15 +157,22 @@ parser code {:
     
     void IncreaseStaticFunctionCount()
     {
+        if (nestedScopes.peek() == SCOPE.CLASS_SCOPE)
+        {
+            staticClassFunctionCount++;
+        }
+        else
+        {
+         report_error(" Static se koristi samo za metode klasa", null);
+        }
         if (nestedScopes.empty()) // Global Scope
         {
             // globalFunctionCount++;
             return;
         }
-        if (nestedScopes.peek() == SCOPE.CLASS_SCOPE)
-        {
-            staticClassFunctionCount++;
-        }
+        
+        
+         
     }
     
     void IncreaseFunctionCallsCount()
@@ -401,6 +433,13 @@ parser code {:
         log.info(msg.toString());
     }
     
+    public void report_detect(int line, Obj info) {
+        StringBuilder msg = new StringBuilder("Pretraga na " + line + "("); 
+        msg.append (info.getName());
+        msg.append ("), nadjeno ");
+        
+        log.info(msg.toString());
+    }
 :}
 
 scan with {:
@@ -422,12 +461,30 @@ Obj backupDesig = null;
 public static final int STATIC = 6;
 public static final int Bool = 5;
 public static final Struct boolType = new Struct(Struct.Bool);
-boolean varArgs = false;
-Obj lastDesignator = null;
 
-Collection<Obj> classFields = null;
-List<Struct> actParams= new LinkedList<Struct>();
+Obj lastDesignator = null;
+///
+    String curTypeName = "";
+    Struct curType = null;
+    Struct curMethType = null;
+    Obj curMeth = null;
+    Obj curClass = null;
+    Obj curDesig = null;
+    Obj extendedClass = null;
     
+    Collection<Obj> membersClass = null; 
+    List<Struct> funcParams = new LinkedList<Struct>();
+    String desigName;
+    
+    int formParams = 0;
+    boolean statMeth = false;
+    boolean retNeed = false;
+    boolean thisSpecified = false;
+    boolean staticVar = false;
+    boolean varArgs = false;
+    
+    int inFor = 0;
+
     Stack<Integer> forStack = new Stack<Integer>();
     Stack<Integer> cond = new Stack<Integer>();
     Stack<Integer> andAdr = new Stack<Integer>();    
@@ -437,6 +494,9 @@ List<Struct> actParams= new LinkedList<Struct>();
     Stack<Integer> endFor = new Stack<Integer>();
     Stack<Integer> noCond = new Stack<Integer>();
     Stack<Integer> desi = new Stack<Integer>();
+///
+Collection<Obj> classFields = null;
+List<Struct> actParams= new LinkedList<Struct>();
     
     public void EnteredFor()
     {
@@ -536,10 +596,6 @@ int [] correctStructTypes = {Struct.Int, Struct.Char, Struct.None};
     
     Obj GetResultIfBothInt(Obj result, int resultLocation, Struct term)
     {
-        /*if (!IsObjectVarElemOrFieldError(result , resultLocation))
-        {
-            return Tab.noObj;
-        }*/
         
         if (result.getType().getKind() == Struct.Int && term.getKind() == Struct.Int)
         {
@@ -618,281 +674,514 @@ terminal ASSIGN, ASSIGN_ADD, ASSIGN_SUB, ASSIGN_MUL, ASSIGN_DIV, ASSIGN_MOD;
 terminal EQUAL, NOT_EQUAL, GREATER_EQUAL, LESS_EQUAL, GREATER, LESS;
 terminal DEC, INC, OR, AND;
 terminal SEMI, COMMA, DOT;
-terminal Integer NUMBER;
-terminal char CHAR;
 terminal Boolean BOOL;
+terminal char CHAR;
+
+terminal Integer NUMBER;
 terminal String IDENT;
-
-
+non terminal InClassStart, InClassEnd, InMethodStart, InMethodEnd;
 non terminal ClassDecl, ClassVarDecl, ClassVarDeclListOpt;
 non terminal MethodDecl, MethodDeclOpt, MethodDeclListOpt, MethodVarDecl, MethodVarDeclListOpt, MethodIdentList;
 non terminal DesignatorOpt, DesignatorStatement;
-non terminal Addop, AddopLeft; 
-non terminal Integer MulopRight, Mulop, Assignop, Relop, AddopRight, MulopLeft;       
+non terminal Addop, AddopLeft, AddopRight; 
+non terminal Integer Mulop, MulopLeft, MulopRight;       
 non terminal VarArgs, VarDecl, VarDeclList, Var;
 non terminal ConstIdent, ConstDecl, ConstDeclList;
 non terminal FormalParamDecl;
 non terminal Statement, StatementListOpt, StatementIfElse;
-non terminal Condition, CondTerm, CondFact, CondOpt;
+non terminal Condition, CondTerm, CondFact, CondOpt, ClassName;
 
 non terminal Decl, DeclListOpt;
 non terminal Integer NumOpt;
-non terminal AssignopError;
+non terminal Assignop, AssignopError;
 non terminal Program;
-
+non terminal Integer Relop;
 non terminal Obj ProgramName, Const, Designator, AddopTermList, MulopFactorList, Term, Factor, DesignatorListOpt, DesignatorIdent;
 non terminal Boolean StaticOpt;
 non terminal Struct Type, TypeVoid, Expression, AddopTermCombList, ExtendsOpt;
 non terminal Integer ActParsListOpt, FormParamsOpt, FormalParamList, ActPars;
+non terminal String MethodName;
 
 precedence left ELSE;
 
-Program ::= PROG ProgramName:progName DeclListOpt LBRACE MethodDeclListOpt RBRACE
-{:
-    parser.HandleProgramEnd(progName, progNameleft);
-    Code.dataSize = Tab.currentScope().getnVars();
-    
-:};
-
-ProgramName ::= IDENT:progName
-{:
-    RESULT = Tab.insert(Obj.Prog, progName, Tab.noType);
-    Tab.openScope();
-    
-:};
-
-DeclListOpt ::= DeclListOpt Decl
-                | /* epsilon */ 
-                ;
-
-
-Decl ::=    ClassDecl 
-            | ConstDecl 
-            | VarDecl 
+Program ::= PROG ProgramName:p DeclListOpt LBRACE MethodDeclListOpt RBRACE 
+            {:
+            if(Tab.find("main") == Tab.noObj) 
+                    parser.report_error(" Mora postojati metoda main u programu", pleft);
+            Code.dataSize = Tab.currentScope().getnVars();
+            Tab.chainLocalSymbols(p);
+            Tab.closeScope();                 
+            :}            
             ;
+            
+ProgramName ::= IDENT:pName
+                {:
+                RESULT = Tab.insert(Obj.Prog, pName, Tab.noType);
+                Tab.openScope();
+                :};
+
+DeclListOpt ::= DeclListOpt Decl  
+                |
+                /* epsilon */ 
+                ;
+                
+Decl ::= ConstDecl | VarDecl | ClassDecl;
 
 //CONST DECLARATION
-ConstDecl ::= CONST Type ConstDeclList SEMI;
+ConstDecl ::= CONST Type ConstDeclList SEMI ;
 
-ConstDeclList ::=   ConstDeclList COMMA ConstIdent
-                    | ConstIdent
-                    ;
-                    
+ConstDeclList ::= ConstDeclList COMMA ConstIdent 
+                |
+                ConstIdent
+                ;
                 
-ConstIdent ::= IDENT:name ASSIGN Const:type
-{: 
-    parser.VariableDeclaration(name, nameleft, Obj.Con, type, typeleft);
-:}
-;
+ConstIdent ::= IDENT:constName ASSIGN Const:type
+                {: parser.IncreaseConstVariableCount();
+                    if( Tab.currentScope.findSymbol(constName) != null)
+                      parser.report_error(" " + constName + " vec deklarisano", constNameleft);
+                      else {
+                          if(type.getType() != curType)
+                              parser.report_error(": neispravan tip promenljive koja se dodeljuje ", typeleft);                              
+                          else {
+                              Tab.insert(Obj.Con, constName, curType);
+                              parser.report_info("Definisana konstanta " + constName + " tipa: " +curType.getKind()+ " na liniji " + constNameleft, null);
+                          }
+                  }  
+                :}
+                ;
 
-Const ::=   BOOL  {: RESULT = new Obj(Obj.Con, "", boolType); :}
-            | CHAR {: RESULT = new Obj(Obj.Con, "", Tab.charType); :}
-            | NUMBER {: RESULT = new Obj(Obj.Con, "", Tab.intType); :}
+Const ::= NUMBER
+            {: RESULT = new Obj(Obj.Con, "", Tab.intType); :}
+            | 
+            CHAR
+            {: RESULT = new Obj(Obj.Con, "", Tab.charType); :}
+            | 
+            BOOL
+            {: RESULT = new Obj(Obj.Con, "", boolType); :}
             ;
 
 //VAR DECLARATION
+                
 VarDecl ::= Type VarDeclList SEMI
-            | Type error SEMI
-            {: parser.ReportVarDeclError(';'); :}
+            |
+            Type error SEMI
+            {:
+            parser.errorRecovery = true;
+                if(parser.inClass)
+                parser.log.debug("Oporavak od greske do ; pri deklaraciji polja unutrasnje klase   "  );
+                else
+                parser.log.debug("Oporavak od greske do ; pri definiciji globalne promenljive   "  );
+            :}
             ;
 
 VarDeclList ::= VarDeclList COMMA Var
-                | error COMMA Var
-                {: parser.ReportVarDeclError(','); :}
-                | Var 
+                |
+                error COMMA Var
+                {:
+                parser.errorRecovery = true;
+                if(parser.inClass)
+                parser.log.debug("Oporavak od greske do , pri deklaraciji polja unustrasnje klase   "  );               
+                else
+                parser.log.debug("Oporavak od greske do , pri definiciji globalne promenljive   "  );               
+                :}
+                |
+                Var
                 ;
-
-Var ::= IDENT:name LBRACK RBRACK  
-        {: parser.IncreaseVariableCount();
-            if (parser.nestedScopes.empty()) {
-                    parser.globalVarCount++;
-                      if( Tab.currentScope.findSymbol(name) != null)
-                      parser.report_error(" " + name + " vec deklarisano", nameleft);
+                
+Var ::= IDENT:identName
+{:parser.IncreaseVariableCount();
+               if(parser.inMain) {
+                    if( Tab.currentScope.findSymbol(identName) != null)
+                      parser.report_error(" " + identName + " vec deklarisano", identNameleft);
                       else {
-                          if( parser.lastType != null && parser.lastType != Tab.noType)
-                              Tab.insert(Obj.Var, name, new Struct(Struct.Array, parser.lastType));
-                              parser.report_info("Definisana globalna promenljiva " + name + " tipa: "+ Struct.Array+" na liniji " + nameleft, null);
+                          if( curType != null && curType != Tab.noType)
+                              Tab.insert(Obj.Var, identName, curType);
+                              parser.report_info("Definisana lokalna promenljiva " + identName + " tipa "+curType.getKind()+" na liniji " + identNameleft, null);
+                          }
+                    
+                } else if(parser.inMethod) {
+                    if( Tab.currentScope.findSymbol(identName) != null)
+                      parser.report_error(" " + identName + " vec deklarisano", identNameleft);
+                      else {
+                          if( curType != null && curType != Tab.noType)
+                     Tab.insert(Obj.Var, identName, curType);
+                              parser.report_info("Definisana lokalna promenljiva " + identName + " tipa "+curType.getKind()+" na liniji " + identNameleft, null);
+                          
+                          }
+                } else if(parser.inClass) {
+                    if( Tab.currentScope.findSymbol(identName) != null)
+                      parser.report_error(" " + identName + " vec deklarisano", identNameleft);
+                      else {
+                          if( curType != null && curType != Tab.noType)
+                              Tab.insert(Obj.Var, identName, curType);
+                              parser.report_info("Definisano polje klase " + identName + " tipa: "+ curType.getKind()+" na liniji " + identNameleft, null);
+                          }
+                } else {
+                    if( Tab.currentScope.findSymbol(identName) != null)
+                      parser.report_error(" " + identName + " vec deklarisano", identNameleft);
+                      else {
+                          if( curType != null && curType != Tab.noType)
+                              Tab.insert(Obj.Var, identName, curType);
+                              parser.report_info("Definisana globalna promenljiva " + identName + " tipa: "+curType.getKind()+ " na liniji " + identNameleft, null);
+                          }    
+              
+                }
+            :}
+
+            |
+            IDENT:identName LBRACK RBRACK
+            {: 
+            parser.IncreaseVariableCount();
+                if(parser.inMain) {
+                    if( Tab.currentScope.findSymbol(identName) != null)
+                      parser.report_error(" " + identName + " vec deklarisano", identNameleft);
+                      else {
+                          if( curType != null && curType != Tab.noType)
+                                Tab.insert(Obj.Var, identName, new Struct(Struct.Array, curType));
+                              parser.report_info("Definisana lokalna promenljiva " + identName + " tipa "+Struct.Array+" na liniji " + identNameleft, null);
+                          }
+                } else if(parser.inMethod) {
+                    if( Tab.currentScope.findSymbol(identName) != null)
+                      parser.report_error(" " + identName + " vec deklarisano", identNameleft);
+                      else {
+                          if( curType != null && curType != Tab.noType)
+                              Tab.insert(Obj.Var, identName, new Struct(Struct.Array, curType));
+                              parser.report_info("Definisana lokalna promenljiva " + identName + " tipa: "+Struct.Array+" na liniji " + identNameleft, null);
+                          }
+                } else if(parser.inClass) {
+                    if( Tab.currentScope.findSymbol(identName) != null)
+                      parser.report_error(" " + identName + " vec deklarisano", identNameleft);
+                      else {
+                          if( curType != null && curType != Tab.noType)
+                              Tab.insert(Obj.Var, identName, new Struct(Struct.Array, curType));
+                              parser.report_info("Definisano polje klase " + identName + " tipa: "+Struct.Array+" na liniji " + identNameleft, null);
+                          }
+                } else {
+                      if( Tab.currentScope.findSymbol(identName) != null)
+                      parser.report_error(" " + identName + " vec deklarisano", identNameleft);
+                      else {
+                          if( curType != null && curType != Tab.noType)
+                              Tab.insert(Obj.Var, identName, new Struct(Struct.Array, curType));
+                              parser.report_info("Definisana globalna promenljiva " + identName + " tipa: "+ Struct.Array+" na liniji " + identNameleft, null);
                           }    
                 }
-                else
-             if(parser.nestedScopes.peek() == SCOPE.MAIN_SCOPE) {
-                    //parser.localVarCount++;
-                    if( Tab.currentScope.findSymbol(name) != null)
-                      parser.report_error(" " + name + " vec deklarisano", nameleft);
-                      else {
-                          if( parser.lastType != null && parser.lastType != Tab.noType)
-                                Tab.insert(Obj.Var, name, new Struct(Struct.Array, parser.lastType));
-                              parser.report_info("Definisana lokalna promenljiva " + name + " tipa "+Struct.Array+" na liniji " + nameleft, null);
-                          }
-                } else if(parser.nestedScopes.peek() == SCOPE.METHOD_SCOPE) {
-                    if( Tab.currentScope.findSymbol(name) != null)
-                      parser.report_error(" " + name + " vec deklarisano", nameleft);
-                      else {
-                          if( parser.lastType != null && parser.lastType != Tab.noType)
-                              Tab.insert(Obj.Var, name, new Struct(Struct.Array, parser.lastType));
-                              parser.report_info("Definisana lokalna promenljiva " + name + " tipa: "+Struct.Array+" na liniji " + nameleft, null);
-                          }
-                } else if(parser.nestedScopes.peek() == SCOPE.CLASS_SCOPE) {
-                    //parser.varClassDeclCount++;
-                    if( Tab.currentScope.findSymbol(name) != null)
-                      parser.report_error(" " + name + " vec deklarisano", nameleft);
-                      else {
-                          if( parser.lastType != null && parser.lastType != Tab.noType)
-                              Tab.insert(Obj.Var, name, new Struct(Struct.Array, parser.lastType));
-                              parser.report_info("Definisano polje klase " + name + " tipa: "+Struct.Array+" na liniji " + nameleft, null);
-                          }
-                }
-        :}
-        | IDENT:name {: parser.VariableDeclaration(name, nameleft, Obj.Var); :}
-        ;
+            :}
+            ;
 
-Type ::= IDENT:name
+Type ::= IDENT:typeName
         {:
-            RESULT = parser.CheckTypeAndUpdateLastType(name, nameleft);
+        Obj typeNode = Tab.find(typeName);
+        if (typeNode == Tab.noObj) {
+            curType = Tab.noType;
+            RESULT = Tab.noType;
+            parser.report_error("Nije pronadjen tip " + typeName + " u tabeli simbola", null);            
+        }
+        else {
+            if (Obj.Type == typeNode.getKind()) {
+                curTypeName = typeName;
+                curType = typeNode.getType();
+                RESULT = typeNode.getType();               
+            }
+            else {
+                parser.report_error(" ime " + typeName + " ne predstavlja tip ", typeNameleft);
+                curType = Tab.noType;
+                RESULT = Tab.noType;
+            }
+        }
         :}
         ;
 
 //CLASS VAR DECLARATION
-ClassVarDeclListOpt ::= ClassVarDeclListOpt ClassVarDecl
-                        | /*epsilon*/
-                        ;
 
-ClassVarDecl ::=    STATIC VarDecl
-                    | VarDecl
+ClassVarDeclListOpt ::= ClassVarDeclListOpt ClassVarDecl
+                    |
+                    /*epsilon*/
                     ;
+                    
+ClassVarDecl ::= STATIC VarDecl
+                {:
+                staticVar = true;
+                :}
+                |
+                VarDecl
+                ;
 
 //CLASS DECLARATION
-ClassDecl ::= CLASS IDENT:className ExtendsOpt:extendsClass LBRACE
-{: 
-    parser.ClassDeclaration(className, classNameleft);
-:}
+ClassDecl ::= InClassStart CLASS ClassName ExtendsOpt LBRACE ClassVarDeclListOpt {: Tab.chainLocalSymbols(curClass.getType()); :} MethodDeclOpt RBRACE InClassEnd;
 
- ClassVarDeclListOpt MethodDeclOpt RBRACE
-{:  
-    SaveExtendedClassMembers(extendsClass);
-    parser.ClassEnding();
-:};
+ClassName ::= IDENT:className
+            {:
+            if( Tab.currentScope.findSymbol(className) != null)
+                      parser.report_error(" " + className + " vec deklarisano", classNameleft);
+                      else {
+                          curClass = Tab.insert(Obj.Type, className, new Struct(Struct.Class));
+                          Tab.openScope();
+                          parser.report_info("Definisana klasa " + className + " na liniji " + classNameleft, null);
+                  }    
+            :};
 
+InClassStart ::= {: 
+                    parser.inClass = true; 
+                    parser.classCount++;
+                :};
 
-ExtendsOpt ::=  EXTENDS Type:type 
-                {: 
-                    if(!(type.getKind() == Struct.Class))
-                        parser.report_error(" Tip objekta iz kog se pokusava izvodjenje mora biti klasa! ", typeleft);
-                    else 
-                        parser.extendedClass = Tab.find(parser.curTypeName);
-                    RESULT = type;
-                :}
-                | EXTENDS error
-                {:
-                    parser.ReportError("Doslo je do greske prilikom deklaracije prosirenja natklase"); 
-                    RESULT = Tab.noType;
-                :}
-                | /* epsilon */
-                ;
+InClassEnd ::= {: 
+                if(extendedClass != null) {
+                    for (Obj obj : extendedClass.getType().getMembers()) {
+                        if(Tab.currentScope.findSymbol(obj.getName()) == null)
+                            Tab.insert(obj.getKind(), obj.getName(), obj.getType());
+                    }
+                }
+                
+                extendedClass = null;
+                parser.inClass = false; 
+                Tab.chainLocalSymbols(curClass.getType());
+                Tab.closeScope();
+                curClass = null;
+                :};
+
+ExtendsOpt ::= EXTENDS Type:type
+            {:
+            if(!(type.getKind() == Struct.Class))
+                parser.report_error(" klasa moze da se izvede samo iz unutrasnjih klasa glavnog programa ", typeleft);
+             else 
+                extendedClass = Tab.find(curTypeName);
+            :}
+            |
+            EXTENDS error 
+            {: parser.errorRecovery = true; parser.log.debug("Oporavak od greske prilikom deklaracije prosirenja natklase   "  ); :}                                         
+            |
+            /* epsilon */
+            {: extendedClass = null; :}
+            ;
             
 //METHOD VAR DECLARATION
+
 MethodVarDeclListOpt ::= MethodVarDeclListOpt MethodVarDecl
-                        | /* epsilon */
+                        |
+                        /* epsilon */
                         ;
 
 MethodVarDecl ::= Type MethodIdentList SEMI ;
                 
 MethodIdentList ::= MethodIdentList COMMA Var
-                    | Var
-                    ;
+                |
+                Var
+                ;
 
 //METHOD DECLARATION
-MethodDeclOpt ::=   LBRACE MethodDeclListOpt RBRACE
-                    | /*epsilon*/
-                    ;
+
+MethodDeclOpt ::= LBRACE MethodDeclListOpt RBRACE
+                |
+                /*epsilon*/
+                ;
 
 MethodDeclListOpt ::= MethodDeclListOpt MethodDecl
-                    | /* epsilon */
+                    |
+                    /* epsilon */
                     ;
 
-MethodDecl ::= StaticOpt:isStaticMethod TypeVoid:type IDENT:methodName LPAREN 
-                {:
-                    parser.MethodDeclaration(methodName, methodNameleft, type, typeleft, isStaticMethod);
+MethodDecl ::= InMethodStart StaticOpt TypeVoid:type MethodName:methodName LPAREN FormParamsOpt RPAREN 
+                {: 
+                if (curMeth.getName().equals("main"))
+                {
+                if(type != Tab.noType)
+                parser.report_error("main ne sme imati povratnu vrednost",methodNameleft);
+                if(formParams>0)
+                    parser.report_error("main ne sme da ima parametre", -1);
+                }
+                else
+                curMeth.setLevel(formParams); 
+                
+                //if (methodName.equals("main") && num > 0)
+                //   parser.report_error("main ne sme da ima parametre", -1);
+                
+                Tab.chainLocalSymbols(curMeth);
+                curMethType = type;   
+                           
                 :}
-FormParamsOpt:numOfParams RPAREN MethodVarDeclListOpt LBRACE StatementListOpt RBRACE 
-{: 
-    if (numOfParams == null) numOfParams = 0;
-    
-    if (methodName.equals("main") &&  numOfParams >0)
-    {
-        parser.report_error("Main ne sme imati argumente!", numOfParamsleft);
-    }
-    parser.lastMethod.setLevel(numOfParams);
-    
-    if (!parser.returnHappend && type != Tab.noType)
-    {
-        parser.report_error("Fali vam povratna vrednost funkcije!",null);
-    }
-    Code.mainPc = lastMethod.getAdr();
-    parser.MethodEnding();
-   parser.returnHappend = false;
-:};
+                MethodVarDeclListOpt LBRACE
+                {: 
+                    curMeth.setAdr(Code.pc);
+                    if ("main".equals(curMeth.getName())) {
+                        Code.mainPc = curMeth.getAdr();
+                    }
+                    Code.put(Code.enter);
+                    Code.put(curMeth.getLevel());
+                    Code.put(Tab.currentScope().getnVars());
+               :}
+                StatementListOpt RBRACE 
+                InMethodEnd
+                {:
+                if(type != Tab.noType && !retNeed )
+                parser.report_error("Funkcija mora imati povratnu vrednost",typeleft);
+                
+                :}
+                ;
 
-StaticOpt ::= 
-            STATIC 
-            {: RESULT = true; :}
-            | /*epsilon*/ 
-            {: RESULT = false;:}
+
+InMethodStart ::= {: parser.inMethod = true; :};
+
+InMethodEnd ::= {:
+                parser.inMethod = false;
+                Code.put(Code.exit);
+                Code.put(Code.return_);
+                Tab.chainLocalSymbols(curMeth);
+                Tab.closeScope();
+                curMeth = null; 
+                curMethType = null;
+                :};
+
+MethodName ::= IDENT:methodName
+              {:
+                  if(methodName.equals("main"))
+                      parser.inMain = true;
+                  else
+                      parser.inMain = false;
+                      
+                 if(Tab.currentScope.findSymbol(methodName) != null)
+                        parser.report_error(""+methodName + " naziv vec u upotrebi", methodNameleft);
+                 else {
+                 
+                    boolean flag =  false;
+                        if(extendedClass != null) {
+                            for (Obj o : extendedClass.getType().getMembers()) {
+                                if(o.getKind() == Obj.Meth && o.getName().equals(methodName)) 
+                                    if(o.getType().getElemType().getKind() == 6) 
+                                        flag = true;
+                            }
+                        }
+                        if(flag) {
+                            parser.report_error(" Ne mozete redefinisati staticku metodu.", methodNameleft);
+                        }
+                 else{
+                    if(statMeth) {
+                     Struct s = new Struct(curType.getKind()); s.setElementType(new Struct(6));
+                     curMeth = Tab.insert(Obj.Meth, methodName, s);
+                    }
+                    else {
+                     Struct s = new Struct(curType.getKind()); s.setElementType(new Struct(7));
+                     curMeth = Tab.insert(Obj.Meth, methodName, s);
+                     parser.report_info("ubacena metoda u tabelu simbola",null);
+                    }
+                     Tab.openScope();
+                 }
+                 }
+                      statMeth = false;
+                      
+                      RESULT = methodName;     
+              :};
+
+StaticOpt ::= STATIC:staticCheck
+            {: 
+            parser.IncreaseStaticFunctionCount();
+            :}
+            |
+            /*epsilon*/
+            {:parser.IncreaseFunctionCount(); 
+            :}
+            ;
+            
+TypeVoid ::= Type:type
+            {: RESULT = type; :}
+            |
+            VOID
+            {: RESULT = curType = Tab.noType; :}
             ;
 
-TypeVoid ::= Type: type
-            {: RESULT = type; // = parser.lastType:}
-            | VOID
-            {: RESULT = parser.lastType = Tab.noType;:}
-            ;
+VarArgs ::=  Type DOT DOT DOT IDENT:identName   
+                {:          
+                        if( Tab.currentScope.findSymbol(identName) != null)         
+                                      parser.report_error(" " + identName + "Sakriveno od strane f-skog parametra", identNameleft);         
+                                      else {            
+                                          if( curType != null && curType != Tab.noType) {           
+                                              Tab.insert(Obj.Var, identName, new Struct(Struct.Array, curType));            
+                                              parser.report_info("Parametar f-je ubacen u listu simbola " + identName + " tipa "+Struct.Array+" na liniji " + identNameleft, null);         
+                                          }         
+                                      }
+                   //varArgs = true;                            
+                :};         
+                
 
-VarArgs ::= COMMA Type:type DOT DOT DOT IDENT:name
-            {:
-                parser.lastType = new Struct(Struct.Array, parser.lastType);
-                parser.VariableDeclaration(name, nameleft, Obj.Var);    
-                parser.formalParamsCount++; 
-            :};
+FormParamsOpt ::= FormalParamList 
+            |
+            FormalParamList COMMA VarArgs
+            {: parser.formArgsCount++;  :}
+            |
+            COMMA VarArgs
+            {: parser.formArgsCount++;  :}
+            |
+            error
+            {: parser.errorRecovery = true; parser.log.debug("Oporavak od greske do ) prilikom deklaracije formalnog parametra funkcije   "  ); :}                               
+            |
+             /* epsilon */ 
+             {: formParams = 0; :}
+             ;
 
-FormParamsOpt ::=   FormalParamList:result
-                    {: RESULT = result; :}
-                    | FormalParamList:numOfParams VarArgs
-                    {: RESULT = numOfParams+1; :}
-                    | VarArgs 
-                    {: RESULT = 1; :}
-                    | error
-                    {: parser.ReportError("Doslo je do greske prilikom deklaracije formalnog parametra funkcije pre znaka \")\""); :}
-                    | /* epsilon */ 
-                    {: RESULT = 0; :}
+FormalParamList ::= FormalParamList COMMA FormalParamDecl
+                    {: formParams ++; :}
+                    |
+                    FormalParamDecl
+                    {: formParams = 1; :}
+                    |
+                    error COMMA FormalParamDecl
+                    {: parser.errorRecovery = true; parser.log.debug("Oporavak od greske do , prilikom deklaracije formalnog parametra funkcije   "  ); :}                   
                     ;
-
-FormalParamList ::= FormalParamList:numberOfParams COMMA FormalParamDecl
-                    {: RESULT = numberOfParams + 1; :}
-                    | error COMMA FormalParamDecl 
-                    {: parser.ReportError("Doslo je do greske prilikom deklaracije formalnog parametra funkcije pre znaka \",\""); :}
-                    | FormalParamDecl
-                    {: RESULT = 1; :}
-                    ;
-
-FormalParamDecl ::= Type IDENT:name LBRACK RBRACK 
+                    
+FormalParamDecl ::= Type IDENT:identName
                     {: 
-                        parser.lastType = new Struct(Struct.Array, parser.lastType);
-                        parser.VariableDeclaration(name, nameleft, Obj.Var);
-                        parser.formalParamsCount++; 
+                    parser.formArgsCount++; 
+                    if( Tab.currentScope.findSymbol(identName) != null)
+                      parser.report_error(" " + identName + "Sakriveno od strane f-skog parametra", identNameleft);
+                      else {
+                          if( curType != null && curType != Tab.noType) {
+                              Tab.insert(Obj.Var, identName, new Struct(curType.getKind(), curType));
+                              parser.report_info("Parametar f-je ubacen u listu simbola " + identName + " tipa "+curType.getKind()+" na liniji " + identNameleft, null);
+                          }
+                      }
                     :}
-                    | Type IDENT:name
-                    {: 
-                        parser.VariableDeclaration(name, nameleft, Obj.Var);
-                        parser.formalParamsCount++; 
+                    |
+                    Type IDENT:identName LBRACK RBRACK
+                    {: parser.formArgsCount++; 
+                      if( Tab.currentScope.findSymbol(identName) != null)
+                      parser.report_error(" " + identName + "Sakriveno od strane f-skog parametra", identNameleft);
+                      else {
+                          if( curType != null && curType != Tab.noType) {
+                              Tab.insert(Obj.Var, identName, new Struct(Struct.Array, curType));
+                              parser.report_info("Parametar f-je ubacen u listu simbola " + identName + " tipa "+Struct.Array+" na liniji " + identNameleft, null);
+                          }
+                      }
+                    
                     :}
                      ;
 
 StatementListOpt ::= StatementListOpt Statement
-                    | /* epsilon */
+                    |
+                    /* epsilon */
                     ;
 
-Statement ::=   DesignatorStatement SEMI
-                | StatementIfElse
-                | FOR LPAREN DesignatorOpt SEMI 
+Statement ::= DesignatorStatement SEMI
+                |
+                IF LPAREN Condition RPAREN Statement 
+                {: 
+                    Code.fixup(endAdr.pop());
+                :}
+                |
+                IF LPAREN Condition RPAREN Statement ELSE 
+                {:
+                    Code.pc += 3; 
+                    Code.fixup(endAdr.pop());
+                    Code.pc -= 3;
+                    
+                    Code.putJump(0); // dummy
+                    endAdr.push(Code.pc - 2);
+                :}
+                Statement 
+                {: 
+                    Code.fixup(endAdr.pop());
+                :}
+                |
+                FOR LPAREN DesignatorOpt SEMI 
                 {:
                     cond.push(Code.pc);
                 :}
@@ -921,11 +1210,10 @@ Statement ::=   DesignatorStatement SEMI
                 {: 
                     forStack.push(1); 
                     Code.fixup(forAdr.pop());
-                    EnteredFor();
                 :}
                 Statement
                 {: 
-                    
+                    inFor--;
                     forStack.pop();
                     Code.putJump(desi.pop());
                     if(endAdr.peek() != -1)
@@ -934,101 +1222,126 @@ Statement ::=   DesignatorStatement SEMI
                         Code.fixup(noCond.pop());
                         endAdr.pop();
                     }
-                    ExitedFor();
                 :}
-                | BREAK SEMI:sem
-                {: 
-                if (IsNotInForLoop())
-                        parser.report_error("Breakovati se moze samo iz unutar for petlje ", semleft);
+                |
+                BREAK SEMI:semi
+                {:
+                    if(inFor<=0)
+                        parser.report_error(" break mora biti unutar for petlje", semileft);
                     else
                         Code.putJump(endFor.pop() - 1);
                 :}
-                | CONTINUE SEMI:sem
+                |
+                CONTINUE SEMI:semi
                 {:
-                    if (IsNotInForLoop())
-                        parser.report_error("Continue naredba se moze izvrsiti samo iz unutar for petlje ", semleft);
+                    if(inFor<=0)
+                        parser.report_error(" continue mora biti unutar for petlje", semileft);
                     else
                         Code.putJump(desi.peek());
                 :}
-                | RETURN:ret SEMI
+                |
+                RETURN:expr SEMI
                 {:
-                    ReturnCallCheck(retleft, null);
+                if(curMeth != null )
+                    {
+                    if(curMethType != Tab.noType)
+                    parser.report_error("Metoda mora imati povratni tip.",exprleft);
+                    }
+                    else{
+                    parser.report_error("Return mora biti unutar funkcije.",exprleft);
+                    }
                 :}
-                | RETURN:ret Expression:expr SEMI
+                |
+                RETURN Expression:expr SEMI
                 {:
-                    ReturnCallCheck(retleft, expr);
+                    if(curMeth != null )
+                    {
+                    if(curMethType == Tab.noType)
+                    parser.report_error("Metoda je void, nema povratni tip.",exprleft);
+                    else
+                    {
+                    retNeed = true;
+                    if(curMethType.getKind() != expr.getKind())
+                    parser.report_error("Tip return-a, se ne slaze sa povratnom vrednosti metode.",exprleft);
+                    }
+                    
+                    }
+                    else{
+                    parser.report_error("Return mora biti unutar funkcije.",exprleft);
+                    }
+                
                 :}
-                | READ LPAREN Designator:designator RPAREN SEMI
+                |
+                READ LPAREN Designator:desig RPAREN SEMI
                 {:
-                    CorrectTypesForFunctionCalls(designator, designatorleft);
-                    if (designator.getType() == Tab.charType ) 
-                        Code.put(Code.bprint);           
-                     else
-                        Code.put(Code.print);
+                 parser.IncreaseFunctionCallsCount(); 
+                    if(desig.getKind() != Obj.Var && desig.getKind()!= Obj.Fld && desig.getKind() != Obj.Elem)
+                        parser.report_error(" " + desig.getName() + " mora oznacavati  promenljivu, element niza ili polje unutar objekta", desigleft);
+                    else 
+                        if(desig.getKind() != Struct.Int && desig.getKind() != Struct.Char && desig.getKind() != Struct.None)
+                            parser.report_error(" " + desig.getName() + " mora biti tipa int, char ili bool.", desigleft);                
+                        
+                  if (desig.getType() == Tab.charType ) 
+                    Code.put(Code.bprint);           
+                 else
+                    Code.put(Code.print);
+                 
+                        
                 :}
-                | PRINT LPAREN Expression:expr NumOpt:width RPAREN SEMI
-                {: 
-                if (IsStructIntCharOrNone(expr, exprleft))
-                {
-                    parser.IncreaseFunctionCallsCount(); 
-                     if (expr.getKind() == Struct.Char ) {
-                    Code.loadConst(width);
+                |
+                PRINT LPAREN Expression:desig NumOpt:num RPAREN SEMI
+                {:
+                parser.IncreaseFunctionCallsCount(); 
+                if(desig.getKind() != Struct.Int && desig.getKind() != Struct.Char && desig.getKind() != Struct.None)
+                    parser.report_error(" operand mora biti tipa int, char ili bool.", desigleft);
+                        
+                if (desig.getKind() == Struct.Char ) {
+                    Code.loadConst(num);
                     Code.put(Code.bprint);
                  }
                  
                  else{
-                    Code.loadConst(width);
+                    Code.loadConst(num);
                     Code.put(Code.print);
                  }
-                }
-                :}
-                | LBRACE StatementListOpt RBRACE
-                ;
-
-StatementIfElse ::= IF LPAREN Condition RPAREN Statement 
-                {: 
-                    Code.fixup(endAdr.pop());
                 :}
                 |
-                IF LPAREN Condition RPAREN Statement ELSE 
-                {:
-                    Code.pc += 3; 
-                    Code.fixup(endAdr.pop());
-                    Code.pc -= 3;
-                    
-                    Code.putJump(0); // dummy
-                    endAdr.push(Code.pc - 2);
-                :}
-                Statement 
-                {: 
-                    Code.fixup(endAdr.pop());
-                :}
-                    | IF LPAREN error RPAREN Statement
-                    {: parser.ReportError("Doslo je do greske u logickom izrazu unutar IF konstrukcije"); :}
-                    | IF LPAREN error RPAREN Statement ELSE Statement 
-                    {: parser.ReportError("Doslo je do greske u logickom izrazu unutar IF-ELSE konstrukcije"); :}
-                    ;
-                    
-NumOpt ::=  COMMA NUMBER:width
-            {: RESULT = width; :}
-            | /* epsilon */
+                LBRACE StatementListOpt RBRACE
+                |
+                IF LPAREN error RPAREN Statement
+                {: parser.errorRecovery = true; parser.log.debug("Oporavak od greske do , prilikom logickog izraza unutat if konstrukcije   "  ); :}                                 
+                |
+                IF LPAREN error RPAREN Statement ELSE Statement 
+                {: parser.errorRecovery = true; parser.log.debug("Oporavak od greske do , prilikom logickog izraza unutar if konstrukcije   "  ); :}                                                 
+                ;
+                
+NumOpt ::= COMMA NUMBER:num
+            {: RESULT = num ; :} 
+            | 
+            /* epsilon */
             {: RESULT = 5; :}
             ;
 
 DesignatorOpt ::= DesignatorStatement 
-            | error
-            {: parser.ReportError("Doslo je do greske unutar FOR(...) konstrukcije"); :}
-            | /* epsilon */
+            | 
+            /* epsilon */
+            |
+            error
+            {: parser.errorRecovery = true; parser.log.debug("Oporavak od greske prilikom izraza unutar for konstrukcije   "  ); :}                                                  
             ;
 
-CondOpt ::=  Condition
-            | error
-            {: parser.ReportError("Doslo je do greske u logickom iskazu unutar FOR(...) konstrukcije"); :}
-            | /* epsilon */ 
-            {: endAdr.push(-1); :}
-            ;
+CondOpt ::= Condition 
 
-DesignatorStatement ::=Designator:desig Assignop :op
+        |
+        error 
+        {: parser.errorRecovery = true; parser.log.debug("Oporavak od greske prilikom izraza unutar for konstrukcije   "  ); :}                                                  
+        |
+        /* epsilon */ 
+        {: endAdr.push(-1); :}
+        ;
+
+    
+DesignatorStatement ::= Designator:desig Assignop :op
                         {:
                         if((int)op != 0) { 
                                 if(desig.getKind() == Obj.Elem)
@@ -1066,203 +1379,230 @@ DesignatorStatement ::=Designator:desig Assignop :op
                                 Code.put((int)op); 
                             
                             Code.store(desig);
-                            /*
-                            if (IsObjectVarElemOrFieldError(designator, designatorleft))
-                            {
-                                if (!IsAssignable(designator, expr))
-                                {
-                                    parser.report_error("Nemoguce je dodeliti vrednost tipa "+parser.StructToTypeName(expr) + " variabli tipa " +parser.StructToTypeName(designator.getType())+"("+designatorleft+")" ,null );
-                                }
-                            }*/
                         :}
-                        | Designator:designator LPAREN ActParsListOpt:args RPAREN
+                        |
+                        Designator:desig LPAREN ActParsListOpt:num RPAREN    
                         {:
-                            //CheckIfArgumentsMatch(designator, designatorleft, args, argsleft);
-                            if(designator != Tab.noObj) {
-                            if((!varArgs && args == designator.getLevel())||(varArgs && args > designator.getLevel())) {
+                        if(desig.getKind() != Obj.Meth)
+                        {
+                        parser.report_error("Funkcija mora biti deklarisana pre poziva",desigleft);
+                        desig = Tab.noObj;
+                        }  
+                            
+                        if(desig != Tab.noObj) {
+                            if((!varArgs && num == desig.getLevel())||(varArgs && num > desig.getLevel())) {
                                 boolean flag = true;
                                 Obj o=null;
-                                for(int i = 0; i < args; i++) {
-                                    if(i<designator.getLevel()) o = ((Obj) designator.getLocalSymbols().toArray()[i]);
-                                    Struct s = actParams.get(actParams.size() - (args - i));
+                                for(int i = 0; i < num; i++) {
+                                    if(i<desig.getLevel()) o = ((Obj) desig.getLocalSymbols().toArray()[i]);
+                                    Struct s = funcParams.get(funcParams.size() - (num - i));
                                     if(!o.getType().compatibleWith(s))
                                         if(!(o.getType().getKind() != Struct.Class && o.getType().getKind() == s.getKind() && o.getType().getElemType() == s.getElemType() && o.getType().getNumberOfFields() == s.getNumberOfFields()))
                                             flag = false;
                                 }
                                 
                                 if(!flag)
-                                    parser.report_error(" Tipovi argumenta funkcije nisu kompatibilni sa argumentima poziva.", argsleft);
+                                    parser.report_error(" Tipovi argumenta funkcije nisu kompatibilni sa argumentima poziva.", numleft);
                                 else{
-                                int destAdr = designator.getAdr() - Code.pc;
+                                int destAdr = desig.getAdr() - Code.pc;
                                 Code.put(Code.call);
                                 Code.put2(destAdr);
-                                if(designator.getType().getKind() != Struct.None)
+                                if(desig.getType().getKind() != Struct.None)
                                 Code.put(Code.pop);
                                 }
                             } else {
-                                parser.report_error(" Broj argumenata funkcije nije dobar."+ designator.getName(), argsleft);                     
+                                parser.report_error(" Broj argumenata funkcije nije dobar."+ desig.getName(), numleft);                     
                             }
+                            for(int i = 0; i < num; i++)
+                                    funcParams.remove(funcParams.size() - 1);
+                        }
+                        
+                        
+                        if(parser.inMain)
+                            parser.funcMainCount++; 
+                        :}        
+                        |
+                        Designator:desig INC
+                        {:
+                        if(desig.getKind() != Obj.Var && desig.getKind()!= Obj.Fld && desig.getKind() != Obj.Elem)
+                                parser.report_error(" " + desig.getName() + " mora oznacavati  promenljivu, element niza ili polje objekta unutrasnje objekta", desigleft);
+                            else{
+                                if(desig.getType().getKind() != Struct.Int)
+                                    parser.report_error(" " + desig.getName() + "mora biti int ", desigleft);
                             
-                            for (int i =0; i < args ; i++)
-                                actParams.remove(actParams.size() - 1);
-                                }
-                        :}
-                        | Designator:designator INC
-                        {:  
-                            if (IsObjectVarElemOrFieldError(designator, designatorleft))
-                            {
-                                if(designator.getType().getKind() != Struct.Int)
-                                {
-                                    parser.report_error("Prilikom INC " + designator.getName() + " mora biti int ", designatorleft);
-                                }else
-                                {
-                                if(designator.getKind() == Obj.Elem)
+                            if(desig.getKind() == Obj.Elem)
                                 Code.put(Code.dup2);
-                            Code.load(designator);
+                            Code.load(desig);
                             Code.put(Code.const_1);
                             Code.put(Code.add);
-                            Code.store(designator);
-                                }
+                            Code.store(desig);
                             }
                         :}
-                        | Designator:designator DEC
-                        {:  
-                            if (IsObjectVarElemOrFieldError(designator, designatorleft))
-                            {
-                                if(designator.getType().getKind() != Struct.Int)
-                                {
-                                    parser.report_error("Prilikom INC " + designator.getName() + " mora biti int ", designatorleft);
-                                }
-                                else
-                                {
-                                 if(designator.getKind() == Obj.Elem)
+                        |
+                        Designator:desig DEC
+                        {:
+                        if(desig.getKind() != Obj.Var && desig.getKind()!= Obj.Fld && desig.getKind() != Obj.Elem)
+                                parser.report_error(" " + desig.getName() + " mora oznacavati  promenljivu, element niza ili polje objekta unutrasnje objekta", desigleft);
+                            else{
+                                if(desig.getType().getKind() != Struct.Int)
+                                    parser.report_error(" " + desig.getName() + "mora biti int ", desigleft);
+                            
+                            if(desig.getKind() == Obj.Elem)
                                 Code.put(Code.dup2);
-                                    Code.load(designator);
-                                    Code.put(Code.const_1);
-                                    Code.put(Code.sub);
-                                    Code.store(designator);
-                                }
+                            Code.load(desig);
+                            Code.put(Code.const_1);
+                            Code.put(Code.sub);
+                            Code.store(desig);
                             }
                         :}
-                        | Designator Assignop error 
-                        {: parser.ReportError("Doslo je do prilikom dodele vrednosti pre znaka ;"); :}
+                        |
+                        Designator ASSIGN error
+                        {: parser.errorRecovery = true; parser.log.debug("Oporavak od greske do ; prilikom konstrukcije iskaza dodele  "  ); :}
+                        |
+                        Designator ASSIGN_ADD error
+                        {: parser.errorRecovery = true; parser.log.debug("Oporavak od greske do ; prilikom konstrukcije iskaza dodele  "  ); :}
+                        |
+                        Designator ASSIGN_SUB error
+                        {: parser.errorRecovery = true; parser.log.debug("Oporavak od greske do ; prilikom konstrukcije iskaza dodele  "  ); :}
+                        |
+                        Designator ASSIGN_MUL error
+                        {: parser.errorRecovery = true; parser.log.debug("Oporavak od greske do ; prilikom konstrukcije iskaza dodele  "  ); :}
+                        |
+                        Designator ASSIGN_DIV error
+                        {: parser.errorRecovery = true; parser.log.debug("Oporavak od greske do ; prilikom konstrukcije iskaza dodele  "  ); :}
+                        |
+                        Designator ASSIGN_MOD error
+                        {: parser.errorRecovery = true; parser.log.debug("Oporavak od greske do ; prilikom konstrukcije iskaza dodele  "  ); :}
                         ;
 
-ActParsListOpt ::=  ActPars:args
-                    {: RESULT = args; :} 
-                    | /* epsilon */ 
-                    {: RESULT = 0; :}
-                    ;
+ActParsListOpt ::= ActPars:num
+                {:
+                RESULT = num;
+                :}
+                | 
+                /* epsilon */ 
+                {:
+                RESULT = 0;
+                :}
+                ;
 
-ActPars ::= ActPars:args COMMA Expression:expr
+ActPars ::= ActPars:num COMMA Expression:expr
             {:
-                actParams.add(expr);
-                RESULT = args+1;
+            funcParams.add(expr);
+            RESULT = num+1;
             :}
-            | Expression:expr
+            |
+            Expression:expr
             {:
-                actParams.add(expr);
-                RESULT = 1;
+            funcParams.add(expr);
+            RESULT = 1;
             :}
             ;
-            
-Designator ::= IDENT:name 
+           
+Designator ::= IDENT:idenName 
                 {:
-                  if(name.equals("this")) {
-                    if(parser.lastMethod != null) {
-                        if(parser.nestedScopes.empty() || parser.nestedScopes.peek() != SCOPE.CLASS_METHOD_SCOPE ||
-                        parser.lastMethod.getType().getElemType().getKind() == STATIC)
-                        {
-                         parser.report_error("this moze postojati samo u nestatickim metodama", nameleft);
-                         }
-                            isThisSpecified = true;
+                  if(idenName.equals("this")) {
+                    if(curMeth != null) {
+                        if(parser.inClass && parser.inMethod && curMeth.getType().getElemType().getKind() != 6)
+                            thisSpecified = true;
+                        else {
+                            parser.report_error("this moze postojati samo u nestatickim metodama", idenNameleft);
+                            thisSpecified = true;
+                        }
                     }
                   } else {
-                    Obj o = Tab.currentScope.findSymbol(name);
-                    if(o == null) {
-                        Obj o1 = Tab.find(name);
+                    
+                    Obj o = Tab.currentScope.findSymbol(idenName);
+                    if(o== null) {
+                        Obj o1 = Tab.find(idenName);
                         if(o1 != Tab.noObj) {
                             if(o1.getType().getKind() == Struct.Array)
-                                lastDesignator = o1;
+                                desigName = idenName;
                     }
-                    else {
+                        else { 
                             Obj found = null;
-                            if(parser.extendedClass != null) {
-                                for (Obj o2 : parser.extendedClass.getType().getMembers()) {
-                                    if(o2.getName().equals(name))
+                            if(extendedClass != null) {
+                                for (Obj o2 : extendedClass.getType().getMembers()) {
+                                    if(o2.getName().equals(idenName))
                                         found = o2;
                                 }
                             }
                             if(found != null) {
                                 if(found.getType().getKind() == Struct.Array) {
-                                    lastDesignator = found;
+                                    desigName = idenName;
                                     if(lastDesignator != null && lastDesignator.getType() != null)
                                         classFields = lastDesignator.getType().getMembers();
                                 }
                                 o1 = found;
                             } else
-                                parser.report_error("" + name + "nije nadjeno "+nameleft,null );
+                                parser.report_error("" + idenName + "nije nadjeno", idenNameleft);
                         }
                         lastDesignator = o1;
                         RESULT = o1;
                     }
                     else {
-                      if(parser.lastMethod != null) {
+                      if(curMeth != null) {
                         if(o.getType().getKind() == Struct.Array)
-                            lastDesignator = o;                       
+                            desigName = idenName;                       
                       }
                         RESULT = lastDesignator = o;
+                        
                     }  
                   }
                 :}
                 DesignatorListOpt:res {: if(res != null) RESULT = res; :}
                 ;
 
-DesignatorListOpt ::= DesignatorListOpt DesignatorIdent:val
-                    {: 
-                        if (val != null) RESULT = val;
-                    :}
-                     | /* epsilon */
-                     ;
 
-DesignatorIdent ::=  DOT IDENT:name
+DesignatorListOpt ::= DesignatorListOpt DesignatorIdent:val
+             {: 
+             if (val != null)   
+                RESULT = val;
+             :}
+                |
+                /* epsilon */
+                ;
+
+DesignatorIdent ::= DOT IDENT:identName
             {:
-            if(!(isThisSpecified || (lastDesignator != null && (lastDesignator.getKind() == Obj.Elem || lastDesignator.getKind() == Obj.Var || lastDesignator.getKind() == Obj.Fld )&& lastDesignator.getType().getKind() == Struct.Class))) {
+            if(!(thisSpecified || (lastDesignator != null && (lastDesignator.getKind() == Obj.Elem || lastDesignator.getKind() == Obj.Var || lastDesignator.getKind() == Obj.Fld )&& lastDesignator.getType().getKind() == Struct.Class))) {
                         if(lastDesignator.getKind() == Obj.Type) {
-                            if(isThisSpecified) {
-                                Obj o = Tab.currentScope().getOuter().findSymbol(name);
+                            if(thisSpecified) {
+                                Obj o = Tab.currentScope().getOuter().findSymbol(identName);
                                 if(o != null) {
                                     if(o.getKind() != Obj.Meth) {
-                                        parser.report_error(": za klasu se mogu pozvati samo staticke metode", nameleft);
+                                        parser.report_error(": za klasu se mogu pozvati samo staticke metode", identNameleft);
                                         lastDesignator = Tab.noObj;
-                                    } else if(o.getType().getElemType().getKind() != STATIC) {
-                                        parser.report_error(": za klasu se mogu pozvati samo staticke metode", nameleft);
+                                    } else if(o.getType().getElemType().getKind() != 6) {
+                                        parser.report_error(": za klasu se mogu pozvati samo staticke metode", identNameleft);
                                         lastDesignator = Tab.noObj;
                                     } else {
+                                        parser.report_detect(identNameleft, o);
                                         lastDesignator = o;
                                     }
                                 }
                                 else { // ako koristimo this a nema ga u toj klasi, proveravamo da li je klasa izvedena
                                       // i ima li u osnovnoj onda
                                     Obj found = null;
-                                    if(parser.extendedClass != null) {
-                                        for (Obj o1 : parser.extendedClass.getType().getMembers()) {
-                                            if(o1.getName().equals(name))
+                                    if(extendedClass != null) {
+                                        for (Obj o1 : extendedClass.getType().getMembers()) {
+                                            if(o1.getName().equals(identName))
                                                 found = o1;
                                         }
                                     }
                                     if(found != null) {
                                         if(found.getKind() != Obj.Meth) {
-                                            parser.report_error(": za klasu se mogu pozvati samo staticke metode", nameleft);
+                                            parser.report_error(": za klasu se mogu pozvati samo staticke metode", identNameleft);
                                             lastDesignator = Tab.noObj;
                                         } else if(found.getType().getElemType().getKind() != 6) {
-                                            parser.report_error(": za klasu se mogu pozvati samo staticke metode", nameleft);
+                                            parser.report_error(": za klasu se mogu pozvati samo staticke metode", identNameleft);
                                             lastDesignator = Tab.noObj;
                                         } else {
+                                            parser.report_detect(identNameleft, found);
                                             lastDesignator = found;
                                         }
                                     } else {
-                                        parser.report_error("(this." + name + ") nije nadjeno", nameleft);
+                                        parser.report_error("(this." + identName + ") nije nadjeno", identNameleft);
                                         lastDesignator = Tab.noObj;
                                     }
                                 }
@@ -1270,81 +1610,85 @@ DesignatorIdent ::=  DOT IDENT:name
                                 Obj found = null;
                                 if(lastDesignator != null) {
                                     for (Obj o : lastDesignator.getType().getMembers()) { //pronalazimo u klasi ovaj naziv
-                                        if(o.getName().equals(name))
+                                        if(o.getName().equals(identName))
                                             found = o;
                                     }
                                     if(found != null){
                                         if(found.getKind() != Obj.Meth) {
-                                            parser.report_error(": za klasu se mogu pozvati samo staticke metode", nameleft);
+                                            parser.report_error(": za klasu se mogu pozvati samo staticke metode", identNameleft);
                                             lastDesignator = Tab.noObj;
                                         } else if(found.getType().getElemType().getKind() != 6) {
-                                            parser.report_error(": za klasu se mogu pozvati samo staticke metode", nameleft);
+                                            parser.report_error(": za klasu se mogu pozvati samo staticke metode", identNameleft);
                                             lastDesignator = Tab.noObj;
                                         } else {
+                                            parser.report_detect(identNameleft, found);
                                             lastDesignator = found;
                                         }
                                     } else {
-                                        parser.report_error("(" + lastDesignator.getName() + "." + name + ") nije nadjeno", nameleft);
+                                        parser.report_error("(" + lastDesignator.getName() + "." + identName + ") nije nadjeno", identNameleft);
                                         lastDesignator = Tab.noObj;
                                     }
                                 }
                             }
-                            isThisSpecified = false;
+                            thisSpecified = false;
                             RESULT = lastDesignator;
                         }
                         else {
-                            parser.report_error(": " + lastDesignator.getName() + " nije klasa", nameleft);
+                            parser.report_error(": " + lastDesignator.getName() + " nije klasa", identNameleft);
                             lastDesignator = Tab.noObj;
                         }
                 } else {
-                    if(isThisSpecified) {
-                        Obj o = Tab.currentScope().getOuter().findSymbol(name);
+                    if(thisSpecified) {
+                        Obj o = Tab.currentScope().getOuter().findSymbol(identName);
                         if(o != null) {
                             if(o.getType().getKind() == Struct.Array) {
-                                lastDesignator = o;
+                                desigName = identName;
                                 if(lastDesignator != null && lastDesignator.getType() != null)
                                     classFields = lastDesignator.getType().getMembers();
                             }
+                            parser.report_detect(identNameleft, o);
                             lastDesignator = o;
                         }
                         else { // ako koristimo this a nema ga u toj klasi, proveravamo da li je klasa izvedena
                               // i ima li u osnovnoj onda
                             Obj found = null;
-                            if(parser.extendedClass != null) {
-                                for (Obj o1 : parser.extendedClass.getType().getMembers()) {
-                                    if(o1.getName().equals(name))
+                            if(extendedClass != null) {
+                                for (Obj o1 : extendedClass.getType().getMembers()) {
+                                    if(o1.getName().equals(identName))
                                         found = o1;
                                 }
                             }
                             if(found != null) {
                                 if(found.getType().getKind() == Struct.Array) {
-                                    lastDesignator = found;
+                                    desigName = identName;
                                     if(lastDesignator != null && lastDesignator.getType() != null)
                                         classFields = lastDesignator.getType().getMembers();
                                 }
+                                parser.report_detect(identNameleft, found);
                                 lastDesignator = found;
                             } else
-                                parser.report_error("(this." + name + ") nije nadjeno", nameleft);
+                                parser.report_error("(this." + identName + ") nije nadjeno", identNameleft);
                         }
                     } else {
                         Obj found = null;
                         if(lastDesignator != null) {
                             for (Obj o : lastDesignator.getType().getMembers()) { //pronalazimo u klasi ovaj naziv
-                                if(o.getName().equals(name))
+                                if(o.getName().equals(identName))
                                     found = o;
                             }
                             if(found != null){
                                 if(found.getType().getKind() == Struct.Array) {
-                                     lastDesignator = found;
+                                    desigName = identName;
                                     if(lastDesignator != null && lastDesignator.getType() != null)
                                         classFields = lastDesignator.getType().getMembers();
                                 }
+                                parser.report_detect(identNameleft, found);
                                 lastDesignator = found;
                             } else
-                                parser.report_error("(" + lastDesignator.getName() + "." + name + ") nije nadjeno", nameleft);
+                                parser.report_error("(" + lastDesignator.getName() + "." + identName + ") nije nadjeno", identNameleft);
                         }
                     }
-                    isThisSpecified = false;
+                    thisSpecified = false;
                     RESULT = lastDesignator;
                 }
             :}
@@ -1356,8 +1700,8 @@ DesignatorIdent ::=  DOT IDENT:name
                     RESULT = Tab.noObj;
             } else
                    backupDesig = lastDesignator;
-                   
                    Code.load(lastDesignator);
+                   
              :}
              Expression:expr RBRACK   
              {:  
@@ -1401,21 +1745,25 @@ Condition ::= Condition OR CondTerm
         
         :}
                 ;
-                          
+                        
 CondTerm ::= CondTerm AND CondFact
             {:
+                        if(!parser.errorRecovery){
                         Code.putJump(0); 
                         orAdr.push(Code.pc - 2);                    
                         while(!andAdr.empty()) 
                             Code.fixup(andAdr.pop());
+                        }
                     :}
                 |
                 CondFact
                 {:
+                        if(!parser.errorRecovery){
                         Code.putJump(0); 
                         orAdr.push(Code.pc - 2);                    
                         while(!andAdr.empty()) 
                             Code.fixup(andAdr.pop());
+                        }
                     :}
                 ;
 
@@ -1446,24 +1794,24 @@ CondFact ::= Expression:exp
             ;
     
                 
-Expression ::= SUB AddopTermCombList:result
-            {: 
-                RESULT = result;
-                
-                if (result.getKind() != Struct.Int)
-                {
-                     RESULT = Tab.noType;
-                     parser.report_error("izraz nakon minusa mora biti tipa int", resultleft);
-                }
-                Code.put(Code.neg);
-            :}
-            | AddopTermCombList:result
-            {:
-                RESULT = result;
-            :}
-            ;
+Expression ::= SUB AddopTermCombList:atcl
+        {:
+        if(atcl.getKind() != Struct.Int){
+        parser.report_error("izraz nakon minusa mora biti tipa int",atclleft);
+        RESULT = Tab.noType;
+        
+        }
+        else RESULT = atcl;
+        Code.put(Code.neg);
+        :}
+        |
+        AddopTermCombList:atcl
+        {:
+        RESULT = atcl;
+        :}
+        ;
 
-AddopTermCombList ::=   AddopTermList:atl
+AddopTermCombList ::= AddopTermList:atl
                     
                     {:
                     if(atl.getKind() == Obj.Elem) {
@@ -1479,37 +1827,19 @@ AddopTermCombList ::=   AddopTermList:atl
                         Code.put((int)op);
                             Code.store(atl);
                             Code.load(atl);
-                        if(atl.getKind() != Obj.Var && atl.getKind()!= Obj.Fld && atl.getKind() != Obj.Elem)
-                                {
-                                parser.report_error(" " + atl.getName() + " mora oznacavati  promenljivu, element niza ili polje objekta unutrasnje objekta", atlleft);
-                                RESULT = Tab.noType;
-                                }
-                            else{
-                                if(atl.getType().getKind() != Struct.Int)
-                                    {
-                                    parser.report_error(" mora biti int ", atlleft);
-                                    RESULT = Tab.noType;
-                                    }
-                                else{
-                                     if(atcl.getKind() != Struct.Int)
-                                    {
-                                        parser.report_error(" mora biti int ", atclleft);
-                                        RESULT = Tab.noType;
-                                    }
-                                    else{
-                                        RESULT = atl.getType();
-                                    }
-                                }
-                            }
+                        if (IsObjectVarElemOrFieldError(atl, atlleft))
+                        {
+                            RESULT = GetResultIfBothInt(atl, atlleft, atcl).getType();
+                        }
                         :}
                         |
-                        AddopTermList:atl
+                        AddopTermList:result
                         {:
-                        if(atl != null)
+                        if(result != null)
                         {
-                        RESULT = atl.getType();
-                        if(atl.getKind() == Obj.Var || atl.getKind() == Obj.Elem)
-                            Code.load(atl);
+                        RESULT = result.getType();
+                        if(result.getKind() == Obj.Var || result.getKind() == Obj.Elem)
+                            Code.load(result);
                         }
                         else
                         RESULT = Tab.noType;
@@ -1517,34 +1847,26 @@ AddopTermCombList ::=   AddopTermList:atl
                         :}
                         ;
 
-AddopTermList ::=   AddopTermList:atl {:if(atl.getKind() != Obj.Con) Code.load(atl);:}
+AddopTermList ::= AddopTermList:result {:if(result.getKind() != Obj.Con) Code.load(result);:}
                     AddopLeft:op Term:term
                     {:
-                     if(atl.getType().getKind() != Struct.Int)
-                        {
-                            parser.report_error(" " + atl.getName() + "mora biti int ", atlleft);
-                            RESULT = Tab.noObj;
-                         }
-                     else{
-                        if(term.getType().getKind() != Struct.Int)
-                        {
-                            parser.report_error(" " + term.getName() + "mora biti int ", termleft);
-                            RESULT = Tab.noObj;
-                        }
-                        else{
+                     
+                     if (GetResultIfBothInt(result, resultleft, term.getType()).getType()!= Tab.noType)
                         RESULT = new Obj(Obj.Con, "rezultat sabiranja", Tab.intType);
-                           }
-                      }
                       if(term.getKind() != Obj.Con)
                             Code.load(term);
                         
                         Code.put((int)op);
+                      
                     :}
-                    | Term:result
-                    {: RESULT = result; :}
+                    |
+                    Term:t
+                    {:
+                    RESULT = t;
+                    :}
                     ;
 
-Term ::=    MulopFactorList:mfl
+Term ::= MulopFactorList:mfl
         {:
         if(mfl.getKind() == Obj.Elem) {
                     Code.put(Code.dup2);
@@ -1560,30 +1882,19 @@ Term ::=    MulopFactorList:mfl
                     
                 Code.put((int)op);
                 Code.store(mfl);
-            if(mfl.getKind() != Obj.Var && mfl.getKind()!= Obj.Fld && mfl.getKind() != Obj.Elem)
-                    {
+                if (!IsObjectVarElemOrFieldError(mfl , mflleft))
+                {
                     parser.report_error(" " + mfl.getName() + " mora oznacavati  promenljivu, element niza ili polje objekta unutrasnje objekta", mflleft);
                     RESULT = Tab.noObj;
-                    }
-                else{
-                    if(mfl.getType().getKind() != Struct.Int)
-                        {
-                        parser.report_error(" " + mfl.getName() + "mora biti int ", mflleft);
-                        RESULT = Tab.noObj;
-                        }
-                    else{
-                         if(term.getType().getKind() != Struct.Int)
-                        {
-                            parser.report_error(" " + term.getName() + "mora biti int ", termleft);
-                            RESULT = Tab.noObj;
-                        }
-                        else{
-                            RESULT = mfl;
-                        }
-                    }
-                }:}
-            | MulopFactorList:result
-            {: RESULT = result; :}
+                }
+               else 
+               RESULT = GetResultIfBothInt(mfl, mflleft, term.getType());
+            :}
+            |
+            MulopFactorList:mfl
+            {:
+            RESULT = mfl;
+            :}
             ;
 
 MulopFactorList ::= MulopFactorList:mfl 
@@ -1592,138 +1903,125 @@ MulopFactorList ::= MulopFactorList:mfl
                             Code.load(mfl);
                     :}
                 
-                    MulopLeft:op Factor:fact    
+                    MulopLeft:operation Factor:fact    
                     {:
                     if(fact.getKind() != Obj.Con) 
                             Code.load(fact);
                         
-                        Code.put((int)op);
-                    if(mfl.getType().getKind() != Struct.Int)
-                        {
-                            parser.report_error(" " + mfl.getName() + "mora biti int ", mflleft);
-                            RESULT = Tab.noObj;
-                         }
-                     else{
-                        if(fact.getType().getKind() != Struct.Int)
-                        {
-                            parser.report_error(" " + fact.getName() + "mora biti int ", factleft);
-                            RESULT = Tab.noObj;
-                        }
-                        else{
-                        RESULT = new Obj(Obj.Con, "rezultat mnozenja", Tab.intType);
-                           }
-                      }
-                        /*RESULT = Tab.noObj;
+                        Code.put((int)operation);
+                        RESULT = Tab.noObj;
                         if (GetResultIfBothInt(mfl, mflleft, fact.getType()) != Tab.noObj)
                         {
                             RESULT = new Obj(Obj.Con, "Multiplication result", Tab.intType); 
-                        }  */
+                        } 
                     :}
-                    | Factor:result
-                    {: RESULT = result; :}
+                    |
+                    Factor:fact
+                    {:
+                    RESULT = fact;
+                    :}
                     ;
 
-Factor ::=  Designator:designator
-            {:  RESULT = designator;
-                if(designator.getKind() == Obj.Con)
-                    Code.load(designator);
-            :}
-            | Designator:designator  LPAREN ActParsListOpt:params RPAREN
+Factor ::= Designator:desig
             {:
-                parser.IncreaseFunctionCallsCount();
-                if (designator.getKind() != Obj.Meth)
-                { 
-                    parser.report_error("Funkcija nije deklarisana",designatorleft);
-                    RESULT = Tab.noObj;
-                }
-                else
-                {
-                    RESULT = new Obj(Obj.Meth, 
-                        designator.getName(), 
-                        new Struct(designator.getType().getKind()), 
-                        designator.getAdr(), 
-                        designator.getLevel());   
-                }
+                RESULT = desig;
+                if(desig.getKind() == Obj.Con)
+                    Code.load(desig);
                 
+            :}
+            |
+            Designator:desig LPAREN ActParsListOpt:num RPAREN
+            {:
+            parser.IncreaseFunctionCallsCount();
+            if(desig.getKind() != Obj.Meth)
+            {
+            parser.report_error("Funkcija mora biti deklarisana pre poziva",desigleft);
+            RESULT = Tab.noObj;
+            }
+            else
+             RESULT = new Obj(Obj.Meth, desig.getName(), new Struct(desig.getType().getKind()), desig.getAdr(), desig.getLevel());   
+            
                 if(RESULT != Tab.noObj) {
-                    if(params == RESULT.getLevel()) {
+                    if((!varArgs && num == desig.getLevel())||(varArgs && num > desig.getLevel())) {
                         boolean flag = true;
-                        for(int i = 0; i < params; i++) {
-                            Obj o = ((Obj) designator.getLocalSymbols().toArray()[i]);
-                            Struct s = actParams.get(actParams.size() - (params - i));
-                             if(!o.getType().compatibleWith(s))
+                        Obj o = null;
+                        for(int i = 0; i < num; i++) {
+                            if(i<desig.getLevel()) o = ((Obj) desig.getLocalSymbols().toArray()[i]);
+                            Struct s = funcParams.get(funcParams.size() - (num - i));
+                            if(!o.getType().compatibleWith(s))
                                 if(!(o.getType().getKind() != Struct.Class && o.getType().getKind() == s.getKind() && o.getType().getElemType() == s.getElemType() && o.getType().getNumberOfFields() == s.getNumberOfFields()))
-                             //if (!IsAssignable(o,s))
                                     flag = false;
                         }
                         
                         if(!flag)
-                            parser.report_error(" Tipovi argumenta funkcije nisu kompatibilni sa argumentima poziva.", paramsleft);
+                            parser.report_error(" Tipovi argumenta funkcije nisu kompatibilni sa argumentima poziva.", numleft);
                         else {
                             if(RESULT.getType() != Tab.noType)
                                 RESULT = new Obj(Obj.Con, "", RESULT.getType());
                                 
                             else                            
-                                parser.report_error(" Funkcija nema povratnu vrednost.", paramsleft);
-                            
-                            int destAdr = designator.getAdr() - Code.pc;
+                                parser.report_error(" Funkcija nema povratnu vrednost.", numleft);
+                            int destAdr = desig.getAdr() - Code.pc;
                             Code.put(Code.call);
                             Code.put2(destAdr);
-                            if(designator.getType().getKind() != Struct.None)
+                            if(desig.getType().getKind() != Struct.None)
                                 Code.put(Code.pop);
                         }
                     } else {
-                        parser.report_error(" Broj argumenata funkcije nije dobar."+ RESULT.getName(), paramsleft);                        
+                        parser.report_error(" Broj argumenata funkcije nije dobar."+ RESULT.getName(), numleft);                        
                     }
-                    for(int i = 0; i < params; i++)
-                            actParams.remove(actParams.size() - 1);
+                    for(int i = 0; i < num; i++)
+                            funcParams.remove(funcParams.size() - 1);
                 }
             :}
-            | NUMBER:num
+            |
+            NUMBER:num
             {: 
             Obj value = new Obj(Obj.Con, "" + num, Tab.intType); 
             value.setAdr(num.intValue());
             Code.load(value);
-            RESULT = value;  
+            RESULT = value; 
             :}
-            | CHAR:chr
+            |
+            CHAR:ch
             {: 
-            Obj value = new Obj(Obj.Con, "" + chr, Tab.charType); 
-            value.setAdr(chr);
+            Obj value = new Obj(Obj.Con, "" + ch, Tab.charType); 
+            value.setAdr(ch);
             Code.load(value);
             RESULT = value; 
-             :}
-            
-            | BOOL:boo
-            {:
+            :}
+            |
+            BOOL:boo
+            {: 
             Obj value = new Obj(Obj.Con, "" + boo, new Struct (Struct.Bool)); 
             value.setAdr(boo? 1:0);
             Code.load(value);
-            RESULT = value;  
+            RESULT = value; 
             :}
-            | NEW Type:type
+            |
+            NEW Type:type
             {:
-                if(type.getKind()!=Struct.Class)
-                    parser.report_error("tip prilikom pravljenja objekta mora biti unutrasnja klasa",typeleft);
-                else
-                {
-                if(lastDesignator.getType().getKind() != type.getKind()) {
-                      parser.report_error(": tipovi se ne podudaraju ", typeleft);
-                      RESULT = new Obj(Obj.NO_VALUE, "", Tab.noType);
-                } else
-                      RESULT = new Obj(Obj.NO_VALUE, "", type);
-                
-                }
+            if(type.getKind()!=Struct.Class)
+                parser.report_error("tip prilikom pravljenja objekta mora biti unutrasnja klasa",typeleft);
+            else
+            {
+            if(lastDesignator.getType().getKind() != type.getKind()) {
+                  parser.report_error(": tipovi se ne podudaraju ", typeleft);
+                  RESULT = new Obj(Obj.NO_VALUE, "", Tab.noType);
+            } else
+                  RESULT = new Obj(Obj.NO_VALUE, "", type);
+            
+            }
             :}
             |
             NEW Type:type 
             {:
                 Obj obj = Tab.noObj;
                 if(classFields == null)
-                    obj = Tab.find(lastDesignator.getName());      
+                    obj = Tab.find(desigName);      
                 else  { 
                     for (Obj o : classFields) { 
-                        if(o.getName().equals(lastDesignator.getName()))
+                        if(o.getName().equals(desigName))
                             obj = o;
                     }
                 } 
@@ -1732,7 +2030,7 @@ Factor ::=  Designator:designator
                     RESULT = new Obj(Obj.NO_VALUE, "", Tab.noType);
                 else {
                     if(obj.getType().getElemType() != type) {
-                        parser.report_error("Ne podudaraju se tipovi." +type+ " i "+ obj.getType().getElemType()+"("+typeleft+")",null );
+                        parser.report_error("Ne podudaraju se tipovi. ", typeleft);
                         RESULT = new Obj(Obj.NO_VALUE, "", Tab.noType);
                     }
                 } 
@@ -1746,69 +2044,87 @@ Factor ::=  Designator:designator
                 else {
                     parser.report_error(": tip expr mora biti int", typeleft);
                     RESULT = new Obj(Obj.NO_VALUE, "", Tab.noType);
-                } 
+                }
                 
                 Code.put(Code.newarray);
                 Code.put(type == Tab.charType ? 0 : 1); 
+                    
+                
             :}
-            | LPAREN Expression:expr RPAREN
+            |
+            LPAREN Expression:expr RPAREN
             {: RESULT = new Obj(Obj.Con, "", expr); :}
             ;
-            
+           
 Assignop ::= ASSIGN 
             {: RESULT = 0 ; :}
-            | AddopRight:addOp
+            |
+            AddopRight:addOp
             {: RESULT = addOp ; :}
-            | MulopRight:mulOp
+            |
+            MulopRight:mulOp
             {: RESULT = mulOp ; :}
             ;
 
-Relop ::=   EQUAL
-            {: RESULT = Code.eq ; :}
-            | NOT_EQUAL
-            {: RESULT = Code.ne ; :}
-            | GREATER
-            {: RESULT = Code.gt ; :} 
-            | GREATER_EQUAL 
-            {: RESULT = Code.ge ; :}
-            | LESS
-            {: RESULT = Code.lt ; :}
-            | LESS_EQUAL
-            {: RESULT = Code.le ; :}
+Relop ::= EQUAL 
+        {: RESULT = Code.eq ; :}
+        | 
+        NOT_EQUAL 
+        {: RESULT = Code.ne ; :}
+        | 
+        GREATER
+        {: RESULT = Code.gt ; :} 
+        | 
+        GREATER_EQUAL 
+        {: RESULT = Code.ge ; :}
+        | 
+        LESS
+        {: RESULT = Code.lt ; :}
+        | 
+        LESS_EQUAL
+        {: RESULT = Code.le ; :}
+        ;
+
+Addop ::= AddopLeft 
+        | 
+        AddopRight 
+        ;
+
+AddopLeft ::= ADD 
+            {: RESULT = Code.add ; :}
+            | 
+            SUB 
+            {: RESULT = Code.sub ; :}
             ;
 
-Addop ::=   AddopLeft 
-            | AddopRight 
+AddopRight ::= ASSIGN_ADD 
+            {: RESULT = Code.add ; :}
+            | 
+            ASSIGN_SUB 
+            {: RESULT = Code.sub ; :}
             ;
 
-AddopLeft ::=   ADD 
-                {: RESULT = Code.add ; :}
-                | SUB 
-                {: RESULT = Code.sub ; :}
-                ;
+Mulop ::= MulopLeft 
+        | 
+        MulopRight 
+        ;
 
-AddopRight ::=  ASSIGN_ADD 
-                {: RESULT = Code.add ; :}
-                | ASSIGN_SUB 
-                {: RESULT = Code.sub ; :}
-                ;
-
-Mulop ::=   MulopLeft 
-            | MulopRight 
+MulopLeft ::= MUL 
+            {: RESULT = Code.mul ; :}
+            | 
+            DIV 
+            {: RESULT = Code.div ; :}
+            | 
+            MOD 
+            {: RESULT = Code.rem ; :}
             ;
 
-MulopLeft ::=   MUL 
-                {: RESULT = Code.mul ; :}
-                | DIV 
-                {: RESULT = Code.div ; :}
-                | MOD 
-                {: RESULT = Code.rem ; :}
-                ;
-
-MulopRight ::=  ASSIGN_MUL 
-                {: RESULT = Code.mul ; :}
-                | ASSIGN_DIV 
-                {: RESULT = Code.div ; :}
-                | ASSIGN_MOD 
-                {: RESULT = Code.rem ; :}
+MulopRight ::= ASSIGN_MUL 
+            {: RESULT = Code.mul ; :}
+            | 
+            ASSIGN_DIV 
+            {: RESULT = Code.div ; :}
+            | 
+            ASSIGN_MOD 
+            {: RESULT = Code.rem ; :}
             ;

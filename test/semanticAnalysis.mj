@@ -1,0 +1,172 @@
+program Test
+
+const int iconst1 = 5;
+
+class class11  { int a; }
+class class22 extends class11 {}
+class class33 extends class22 {}
+
+int givar1, givar2;
+const int iconst11 = 1, iconst21 = 2;
+
+class class111 {
+	int fld1, fld2;
+	{
+		void method2(int p1, int p2) 
+			int l1, l2;
+		{
+			l1 = p1;
+			p2 = l2;
+			fld1 = p1;
+			fld2 = l2;
+			givar1 = iconst11;
+			givar2 = iconst21;
+			this.fld1 = iconst11;
+			this.fld2 = iconst21;
+		}
+		
+		static void method3() {
+			givar1 += iconst11;
+			givar2 += iconst21;
+		}
+		
+		void method4() {
+			class111.method3();
+			method3();
+			method2(fld1, fld2);
+			this.fld1 = 1 * 1;
+			this.fld2 = 5;
+		}
+	}
+}
+
+class class222 extends class111 {
+	int fld3;
+	{
+		void method5() {
+			method4();
+			this.method2(1, 1);
+			method3();
+			class111.method3();
+			this.method3();
+			fld1 = fld3;
+			this.fld2 = this.fld1;
+		}
+	}
+}
+
+class class1 {
+	{
+		void method1() {
+		
+		}
+		
+		int method2() {
+			return 0;
+		}
+		
+		char method3() {
+			return 'a';
+		}
+		
+		bool method4() {
+			return true;
+		}
+	}
+}
+
+class class2 {
+	int a;
+}
+
+{
+
+	char getChar() {
+		return 'a';
+	}
+	
+	int getInt() {
+		return 0;
+	}
+
+	int globalFunction1(int a, char b, bool c) {
+		return 0;
+	}
+	
+	int global6() 
+		int l0;
+	{
+		global6();
+		l0 = global6();
+		return l0;
+	}
+	
+	void main() 
+		int array[], size;
+		int n;
+		char c;
+		bool f;
+		class1 instance;
+		bool fact1, fact2, fact3;
+		int number1, number2, number3;
+		char char1, char2, char3;
+		class1 instance1, instance2;
+		class2 instance3, instance4;
+		int i, j, k;
+		int l1[];
+		char l2;
+		class11 c1var1;
+		class22 c2var1;
+		class33 c3var1;
+	{
+		instance = new class1;
+		array = new int[size];
+		array = new int[5 + 5 +1];
+		
+		n+= n * n;
+	 	n += (n+=n) * (n *= n) + n + n * n / n + (n - n * n);
+		n = iconst1 + 5;
+		n = 1 + 1 + 1 + 1 + 1 + 1;
+		
+		globalFunction1(1, 'a', true);
+		globalFunction1(globalFunction1(globalFunction1(globalFunction1(1, 'a', true), 'a', true), 'a', true), 'a', true);
+	
+		if (number1 > number2) {
+			
+		}
+		
+		if(fact1 && number1 == number2 || true) {
+		
+		}
+		
+		if (fact1 && number3 != number1 || true && false || number3 > number1) {
+		
+		}
+		
+		for (i = 0; i < 100; i ++) {
+			for (j = 0; j < 100; j++) {
+				for (k = 0; k < 100; k++) {
+					break;
+					continue;
+				}
+				break;
+				continue;
+			}
+			break;
+			continue;
+		}
+		
+		givar1 = 2;
+		c1var1.a = 2;
+		
+		l1[0] = 2;
+		c1var1 = c2var1;
+		c1var1 = c3var1;
+		c2var1 = c3var1;
+		c2var1 = c1var1;
+	
+		l1[0]++;
+		givar1++;
+		
+	}
+}

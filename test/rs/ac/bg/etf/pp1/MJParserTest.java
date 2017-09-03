@@ -3,6 +3,7 @@ package rs.ac.bg.etf.pp1;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
@@ -13,6 +14,8 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.xml.DOMConfigurator;
 
 import rs.ac.bg.etf.pp1.util.Log4JUtils;
+import rs.etf.pp1.mj.runtime.Code;
+import rs.etf.pp1.symboltable.Tab;
 
 public class MJParserTest {
 
@@ -40,7 +43,7 @@ public class MJParserTest {
 		
 		Reader br = null;
 		try {
-			File sourceCode = new File("test/"+TestExamples[0]);
+			File sourceCode = new File("test/program.mj");
 			log.info("Compiling source file: " + sourceCode.getAbsolutePath());
 			
 			br = new BufferedReader(new FileReader(sourceCode));
@@ -60,7 +63,8 @@ public class MJParserTest {
 	        log.info("formalParamsCount = " + p.formalParamsCount);
 	        log.info("classCount = " + p.classCount);
 	        
-	        
+	        Code.write(new FileOutputStream("test/program.obj"));
+	        Tab.dump();
 	        
 		} 
 		finally {

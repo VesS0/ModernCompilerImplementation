@@ -1,5 +1,5 @@
 package rs.ac.bg.etf.pp1;
-import rs.etf.pp1.mj.runtime.Code;
+
 import java_cup.runtime.*;
 import org.apache.log4j.*;
 import java.util.*;
@@ -422,21 +422,11 @@ Obj backupDesig = null;
 public static final int STATIC = 6;
 public static final int Bool = 5;
 public static final Struct boolType = new Struct(Struct.Bool);
-boolean varArgs = false;
+
 Obj lastDesignator = null;
 
 Collection<Obj> classFields = null;
 List<Struct> actParams= new LinkedList<Struct>();
-    
-    Stack<Integer> forStack = new Stack<Integer>();
-    Stack<Integer> cond = new Stack<Integer>();
-    Stack<Integer> andAdr = new Stack<Integer>();    
-    Stack<Integer> orAdr = new Stack<Integer>();     
-    Stack<Integer> endAdr = new Stack<Integer>();
-    Stack<Integer> forAdr = new Stack<Integer>();
-    Stack<Integer> endFor = new Stack<Integer>();
-    Stack<Integer> noCond = new Stack<Integer>();
-    Stack<Integer> desi = new Stack<Integer>();
     
     public void EnteredFor()
     {
@@ -618,17 +608,16 @@ terminal ASSIGN, ASSIGN_ADD, ASSIGN_SUB, ASSIGN_MUL, ASSIGN_DIV, ASSIGN_MOD;
 terminal EQUAL, NOT_EQUAL, GREATER_EQUAL, LESS_EQUAL, GREATER, LESS;
 terminal DEC, INC, OR, AND;
 terminal SEMI, COMMA, DOT;
-terminal Integer NUMBER;
-terminal char CHAR;
-terminal Boolean BOOL;
+terminal BOOL, CHAR, NUMBER;
+
 terminal String IDENT;
 
 
 non terminal ClassDecl, ClassVarDecl, ClassVarDeclListOpt;
 non terminal MethodDecl, MethodDeclOpt, MethodDeclListOpt, MethodVarDecl, MethodVarDeclListOpt, MethodIdentList;
 non terminal DesignatorOpt, DesignatorStatement;
-non terminal Addop, AddopLeft; 
-non terminal Integer MulopRight, Mulop, Assignop, Relop, AddopRight, MulopLeft;       
+non terminal Addop, AddopLeft, AddopRight; 
+non terminal Mulop, MulopLeft, MulopRight;       
 non terminal VarArgs, VarDecl, VarDeclList, Var;
 non terminal ConstIdent, ConstDecl, ConstDeclList;
 non terminal FormalParamDecl;
@@ -636,8 +625,8 @@ non terminal Statement, StatementListOpt, StatementIfElse;
 non terminal Condition, CondTerm, CondFact, CondOpt;
 
 non terminal Decl, DeclListOpt;
-non terminal Integer NumOpt;
-non terminal AssignopError;
+non terminal NumOpt;
+non terminal Assignop, AssignopError , Relop;
 non terminal Program;
 
 non terminal Obj ProgramName, Const, Designator, AddopTermList, MulopFactorList, Term, Factor, DesignatorListOpt, DesignatorIdent;
@@ -650,15 +639,12 @@ precedence left ELSE;
 Program ::= PROG ProgramName:progName DeclListOpt LBRACE MethodDeclListOpt RBRACE
 {:
     parser.HandleProgramEnd(progName, progNameleft);
-    Code.dataSize = Tab.currentScope().getnVars();
-    
 :};
 
 ProgramName ::= IDENT:progName
 {:
     RESULT = Tab.insert(Obj.Prog, progName, Tab.noType);
     Tab.openScope();
-    
 :};
 
 DeclListOpt ::= DeclListOpt Decl
@@ -703,45 +689,9 @@ VarDeclList ::= VarDeclList COMMA Var
                 ;
 
 Var ::= IDENT:name LBRACK RBRACK  
-        {: parser.IncreaseVariableCount();
-            if (parser.nestedScopes.empty()) {
-                    parser.globalVarCount++;
-                      if( Tab.currentScope.findSymbol(name) != null)
-                      parser.report_error(" " + name + " vec deklarisano", nameleft);
-                      else {
-                          if( parser.lastType != null && parser.lastType != Tab.noType)
-                              Tab.insert(Obj.Var, name, new Struct(Struct.Array, parser.lastType));
-                              parser.report_info("Definisana globalna promenljiva " + name + " tipa: "+ Struct.Array+" na liniji " + nameleft, null);
-                          }    
-                }
-                else
-             if(parser.nestedScopes.peek() == SCOPE.MAIN_SCOPE) {
-                    //parser.localVarCount++;
-                    if( Tab.currentScope.findSymbol(name) != null)
-                      parser.report_error(" " + name + " vec deklarisano", nameleft);
-                      else {
-                          if( parser.lastType != null && parser.lastType != Tab.noType)
-                                Tab.insert(Obj.Var, name, new Struct(Struct.Array, parser.lastType));
-                              parser.report_info("Definisana lokalna promenljiva " + name + " tipa "+Struct.Array+" na liniji " + nameleft, null);
-                          }
-                } else if(parser.nestedScopes.peek() == SCOPE.METHOD_SCOPE) {
-                    if( Tab.currentScope.findSymbol(name) != null)
-                      parser.report_error(" " + name + " vec deklarisano", nameleft);
-                      else {
-                          if( parser.lastType != null && parser.lastType != Tab.noType)
-                              Tab.insert(Obj.Var, name, new Struct(Struct.Array, parser.lastType));
-                              parser.report_info("Definisana lokalna promenljiva " + name + " tipa: "+Struct.Array+" na liniji " + nameleft, null);
-                          }
-                } else if(parser.nestedScopes.peek() == SCOPE.CLASS_SCOPE) {
-                    //parser.varClassDeclCount++;
-                    if( Tab.currentScope.findSymbol(name) != null)
-                      parser.report_error(" " + name + " vec deklarisano", nameleft);
-                      else {
-                          if( parser.lastType != null && parser.lastType != Tab.noType)
-                              Tab.insert(Obj.Var, name, new Struct(Struct.Array, parser.lastType));
-                              parser.report_info("Definisano polje klase " + name + " tipa: "+Struct.Array+" na liniji " + nameleft, null);
-                          }
-                }
+        {: 
+            parser.lastType = new Struct(Struct.Array, parser.lastType);
+            parser.VariableDeclaration(name, nameleft, Obj.Var); 
         :}
         | IDENT:name {: parser.VariableDeclaration(name, nameleft, Obj.Var); :}
         ;
@@ -828,7 +778,7 @@ FormParamsOpt:numOfParams RPAREN MethodVarDeclListOpt LBRACE StatementListOpt RB
     {
         parser.report_error("Fali vam povratna vrednost funkcije!",null);
     }
-    Code.mainPc = lastMethod.getAdr();
+    
     parser.MethodEnding();
    parser.returnHappend = false;
 :};
@@ -892,63 +842,16 @@ StatementListOpt ::= StatementListOpt Statement
 
 Statement ::=   DesignatorStatement SEMI
                 | StatementIfElse
-                | FOR LPAREN DesignatorOpt SEMI 
-                {:
-                    cond.push(Code.pc);
-                :}
-                CondOpt
-                {:
-                    Code.putJump(0);
-                    forAdr.push(Code.pc - 2);
-                    
-                    if(endAdr.peek() != -1) 
-                        endFor.push(endAdr.peek()); 
-                    else {
-                        Code.putJump(0);
-                        noCond.push(Code.pc - 2);
-                        endFor.push(noCond.peek());
-                    }
-                :}
-                SEMI 
-                {:
-                    desi.push(Code.pc);
-                :}
-                DesignatorOpt
-                {: 
-                    Code.putJump(cond.pop());
-                :}
-                RPAREN
-                {: 
-                    forStack.push(1); 
-                    Code.fixup(forAdr.pop());
-                    EnteredFor();
-                :}
-                Statement
-                {: 
-                    
-                    forStack.pop();
-                    Code.putJump(desi.pop());
-                    if(endAdr.peek() != -1)
-                        Code.fixup(endAdr.pop());
-                    else {
-                        Code.fixup(noCond.pop());
-                        endAdr.pop();
-                    }
-                    ExitedFor();
-                :}
+                | FOR LPAREN DesignatorOpt SEMI CondOpt SEMI DesignatorOpt RPAREN {: EnteredFor(); :} Statement {: ExitedFor(); :}
                 | BREAK SEMI:sem
                 {: 
                 if (IsNotInForLoop())
                         parser.report_error("Breakovati se moze samo iz unutar for petlje ", semleft);
-                    else
-                        Code.putJump(endFor.pop() - 1);
                 :}
                 | CONTINUE SEMI:sem
                 {:
                     if (IsNotInForLoop())
                         parser.report_error("Continue naredba se moze izvrsiti samo iz unutar for petlje ", semleft);
-                    else
-                        Code.putJump(desi.peek());
                 :}
                 | RETURN:ret SEMI
                 {:
@@ -961,48 +864,19 @@ Statement ::=   DesignatorStatement SEMI
                 | READ LPAREN Designator:designator RPAREN SEMI
                 {:
                     CorrectTypesForFunctionCalls(designator, designatorleft);
-                    if (designator.getType() == Tab.charType ) 
-                        Code.put(Code.bprint);           
-                     else
-                        Code.put(Code.print);
                 :}
                 | PRINT LPAREN Expression:expr NumOpt:width RPAREN SEMI
                 {: 
                 if (IsStructIntCharOrNone(expr, exprleft))
                 {
                     parser.IncreaseFunctionCallsCount(); 
-                     if (expr.getKind() == Struct.Char ) {
-                    Code.loadConst(width);
-                    Code.put(Code.bprint);
-                 }
-                 
-                 else{
-                    Code.loadConst(width);
-                    Code.put(Code.print);
-                 }
                 }
                 :}
                 | LBRACE StatementListOpt RBRACE
                 ;
 
 StatementIfElse ::= IF LPAREN Condition RPAREN Statement 
-                {: 
-                    Code.fixup(endAdr.pop());
-                :}
-                |
-                IF LPAREN Condition RPAREN Statement ELSE 
-                {:
-                    Code.pc += 3; 
-                    Code.fixup(endAdr.pop());
-                    Code.pc -= 3;
-                    
-                    Code.putJump(0); // dummy
-                    endAdr.push(Code.pc - 2);
-                :}
-                Statement 
-                {: 
-                    Code.fixup(endAdr.pop());
-                :}
+                    | IF LPAREN Condition RPAREN Statement ELSE Statement 
                     | IF LPAREN error RPAREN Statement
                     {: parser.ReportError("Doslo je do greske u logickom izrazu unutar IF konstrukcije"); :}
                     | IF LPAREN error RPAREN Statement ELSE Statement 
@@ -1025,87 +899,23 @@ CondOpt ::=  Condition
             | error
             {: parser.ReportError("Doslo je do greske u logickom iskazu unutar FOR(...) konstrukcije"); :}
             | /* epsilon */ 
-            {: endAdr.push(-1); :}
             ;
 
-DesignatorStatement ::=Designator:desig Assignop :op
+DesignatorStatement ::= Designator:designator Assignop Expression:expr
                         {:
-                        if((int)op != 0) { 
-                                if(desig.getKind() == Obj.Elem)
-                                    Code.put(Code.dup2);
-                                Code.load(desig); 
-                            }
-                        
-                        :}
-                        Expression:expr
-                        {:
-                            if(desig.getKind() != Obj.Var && desig.getKind()!= Obj.Fld && desig.getKind() != Obj.Elem)
-                                parser.report_error(" " + desig.getName() + " mora oznacavati  promenljivu, element niza ili polje unutar objekta", desigleft);
-                            else{
-                                boolean comp = true;
-                                if(!expr.assignableTo(desig.getType())) {
-                                
-                                    if(expr.getKind() != desig.getType().getKind())
-                                        parser.report_error(""+expr.getKind() +" != " +desig.getType().getKind()+"expr.getKind() != desig.getType().getKind()", desigleft); 
-                                    if (expr.getElemType() != desig.getType().getElemType())
-                                        parser.report_error(""+expr.getElemType() +" != "+ desig.getType().getElemType()+ " expr.getElemType() != desig.getType().getElemType()", desigleft);
-                                    
-                                    
-                                    if (expr.getNumberOfFields() != desig.getType().getNumberOfFields())
-                                        parser.report_error(" expr.getNumberOfFields() != desig.getType().getNumberOfFields()", desigleft);
-                                    if (expr.getMembers() == desig.getType().getMembers())
-                                        parser.report_error("expr.getMembers() == desig.getType().getMembers()", desigleft);
-                                    if(desig.getType().getKind() == Struct.Array && expr.getElemType() == null)
-                                        if(!expr.assignableTo(desig.getType().getElemType()))
-                                            comp = false;
-                                }
-                                if(!comp)
-                                    parser.report_error(" nekompatibilni tipovi u dodeli vrednosti", desigleft);
-                            }
-                            if((int)op != 0) 
-                                Code.put((int)op); 
-                            
-                            Code.store(desig);
-                            /*
                             if (IsObjectVarElemOrFieldError(designator, designatorleft))
                             {
                                 if (!IsAssignable(designator, expr))
                                 {
                                     parser.report_error("Nemoguce je dodeliti vrednost tipa "+parser.StructToTypeName(expr) + " variabli tipa " +parser.StructToTypeName(designator.getType())+"("+designatorleft+")" ,null );
                                 }
-                            }*/
+                            }
                         :}
                         | Designator:designator LPAREN ActParsListOpt:args RPAREN
                         {:
-                            //CheckIfArgumentsMatch(designator, designatorleft, args, argsleft);
-                            if(designator != Tab.noObj) {
-                            if((!varArgs && args == designator.getLevel())||(varArgs && args > designator.getLevel())) {
-                                boolean flag = true;
-                                Obj o=null;
-                                for(int i = 0; i < args; i++) {
-                                    if(i<designator.getLevel()) o = ((Obj) designator.getLocalSymbols().toArray()[i]);
-                                    Struct s = actParams.get(actParams.size() - (args - i));
-                                    if(!o.getType().compatibleWith(s))
-                                        if(!(o.getType().getKind() != Struct.Class && o.getType().getKind() == s.getKind() && o.getType().getElemType() == s.getElemType() && o.getType().getNumberOfFields() == s.getNumberOfFields()))
-                                            flag = false;
-                                }
-                                
-                                if(!flag)
-                                    parser.report_error(" Tipovi argumenta funkcije nisu kompatibilni sa argumentima poziva.", argsleft);
-                                else{
-                                int destAdr = designator.getAdr() - Code.pc;
-                                Code.put(Code.call);
-                                Code.put2(destAdr);
-                                if(designator.getType().getKind() != Struct.None)
-                                Code.put(Code.pop);
-                                }
-                            } else {
-                                parser.report_error(" Broj argumenata funkcije nije dobar."+ designator.getName(), argsleft);                     
-                            }
-                            
+                            CheckIfArgumentsMatch(designator, designatorleft, args, argsleft);
                             for (int i =0; i < args ; i++)
                                 actParams.remove(actParams.size() - 1);
-                                }
                         :}
                         | Designator:designator INC
                         {:  
@@ -1114,14 +924,6 @@ DesignatorStatement ::=Designator:desig Assignop :op
                                 if(designator.getType().getKind() != Struct.Int)
                                 {
                                     parser.report_error("Prilikom INC " + designator.getName() + " mora biti int ", designatorleft);
-                                }else
-                                {
-                                if(designator.getKind() == Obj.Elem)
-                                Code.put(Code.dup2);
-                            Code.load(designator);
-                            Code.put(Code.const_1);
-                            Code.put(Code.add);
-                            Code.store(designator);
                                 }
                             }
                         :}
@@ -1132,15 +934,6 @@ DesignatorStatement ::=Designator:desig Assignop :op
                                 if(designator.getType().getKind() != Struct.Int)
                                 {
                                     parser.report_error("Prilikom INC " + designator.getName() + " mora biti int ", designatorleft);
-                                }
-                                else
-                                {
-                                 if(designator.getKind() == Obj.Elem)
-                                Code.put(Code.dup2);
-                                    Code.load(designator);
-                                    Code.put(Code.const_1);
-                                    Code.put(Code.sub);
-                                    Code.store(designator);
                                 }
                             }
                         :}
@@ -1168,15 +961,8 @@ ActPars ::= ActPars:args COMMA Expression:expr
             
 Designator ::= IDENT:name 
                 {:
-                  if(name.equals("this")) {
-                    if(parser.lastMethod != null) {
-                        if(parser.nestedScopes.empty() || parser.nestedScopes.peek() != SCOPE.CLASS_METHOD_SCOPE ||
-                        parser.lastMethod.getType().getElemType().getKind() == STATIC)
-                        {
-                         parser.report_error("this moze postojati samo u nestatickim metodama", nameleft);
-                         }
-                            isThisSpecified = true;
-                    }
+                  if (ThisIsSpecified(name, nameleft))
+                  {
                   } else {
                     Obj o = Tab.currentScope.findSymbol(name);
                     if(o == null) {
@@ -1356,8 +1142,6 @@ DesignatorIdent ::=  DOT IDENT:name
                     RESULT = Tab.noObj;
             } else
                    backupDesig = lastDesignator;
-                   
-                   Code.load(lastDesignator);
              :}
              Expression:expr RBRACK   
              {:  
@@ -1377,73 +1161,17 @@ DesignatorIdent ::=  DOT IDENT:name
             ;
             
 
-Condition ::= Condition OR CondTerm
-        {:
-        
-        Code.putJump(0); 
-        endAdr.push(Code.pc - 2);
-    
-        while(!orAdr.empty()) 
-            Code.fixup(orAdr.pop());
-                        
-        
-        :}
-                |
-                CondTerm
-                        {:
-        
-        Code.putJump(0); 
-        endAdr.push(Code.pc - 2);
-    
-        while(!orAdr.empty()) 
-            Code.fixup(orAdr.pop());
-                        
-        
-        :}
+Condition ::=   Condition OR CondTerm
+                | CondTerm
                 ;
                           
-CondTerm ::= CondTerm AND CondFact
-            {:
-                        Code.putJump(0); 
-                        orAdr.push(Code.pc - 2);                    
-                        while(!andAdr.empty()) 
-                            Code.fixup(andAdr.pop());
-                    :}
-                |
-                CondFact
-                {:
-                        Code.putJump(0); 
-                        orAdr.push(Code.pc - 2);                    
-                        while(!andAdr.empty()) 
-                            Code.fixup(andAdr.pop());
-                    :}
+CondTerm ::=    CondTerm AND CondFact
+                | CondFact
                 ;
 
-CondFact ::= Expression:exp
-            {:
-            if(exp.getKind() != Struct.Bool)
-                    parser.report_error("Exp mora biti tipa bool", expleft);
-            Code.loadConst(0); //expr je bool i samo proverimo da li je jednako sa 0
-                Code.putFalseJump(Code.ne, 0); // dummy //ako nije tacan uslov odmah preskacemo AND uslove i idemo na OR ako ima
-                andAdr.push(Code.pc - 2);
-            :}
-            |
-            Expression:exp1 Relop:op Expression:exp2
-            {:
-            if(!exp1.compatibleWith(exp2)) {
-                    if(!(exp1.getKind() == exp2.getKind() && exp1.getElemType() == exp2.getElemType() && exp1.getNumberOfFields() == exp2.getNumberOfFields()))
-                        parser.report_error(" Tipovi nisu kompatibilni", exp1left);
-                }
-                else {
-                    if(exp1.getKind() == Struct.Array || exp1.getKind() == Struct.Class) {
-                        if(op != Code.eq && op != Code.ne)
-                            parser.report_error("Uz promenljive tipa klase ili niza mogu se koristiti samo != i ==", exp1left);
-                    }
-                Code.putFalseJump(op, 0); // dummy
-                andAdr.push(Code.pc - 2);   
-                }
-            :}
-            ;
+CondFact ::=    Expression
+                | Expression Relop Expression
+                ;
     
                 
 Expression ::= SUB AddopTermCombList:result
@@ -1455,7 +1183,6 @@ Expression ::= SUB AddopTermCombList:result
                      RESULT = Tab.noType;
                      parser.report_error("izraz nakon minusa mora biti tipa int", resultleft);
                 }
-                Code.put(Code.neg);
             :}
             | AddopTermCombList:result
             {:
@@ -1463,171 +1190,52 @@ Expression ::= SUB AddopTermCombList:result
             :}
             ;
 
-AddopTermCombList ::=   AddopTermList:atl
-                    
-                    {:
-                    if(atl.getKind() == Obj.Elem) {
-                                Code.put(Code.dup2);
-                                Code.put(Code.dup2);
-                            }
-                            if(atl.getKind() != Obj.Con)
-                    Code.load(atl); 
-                    :}
-                    
-                     AddopRight:op  AddopTermCombList:atcl
-                        {:
-                        Code.put((int)op);
-                            Code.store(atl);
-                            Code.load(atl);
-                        if(atl.getKind() != Obj.Var && atl.getKind()!= Obj.Fld && atl.getKind() != Obj.Elem)
-                                {
-                                parser.report_error(" " + atl.getName() + " mora oznacavati  promenljivu, element niza ili polje objekta unutrasnje objekta", atlleft);
-                                RESULT = Tab.noType;
-                                }
-                            else{
-                                if(atl.getType().getKind() != Struct.Int)
-                                    {
-                                    parser.report_error(" mora biti int ", atlleft);
-                                    RESULT = Tab.noType;
-                                    }
-                                else{
-                                     if(atcl.getKind() != Struct.Int)
-                                    {
-                                        parser.report_error(" mora biti int ", atclleft);
-                                        RESULT = Tab.noType;
-                                    }
-                                    else{
-                                        RESULT = atl.getType();
-                                    }
-                                }
-                            }
+AddopTermCombList ::=   AddopTermList:result  AddopRight  AddopTermCombList:term
+                        {: 
+                            RESULT = GetResultIfBothInt(result, resultleft, term).getType();
                         :}
-                        |
-                        AddopTermList:atl
+                        | AddopTermList:result
                         {:
-                        if(atl != null)
-                        {
-                        RESULT = atl.getType();
-                        if(atl.getKind() == Obj.Var || atl.getKind() == Obj.Elem)
-                            Code.load(atl);
-                        }
+                           if(result != null)
+                        RESULT = result.getType();
                         else
                         RESULT = Tab.noType;
-                        
                         :}
                         ;
 
-AddopTermList ::=   AddopTermList:atl {:if(atl.getKind() != Obj.Con) Code.load(atl);:}
-                    AddopLeft:op Term:term
+AddopTermList ::=   AddopTermList:result AddopLeft Term:term
                     {:
-                     if(atl.getType().getKind() != Struct.Int)
+                        if (GetResultIfBothInt(result, resultleft, term.getType()) != Tab.noObj)
                         {
-                            parser.report_error(" " + atl.getName() + "mora biti int ", atlleft);
-                            RESULT = Tab.noObj;
-                         }
-                     else{
-                        if(term.getType().getKind() != Struct.Int)
-                        {
-                            parser.report_error(" " + term.getName() + "mora biti int ", termleft);
-                            RESULT = Tab.noObj;
+                            RESULT = new Obj(Obj.Con, "Addition result", Tab.intType); 
                         }
-                        else{
-                        RESULT = new Obj(Obj.Con, "rezultat sabiranja", Tab.intType);
-                           }
-                      }
-                      if(term.getKind() != Obj.Con)
-                            Code.load(term);
-                        
-                        Code.put((int)op);
                     :}
                     | Term:result
                     {: RESULT = result; :}
                     ;
 
-Term ::=    MulopFactorList:mfl
-        {:
-        if(mfl.getKind() == Obj.Elem) {
-                    Code.put(Code.dup2);
-                    Code.put(Code.dup2);
-                }
-                if(mfl.getKind() != Obj.Con)
-                    Code.load(mfl); 
-        :}
-             MulopRight:op Term:term
+Term ::=    MulopFactorList:result  MulopRight Term:term
             {:
-            if(term.getKind() != Obj.Con)
-                    Code.load(term);
-                    
-                Code.put((int)op);
-                Code.store(mfl);
-            if(mfl.getKind() != Obj.Var && mfl.getKind()!= Obj.Fld && mfl.getKind() != Obj.Elem)
-                    {
-                    parser.report_error(" " + mfl.getName() + " mora oznacavati  promenljivu, element niza ili polje objekta unutrasnje objekta", mflleft);
-                    RESULT = Tab.noObj;
-                    }
-                else{
-                    if(mfl.getType().getKind() != Struct.Int)
-                        {
-                        parser.report_error(" " + mfl.getName() + "mora biti int ", mflleft);
-                        RESULT = Tab.noObj;
-                        }
-                    else{
-                         if(term.getType().getKind() != Struct.Int)
-                        {
-                            parser.report_error(" " + term.getName() + "mora biti int ", termleft);
-                            RESULT = Tab.noObj;
-                        }
-                        else{
-                            RESULT = mfl;
-                        }
-                    }
-                }:}
+                RESULT = GetResultIfBothInt(result, resultleft, term.getType());
+            :}
             | MulopFactorList:result
             {: RESULT = result; :}
             ;
 
-MulopFactorList ::= MulopFactorList:mfl 
+MulopFactorList ::= MulopFactorList:result MulopLeft Factor:fact
                     {:
-                    if(mfl.getKind() != Obj.Con)
-                            Code.load(mfl);
-                    :}
-                
-                    MulopLeft:op Factor:fact    
-                    {:
-                    if(fact.getKind() != Obj.Con) 
-                            Code.load(fact);
-                        
-                        Code.put((int)op);
-                    if(mfl.getType().getKind() != Struct.Int)
-                        {
-                            parser.report_error(" " + mfl.getName() + "mora biti int ", mflleft);
-                            RESULT = Tab.noObj;
-                         }
-                     else{
-                        if(fact.getType().getKind() != Struct.Int)
-                        {
-                            parser.report_error(" " + fact.getName() + "mora biti int ", factleft);
-                            RESULT = Tab.noObj;
-                        }
-                        else{
-                        RESULT = new Obj(Obj.Con, "rezultat mnozenja", Tab.intType);
-                           }
-                      }
-                        /*RESULT = Tab.noObj;
-                        if (GetResultIfBothInt(mfl, mflleft, fact.getType()) != Tab.noObj)
+                        RESULT = Tab.noObj;
+                        if (GetResultIfBothInt(result, resultleft, fact.getType()) != Tab.noObj)
                         {
                             RESULT = new Obj(Obj.Con, "Multiplication result", Tab.intType); 
-                        }  */
+                        }  
                     :}
                     | Factor:result
                     {: RESULT = result; :}
                     ;
 
 Factor ::=  Designator:designator
-            {:  RESULT = designator;
-                if(designator.getKind() == Obj.Con)
-                    Code.load(designator);
-            :}
+            {: RESULT = designator; :}
             | Designator:designator  LPAREN ActParsListOpt:params RPAREN
             {:
                 parser.IncreaseFunctionCallsCount();
@@ -1651,9 +1259,9 @@ Factor ::=  Designator:designator
                         for(int i = 0; i < params; i++) {
                             Obj o = ((Obj) designator.getLocalSymbols().toArray()[i]);
                             Struct s = actParams.get(actParams.size() - (params - i));
-                             if(!o.getType().compatibleWith(s))
-                                if(!(o.getType().getKind() != Struct.Class && o.getType().getKind() == s.getKind() && o.getType().getElemType() == s.getElemType() && o.getType().getNumberOfFields() == s.getNumberOfFields()))
-                             //if (!IsAssignable(o,s))
+                            // if(!o.getType().compatibleWith(s))
+                            //    if(!(o.getType().getKind() != Struct.Class && o.getType().getKind() == s.getKind() && o.getType().getElemType() == s.getElemType() && o.getType().getNumberOfFields() == s.getNumberOfFields()))
+                             if (!IsAssignable(o,s))
                                     flag = false;
                         }
                         
@@ -1666,11 +1274,6 @@ Factor ::=  Designator:designator
                             else                            
                                 parser.report_error(" Funkcija nema povratnu vrednost.", paramsleft);
                             
-                            int destAdr = designator.getAdr() - Code.pc;
-                            Code.put(Code.call);
-                            Code.put2(destAdr);
-                            if(designator.getType().getKind() != Struct.None)
-                                Code.put(Code.pop);
                         }
                     } else {
                         parser.report_error(" Broj argumenata funkcije nije dobar."+ RESULT.getName(), paramsleft);                        
@@ -1679,28 +1282,12 @@ Factor ::=  Designator:designator
                             actParams.remove(actParams.size() - 1);
                 }
             :}
-            | NUMBER:num
-            {: 
-            Obj value = new Obj(Obj.Con, "" + num, Tab.intType); 
-            value.setAdr(num.intValue());
-            Code.load(value);
-            RESULT = value;  
-            :}
+            | NUMBER:number
+            {: RESULT = new Obj(Obj.Con, "" + number, Tab.intType); :}
             | CHAR:chr
-            {: 
-            Obj value = new Obj(Obj.Con, "" + chr, Tab.charType); 
-            value.setAdr(chr);
-            Code.load(value);
-            RESULT = value; 
-             :}
-            
-            | BOOL:boo
-            {:
-            Obj value = new Obj(Obj.Con, "" + boo, new Struct (Struct.Bool)); 
-            value.setAdr(boo? 1:0);
-            Code.load(value);
-            RESULT = value;  
-            :}
+            {: RESULT = new Obj(Obj.Con, "" + chr, Tab.charType); :}
+            | BOOL:bool
+            {: RESULT = new Obj(Obj.Con, "" + bool, Tab.intType); :}
             | NEW Type:type
             {:
                 if(type.getKind()!=Struct.Class)
@@ -1747,34 +1334,34 @@ Factor ::=  Designator:designator
                     parser.report_error(": tip expr mora biti int", typeleft);
                     RESULT = new Obj(Obj.NO_VALUE, "", Tab.noType);
                 } 
-                
-                Code.put(Code.newarray);
-                Code.put(type == Tab.charType ? 0 : 1); 
             :}
+            /*| NEW Type:type LBRACK Expression:expr RBRACK
+            {:
+                if (expr.getKind() != Struct.Int)
+                {
+                    parser.report_error("Velicina niza mora biti int", exprleft);
+                    RESULT = new Obj(Obj.NO_VALUE, "", Tab.noType);
+                }
+                else
+                {
+                    RESULT = new Obj(Obj.NO_VALUE, "", new Struct(Struct.Array, type));
+                }
+            :}*/
             | LPAREN Expression:expr RPAREN
             {: RESULT = new Obj(Obj.Con, "", expr); :}
             ;
             
 Assignop ::= ASSIGN 
-            {: RESULT = 0 ; :}
-            | AddopRight:addOp
-            {: RESULT = addOp ; :}
-            | MulopRight:mulOp
-            {: RESULT = mulOp ; :}
+            | AddopRight
+            | MulopRight
             ;
 
 Relop ::=   EQUAL
-            {: RESULT = Code.eq ; :}
             | NOT_EQUAL
-            {: RESULT = Code.ne ; :}
             | GREATER
-            {: RESULT = Code.gt ; :} 
             | GREATER_EQUAL 
-            {: RESULT = Code.ge ; :}
             | LESS
-            {: RESULT = Code.lt ; :}
             | LESS_EQUAL
-            {: RESULT = Code.le ; :}
             ;
 
 Addop ::=   AddopLeft 
@@ -1782,15 +1369,11 @@ Addop ::=   AddopLeft
             ;
 
 AddopLeft ::=   ADD 
-                {: RESULT = Code.add ; :}
                 | SUB 
-                {: RESULT = Code.sub ; :}
                 ;
 
 AddopRight ::=  ASSIGN_ADD 
-                {: RESULT = Code.add ; :}
                 | ASSIGN_SUB 
-                {: RESULT = Code.sub ; :}
                 ;
 
 Mulop ::=   MulopLeft 
@@ -1798,17 +1381,11 @@ Mulop ::=   MulopLeft
             ;
 
 MulopLeft ::=   MUL 
-                {: RESULT = Code.mul ; :}
                 | DIV 
-                {: RESULT = Code.div ; :}
                 | MOD 
-                {: RESULT = Code.rem ; :}
                 ;
 
 MulopRight ::=  ASSIGN_MUL 
-                {: RESULT = Code.mul ; :}
                 | ASSIGN_DIV 
-                {: RESULT = Code.div ; :}
                 | ASSIGN_MOD 
-                {: RESULT = Code.rem ; :}
-            ;
+ ;

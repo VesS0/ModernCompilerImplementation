@@ -1,0 +1,44 @@
+program SyntaxError
+
+int a b;
+int c,d e;
+int f g, h;
+
+{
+	void gf0(int a int b,int c) {
+	
+	}
+	
+	void gf1(int a, int b int c) {
+	
+	}
+	
+	void main() 
+		int b[];
+		int a, b c;
+		char c1;
+		int e f, g;
+		char c2;
+		int k l, e
+	{
+		
+		c1 = 'a';
+		c1 = return;
+		c1 = 'a';
+		c1 = ;
+		c1 = 'a';
+		
+		if ( return ) {
+		
+		} else {
+		
+		}
+	
+		for (return; a < 0; a++) { }
+		for (a = 0; return; a++) { }
+		for (a = 0; a < 0; return) { }
+	
+		b[ a- ] = null;
+	
+	}
+}
