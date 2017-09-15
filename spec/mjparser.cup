@@ -5,6 +5,9 @@ import org.apache.log4j.*;
 import java.util.*;
 import java.util.stream.IntStream;
 import rs.ac.bg.etf.pp1.util.ScopeEngine;
+import rs.ac.bg.etf.pp1.util.EntityCounters;
+import rs.ac.bg.etf.pp1.util.UtilFunctions;
+import rs.ac.bg.etf.pp1.util.SCOPE;
 
 // import java.io.*;
 import rs.etf.pp1.symboltable.Tab;
@@ -48,7 +51,7 @@ parser code {:
         
         if( Tab.currentScope.findSymbol(name) != null)
         {
-             report_error(" " + name + " je vec deklarisano ("+nameLocation+")" ,null );
+             report_error(" " + name + " je vec deklarisano " ,null );
              return false;
         }
         
@@ -61,8 +64,8 @@ parser code {:
         return true;
     }
     
-    void VariableDeclaration(String name, int nameLocation, int objectKind, 
-        Obj assignedType, int assignLocation, boolean isConst)
+    void VariableDeclaration(String name, int nameLocation, int objectKind, Struct lastType, 
+        Obj assignedType, int assignLocation)
     {
     	if (!CorrectNameAndType(name, lastType))
     	{
@@ -75,25 +78,17 @@ parser code {:
             return;
         }
         
-        Tab.insert(objectKind, name, lastType);
-        
-        if (isConst) ScopeEntityCounter.IncreaseConstVariableCount();
-        else ScopeEntityCounter.IncreaseVariableCount();
-        
+        Obj obj = Tab.insert(objectKind, name, lastType);
+        if (assignedType!=null) obj.setAdr(assignedType.getAdr());
         report_info("Definisana promenljiva " + name + " tipa: "+UtilFunctions.StructToTypeName(lastType)+ " na liniji "+nameLocation, null);
     }
 
     // Overloading
-    void VariableDeclaration(String name, int nameLocation, int objectType)
+    void VariableDeclaration(String name, int nameLocation, int objectType, Struct lastt)
     {
-        VariableDeclaration(name, nameLocation, objectType, null, 0, false);
+        VariableDeclaration(name, nameLocation, objectType, lastt, null, 0);
     }
     
-    void VariableDeclaration(String name, int nameLocation, int objectType, Obj assignedType, int assignedLocation)
-    {
-        VariableDeclaration(name, nameLocation, objectType, assignedType, assignedLocation, false);
-    }
-
     void ClassDeclaration(String className, int classLocation)
     {
         if(Tab.currentScope.findSymbol(className) != null)
@@ -103,9 +98,9 @@ parser code {:
         }
         
         lastClass = Tab.insert(Obj.Type, className, new Struct(Struct.Class));
-        ScopeEntityCounter.InScope(ScopeEntityCounter.SCOPE.CLASS_SCOPE);
+        ScopeEngine.InScope(SCOPE.CLASS_SCOPE);
         Tab.openScope();
-        classCount++;
+       	EntityCounters.IncreaseClassCount();
         
         report_info("Definisana klasa " + className + " na liniji "+classLocation,null );
     }
@@ -122,7 +117,7 @@ parser code {:
        
         // if (!nestedScopes.empty() && nestedScopes.peek() == SCOPE.CLASS_SCOPE)
         {
-        	ScopeEntityCounter.OutOfCurrentScope();
+        	ScopeEngine.OutOfCurrentScope();
             Tab.chainLocalSymbols(lastClass.getType());
             Tab.closeScope();
             lastClass = null;
@@ -162,7 +157,7 @@ parser code {:
                 return;
             }
 
-            ScopeEntityCounter.InScope(ScopeEntityCounter.SCOPE.MAIN_SCOPE);
+            ScopeEngine.InScope(SCOPE.MAIN_SCOPE);
             InsertMethod(methodName, methodLocation, type.getKind());
             Tab.openScope();
             lastMethType = type;
@@ -179,16 +174,20 @@ parser code {:
        }
        
        lastMethType = type;
-       ScopeEntityCounter.InScope(ScopeEntityCounter.SCOPE.METHOD_SCOPE);
+       ScopeEngine.InScope(SCOPE.METHOD_SCOPE);
        Tab.openScope();
     }
     
     void InsertMethod(String methodName, int methodLocation, int methodType)
     {
-           if (methodType == 7 ) ScopeEntityCounter.IncreaseFunctionCount();
-           else ScopeEntityCounter.IncreaseStaticFunctionCount();
-           lastType.setElementType(new Struct(methodType));
-           lastMethod = Tab.insert(Obj.Meth, methodName, lastType);
+           if (methodType == 6 ) EntityCounters.IncreaseStaticFunctionCount();
+           else EntityCounters.IncreaseFunctionCount();
+           // lastType.setElementType(new Struct(methodType));
+           
+           Struct methType = new Struct(lastType.getKind());
+           methType.setElementType(new Struct(methodType));
+           
+           lastMethod = Tab.insert(Obj.Meth, methodName, methType);
            report_info("Ubacena metoda "+methodName+" u tabelu simbola na liniji "+ methodLocation,null );
     }
     
@@ -207,7 +206,7 @@ parser code {:
     
     void HandleScopeEnd(Obj scopeName)
     {
-    	ScopeEntityCounter.OutOfCurrentScope();
+    	ScopeEngine.OutOfCurrentScope();
         Tab.chainLocalSymbols(scopeName);
         Tab.closeScope();
     }
@@ -228,6 +227,14 @@ parser code {:
         
         if (Obj.Type == typeNode.getKind()) 
         {
+        	/* if (typeName="int")
+        	{
+                if (typeNode.getType().getElemType()== null)
+                    return lastType = typeNode.getType();
+                else 
+                	return lastType = typeNode.getType().getElemType();
+        	}*/
+        	
              curTypeName = typeName;
              return lastType = typeNode.getType();
         }
@@ -378,7 +385,7 @@ int [] correctStructTypes = {Struct.Int, Struct.Char, Struct.None};
         if (IsObjectVarElemOrFieldError(designator, designatorLocation) &&
             IsStructIntCharOrNone(designator.getType(), designatorLocation))
          {
-        	ScopeEntityCounter.IncreaseFunctionCallsCount(); 
+        	EntityCounters.IncreaseFunctionCallsCount(); 
          }
     }
     
@@ -458,11 +465,11 @@ int [] correctStructTypes = {Struct.Int, Struct.Char, Struct.None};
                 if(!(o.getType().getKind() != Struct.Class && o.getType().getKind() == s.getKind() && o.getType().getElemType() == s.getElemType() && o.getType().getNumberOfFields() == s.getNumberOfFields()))
              //if (!o.getType().compatibleWith(s) && !IsAssignable(o,s)) 
              {
-                 parser.report_error(" Tipovi argumenta funkcije nisu kompatibilni sa argumentima poziva. ("+argsLocation+")", null);
+                 parser.report_error(" _Tipovi argumenta funkcije nisu kompatibilni sa argumentima poziva. ("+argsLocation+")", null);
                  return false;
              }
         }
-        ScopeEntityCounter.IncreaseFunctionCallsCount();
+        EntityCounters.IncreaseFunctionCallsCount();
         return true;
     }
     
@@ -472,7 +479,7 @@ int [] correctStructTypes = {Struct.Int, Struct.Char, Struct.None};
      
         if(parser.lastMethod != null) 
         {
-          if(!ScopeEntityCounter.IsInClassScope() || parser.lastMethod.getType().getElemType().getKind() == STATIC)
+          if(!ScopeEngine.IsInClassScope() || parser.lastMethod.getType().getElemType().getKind() == STATIC)
           {
                parser.report_error("This se moze navoditi samo u nestatickim metodama ("+nameLocation+")", null);
           }
@@ -521,9 +528,8 @@ precedence left ELSE;
 
 Program ::= PROG ProgramName:progName DeclListOpt LBRACE MethodDeclListOpt RBRACE
 {:
-    parser.HandleProgramEnd(progName, progNameleft);
     Code.dataSize = Tab.currentScope().getnVars();
-    
+    parser.HandleProgramEnd(progName, progNameleft);
 :};
 
 ProgramName ::= IDENT:progName
@@ -553,13 +559,25 @@ ConstDeclList ::=   ConstDeclList COMMA ConstIdent
                 
 ConstIdent ::= IDENT:name ASSIGN Const:type
 {: 
-    parser.VariableDeclaration(name, nameleft, Obj.Con, type, typeleft);
+    parser.VariableDeclaration(name, nameleft, Obj.Con, parser.lastType, type, typeleft);
+	EntityCounters.IncreaseConstVariableCount();
 :}
 ;
 
-Const ::=   BOOL  {: RESULT = new Obj(Obj.Con, "", boolType); :}
-            | CHAR {: RESULT = new Obj(Obj.Con, "", Tab.charType); :}
-            | NUMBER {: RESULT = new Obj(Obj.Con, "", Tab.intType); :}
+Const ::=   BOOL:booll  
+	{:
+	Obj obj= new Obj(Obj.Con, "", boolType); 
+obj.setAdr(booll?1:0); 
+	RESULT = obj;
+:}
+            | CHAR:charr {:
+            	Obj obj = new Obj(Obj.Con, "", Tab.charType); 
+	obj.setAdr(charr); 
+	RESULT=obj;
+	:}
+            | NUMBER:numberr {: Obj obj = new Obj(Obj.Con, "", Tab.intType); 
+	obj.setAdr((int)numberr);
+	RESULT=obj; :}
             ;
 
 //VAR DECLARATION
@@ -575,47 +593,11 @@ VarDeclList ::= VarDeclList COMMA Var
                 ;
 
 Var ::= IDENT:name LBRACK RBRACK  
-        {: ScopeEntityCounter.IncreaseVariableCount();
-            if (ScopeEngine.IsInGlobalScope()) {
-                    // parser.globalVarCount++;
-                      if( Tab.currentScope.findSymbol(name) != null)
-                      parser.report_error(" " + name + " vec deklarisano", nameleft);
-                      else {
-                          if( parser.lastType != null && parser.lastType != Tab.noType)
-                              Tab.insert(Obj.Var, name, new Struct(Struct.Array, parser.lastType));
-                              parser.report_info("Definisana globalna promenljiva " + name + " tipa: "+ Struct.Array+" na liniji " + nameleft, null);
-                          }    
-                }
-                else
-             if(ScopeEngine.IsInMainScope()) {
-                    //parser.localVarCount++;
-                    if( Tab.currentScope.findSymbol(name) != null)
-                      parser.report_error(" " + name + " vec deklarisano", nameleft);
-                      else {
-                          if( parser.lastType != null && parser.lastType != Tab.noType)
-                                Tab.insert(Obj.Var, name, new Struct(Struct.Array, parser.lastType));
-                              parser.report_info("Definisana lokalna promenljiva " + name + " tipa "+Struct.Array+" na liniji " + nameleft, null);
-                          }
-                } else if(ScopeEngine.IsInMethodScope()) {
-                    if( Tab.currentScope.findSymbol(name) != null)
-                      parser.report_error(" " + name + " vec deklarisano", nameleft);
-                      else {
-                          if( parser.lastType != null && parser.lastType != Tab.noType)
-                              Tab.insert(Obj.Var, name, new Struct(Struct.Array, parser.lastType));
-                              parser.report_info("Definisana lokalna promenljiva " + name + " tipa: "+Struct.Array+" na liniji " + nameleft, null);
-                          }
-                } else if(ScopeEngine.IsInClassScope()) {
-                    //parser.varClassDeclCount++;
-                    if( Tab.currentScope.findSymbol(name) != null)
-                      parser.report_error(" " + name + " vec deklarisano", nameleft);
-                      else {
-                          if( parser.lastType != null && parser.lastType != Tab.noType)
-                              Tab.insert(Obj.Var, name, new Struct(Struct.Array, parser.lastType));
-                              parser.report_info("Definisano polje klase " + name + " tipa: "+Struct.Array+" na liniji " + nameleft, null);
-                          }
-                }
+        {: 
+            parser.VariableDeclaration(name, nameleft, Obj.Var, new Struct(Struct.Array, parser.lastType));
+			EntityCounters.IncreaseVariableCount();
         :}
-        | IDENT:name {: parser.VariableDeclaration(name, nameleft, Obj.Var); :}
+        | IDENT:name {: parser.VariableDeclaration(name, nameleft, Obj.Var, parser.lastType); EntityCounters.IncreaseVariableCount(); :}
         ;
 
 Type ::= IDENT:name
@@ -639,7 +621,7 @@ ClassDecl ::= CLASS IDENT:className ExtendsOpt:extendsClass LBRACE
     parser.ClassDeclaration(className, classNameleft);
 :}
 
- ClassVarDeclListOpt MethodDeclOpt RBRACE
+ 			ClassVarDeclListOpt MethodDeclOpt RBRACE
 {:  
     SaveExtendedClassMembers(extendsClass);
     parser.ClassEnding();
@@ -682,11 +664,23 @@ MethodDeclListOpt ::= MethodDeclListOpt MethodDecl
                     | /* epsilon */
                     ;
 
-MethodDecl ::= StaticOpt:isStaticMethod TypeVoid:type IDENT:methodName LPAREN 
+MethodDecl ::= StaticOpt:isStaticMethod TypeVoid:type IDENT:methodName
                 {:
                     parser.MethodDeclaration(methodName, methodNameleft, type, typeleft, isStaticMethod);
                 :}
-FormParamsOpt:numOfParams RPAREN MethodVarDeclListOpt LBRACE StatementListOpt RBRACE 
+LPAREN FormParamsOpt:numOfParams RPAREN MethodVarDeclListOpt LBRACE
+{:
+	parser.lastMethod.setAdr(Code.pc);
+	if ("main".equals(parser.lastMethod.getName()))
+	{
+		Code.mainPc = Code.pc;
+	}    
+    parser.lastMethod.setLevel(numOfParams);
+	Code.put(Code.enter);
+	Code.put(parser.lastMethod.getLevel());
+	Code.put(Tab.currentScope.getnVars());
+:}
+StatementListOpt RBRACE 
 {: 
     if (numOfParams == null) numOfParams = 0;
     
@@ -694,15 +688,18 @@ FormParamsOpt:numOfParams RPAREN MethodVarDeclListOpt LBRACE StatementListOpt RB
     {
         parser.report_error("Main ne sme imati argumente!", numOfParamsleft);
     }
-    parser.lastMethod.setLevel(numOfParams);
+
     
     if (!parser.returnHappend && type != Tab.noType)
     {
         parser.report_error("Fali vam povratna vrednost funkcije!",null);
     }
-    Code.mainPc = parser.lastMethod.getAdr();
+
+    Code.put(Code.exit);
+    Code.put(Code.return_);
+    
     parser.MethodEnding();
-   parser.returnHappend = false;
+    parser.returnHappend = false;
 :};
 
 StaticOpt ::= 
@@ -721,8 +718,8 @@ TypeVoid ::= Type: type
 VarArgs ::= COMMA Type:type DOT DOT DOT IDENT:name
             {:
                 parser.lastType = new Struct(Struct.Array, parser.lastType);
-                parser.VariableDeclaration(name, nameleft, Obj.Var);    
-                parser.formalParamsCount++; 
+                parser.VariableDeclaration(name, nameleft, Obj.Var, parser.lastType);    
+                EntityCounters.IncreaseFormalParamsCount();
             :};
 
 FormParamsOpt ::=   FormalParamList:result
@@ -747,14 +744,13 @@ FormalParamList ::= FormalParamList:numberOfParams COMMA FormalParamDecl
 
 FormalParamDecl ::= Type IDENT:name LBRACK RBRACK 
                     {: 
-                        parser.lastType = new Struct(Struct.Array, parser.lastType);
-                        parser.VariableDeclaration(name, nameleft, Obj.Var);
-                        parser.formalParamsCount++; 
+                        parser.VariableDeclaration(name, nameleft, Obj.Var, new Struct(Struct.Array, parser.lastType));
+                        EntityCounters.IncreaseFormalParamsCount(); 
                     :}
                     | Type IDENT:name
                     {: 
-                        parser.VariableDeclaration(name, nameleft, Obj.Var);
-                        parser.formalParamsCount++; 
+                        parser.VariableDeclaration(name, nameleft, Obj.Var, parser.lastType);
+                        EntityCounters.IncreaseFormalParamsCount();
                     :}
                      ;
 
@@ -834,15 +830,16 @@ Statement ::=   DesignatorStatement SEMI
                 {:
                     CorrectTypesForFunctionCalls(designator, designatorleft);
                     if (designator.getType() == Tab.charType ) 
-                        Code.put(Code.bprint);           
+                        Code.put(Code.bread);           
                      else
-                        Code.put(Code.print);
+                        Code.put(Code.read);
+                    Code.store(designator);
                 :}
                 | PRINT LPAREN Expression:expr NumOpt:width RPAREN SEMI
                 {: 
                 if (IsStructIntCharOrNone(expr, exprleft))
                 {
-                	ScopeEntityCounter.IncreaseFunctionCallsCount(); 
+                	EntityCounters.IncreaseFunctionCallsCount(); 
                      if (expr.getKind() == Struct.Char ) {
                     Code.loadConst(width);
                     Code.put(Code.bprint);
@@ -911,17 +908,21 @@ DesignatorStatement ::=Designator:desig Assignop :op
                         :}
                         Expression:expr
                         {:
-                            if(desig.getKind() != Obj.Var && desig.getKind()!= Obj.Fld && desig.getKind() != Obj.Elem)
-                                parser.report_error(" " + desig.getName() + " mora oznacavati  promenljivu, element niza ili polje unutar objekta", desigleft);
-                            else{
+                            if (IsObjectVarElemOrFieldError(desig, desigleft))
+                            {
                                 boolean comp = true;
                                 if(!expr.assignableTo(desig.getType())) {
                                 
                                     if(expr.getKind() != desig.getType().getKind())
                                         parser.report_error(""+expr.getKind() +" != " +desig.getType().getKind()+"expr.getKind() != desig.getType().getKind()", desigleft); 
-                                    if (expr.getElemType() != desig.getType().getElemType())
-                                        parser.report_error(""+expr.getElemType() +" != "+ desig.getType().getElemType()+ " expr.getElemType() != desig.getType().getElemType()", desigleft);
+                                    if (desig.getType().getElemType() == null)
+                                    {
+                                        if (expr.getElemType() != desig.getType().getElemType()) parser.report_error(""+expr.getElemType() +" != "+ desig.getType().getElemType()+ " . expr.getElemType() != desig.getType().getElemType()", desigleft);
                                     
+                                    }else  if(expr.getElemType() != desig.getType().getElemType().getElemType())
+                                    {
+                                    	 parser.report_error(""+expr.getElemType() +" != "+ desig.getType().getElemType()+ " .. expr.getElemType() != desig.getType().getElemType()", desigleft);
+                                    }
                                     
                                     if (expr.getNumberOfFields() != desig.getType().getNumberOfFields())
                                         parser.report_error(" expr.getNumberOfFields() != desig.getType().getNumberOfFields()", desigleft);
@@ -1502,7 +1503,7 @@ Factor ::=  Designator:designator
             :}
             | Designator:designator  LPAREN ActParsListOpt:params RPAREN
             {:
-            	ScopeEntityCounter.IncreaseFunctionCallsCount();
+            	EntityCounters.IncreaseFunctionCallsCount();
                 if (designator.getKind() != Obj.Meth)
                 { 
                     parser.report_error("Funkcija nije deklarisana",designatorleft);
@@ -1530,7 +1531,7 @@ Factor ::=  Designator:designator
                         }
                         
                         if(!flag)
-                            parser.report_error(" Tipovi argumenta funkcije nisu kompatibilni sa argumentima poziva.", paramsleft);
+                            parser.report_error(" __Tipovi argumenta funkcije nisu kompatibilni sa argumentima poziva.", paramsleft);
                         else {
                             if(RESULT.getType() != Tab.noType)
                                 RESULT = new Obj(Obj.Con, "", RESULT.getType());
@@ -1541,8 +1542,6 @@ Factor ::=  Designator:designator
                             int destAdr = designator.getAdr() - Code.pc;
                             Code.put(Code.call);
                             Code.put2(destAdr);
-                            if(designator.getType().getKind() != Struct.None)
-                                Code.put(Code.pop);
                         }
                     } else {
                         parser.report_error(" Broj argumenata funkcije nije dobar."+ RESULT.getName(), paramsleft);                        
@@ -1604,7 +1603,7 @@ Factor ::=  Designator:designator
                     RESULT = new Obj(Obj.NO_VALUE, "", Tab.noType);
                 else {
                     if(obj.getType().getElemType() != type) {
-                        parser.report_error("Ne podudaraju se tipovi." +type+ " i "+ obj.getType().getElemType()+"("+typeleft+")",null );
+                        parser.report_error("Ne podudaraju se tipovi." +type+ " i "+obj.getType()+ " + "+ obj.getType()+"("+typeleft+")",null );
                         RESULT = new Obj(Obj.NO_VALUE, "", Tab.noType);
                     }
                 } 

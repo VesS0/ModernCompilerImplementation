@@ -6,7 +6,7 @@ public final class ScopeEngine{
 	
     static Stack<SCOPE> nestedScopes = new Stack<SCOPE>();
     
-    void InScope(SCOPE newScope)
+    public static void InScope(SCOPE newScope)
     {
         if (nestedScopes.empty())
         {
@@ -22,7 +22,7 @@ public final class ScopeEngine{
         nestedScopes.push(newScope);   
     }
     
-    void OutOfCurrentScope()
+    public static void OutOfCurrentScope()
     {
         if (!nestedScopes.empty())
         {

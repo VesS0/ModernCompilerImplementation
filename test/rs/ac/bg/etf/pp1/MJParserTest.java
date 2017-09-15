@@ -13,6 +13,7 @@ import java_cup.runtime.Symbol;
 import org.apache.log4j.Logger;
 import org.apache.log4j.xml.DOMConfigurator;
 
+import rs.ac.bg.etf.pp1.util.EntityCounters;
 import rs.ac.bg.etf.pp1.util.Log4JUtils;
 import rs.etf.pp1.mj.runtime.Code;
 import rs.etf.pp1.symboltable.Tab;
@@ -52,16 +53,16 @@ public class MJParserTest {
 			MJParser p = new MJParser(lexer);
 	        Symbol s = p.parse();  //pocetak parsiranja
 	        
-	        log.info("globalVariableCount = " + p.globalVariableCount);
-	        log.info("globalConstVariableCount = " + p.globalConstVariableCount);
-	        log.info("classVariableCount = " + p.classVariableCount);
-	        log.info("mainVariableCount = " + p.mainVariableCount);
-	        log.info("mainFunctionCallsCount = " + p.mainFunctionCallsCount);
-	        log.info("globalClassFunctionCount = " + p.globalClassFunctionCount);
-	        log.info("staticClassFunctionCount = " + p.staticClassFunctionCount);
-	        log.info("globalFunctionCount = " + p.globalFunctionCount);
-	        log.info("formalParamsCount = " + p.formalParamsCount);
-	        log.info("classCount = " + p.classCount);
+	        log.info("globalVariableCount = " + EntityCounters.getGlobalVariableCount());
+	        log.info("globalConstVariableCount = " + EntityCounters.getGlobalConstVariableCount());
+	        log.info("classVariableCount = " + EntityCounters.getClassVariableCount());
+	        log.info("mainVariableCount = " + EntityCounters.getMainVariableCount());
+	        log.info("mainFunctionCallsCount = " + EntityCounters.getMainFunctionCallsCount());
+	        log.info("globalClassFunctionCount = " + EntityCounters.getGlobalClassFunctionCount());
+	        log.info("staticClassFunctionCount = " + EntityCounters.getStaticClassFunctionCount());
+	        log.info("globalFunctionCount = " + EntityCounters.getGlobalFunctionCount());
+	        log.info("formalParamsCount = " + EntityCounters.getFormalParamsCount());
+	        log.info("classCount = " + EntityCounters.getClassCount());
 	        
 	        Code.write(new FileOutputStream("test/program.obj"));
 	        Tab.dump();
