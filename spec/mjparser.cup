@@ -4,65 +4,24 @@ import java_cup.runtime.*;
 import org.apache.log4j.*;
 import java.util.*;
 import java.util.stream.IntStream;
-import rs.ac.bg.etf.pp1.MJParser.SCOPE;
+import rs.ac.bg.etf.pp1.util.ScopeEngine;
 
 // import java.io.*;
 import rs.etf.pp1.symboltable.Tab;
 import rs.etf.pp1.symboltable.concepts.*;
 
 parser code {:
-    public static enum SCOPE
-    {
-        METHOD_SCOPE,
-        CLASS_SCOPE,
-        CLASS_METHOD_SCOPE,
-        MAIN_SCOPE
-    }
-    
-    Stack<SCOPE> nestedScopes = new Stack<SCOPE>();
-    
-    int globalVariableCount = 0;
-    int globalConstVariableCount = 0;
-    int mainVariableCount = 0;
-    int mainFunctionCallsCount = 0;
-    int globalClassFunctionCount = 0;
-    int staticClassFunctionCount = 0;
-    int formalParamsCount = 0;
-    int globalFunctionCount = 0;
-    int classCount = 0;
-    int classVariableCount = 0;
-    
-    boolean errorEncountered = false;
-    boolean errorHandled = false;
-    boolean returnHappend = false;
-    
+
     Struct lastMethType = null;
-    Struct lastType = null;
+    Struct lastType = null; // unneeded can get from up
     Obj lastClass = null;
     Obj lastMethod = null;
     Obj extendedClass = null;
     String curTypeName = "";
     
-    public String StructToTypeName(Struct structKind)
-    {
-        switch(structKind.getKind())
-        {
-            case 0:
-            return "None";
-            case 1:
-            return "Int";
-            case 2:
-            return "Char";
-            case 3:
-            return "Array";
-            case 4:
-            return "Class";
-            case 5:
-            return "Bool";
-            default:
-            return "No such kind";
-        }
-    }
+    boolean returnHappend = false;
+    boolean errorEncountered = false;
+    boolean errorHandled = false;
     
     void ReportError(String errorMessage)
     {
@@ -72,142 +31,56 @@ parser code {:
     
     void ReportVarDeclError(char errorChar)
     {
-        errorEncountered = true;
-        if (nestedScopes.empty())
+        if (ScopeEngine.IsInGlobalScope())
         {
-            log.debug("Doslo je do greske prilikom deklaracije globalne promenljive pre znaka \""+errorChar + '\"');
+        	ReportError("Doslo je do greske prilikom deklaracije globalne promenljive pre znaka \""+errorChar + '\"');
             return;
         }
-        if (nestedScopes.peek() == SCOPE.CLASS_SCOPE)
+        if (ScopeEngine.IsInClassScope())
         {
-            log.debug("Doslo je do greske prilikom definicije lokalne promenljive unutrasnje klase pre znaka \"" +errorChar+ '\"');
+        	ReportError("Doslo je do greske prilikom definicije lokalne promenljive unutrasnje klase pre znaka \"" +errorChar+ '\"');
             return;
         }
     }
     
-    void IncreaseVariableCount()
+    boolean CorrectNameAndType(String name, Struct type)
     {
         
-        if (nestedScopes.empty()) // Global scope
-        {
-            globalVariableCount++;
-            return;
-        }
-        if (nestedScopes.peek() == SCOPE.MAIN_SCOPE)
-        {
-            mainVariableCount++;
-            return;
-        }
-        if (nestedScopes.peek() == SCOPE.CLASS_SCOPE)
-        {
-            classVariableCount++;
-            return;
-        }
-        if (nestedScopes.peek() == SCOPE.METHOD_SCOPE)
-        {
-            return;
-        }
-    }
-    
-    void IncreaseConstVariableCount()
-    {
-        if (nestedScopes.empty()) // Global scope
-        {
-            globalConstVariableCount++;
-        }
-    }
-    
-    void IncreaseFunctionCount()
-    {
-        if (nestedScopes.empty()) // Global Scope
-        {
-            globalFunctionCount++;
-            return;
-        }
-        if (nestedScopes.peek() == SCOPE.CLASS_SCOPE)
-        {
-            globalClassFunctionCount++;
-        }
-    }
-    
-    void IncreaseStaticFunctionCount()
-    {
-        if (nestedScopes.empty()) // Global Scope
-        {
-            // globalFunctionCount++;
-            return;
-        }
-        if (nestedScopes.peek() == SCOPE.CLASS_SCOPE)
-        {
-            staticClassFunctionCount++;
-        }
-    }
-    
-    void IncreaseFunctionCallsCount()
-    {
-        if (nestedScopes.empty()) // Global scope
-        {
-            return;
-        }
-        
-        if (nestedScopes.peek() == SCOPE.MAIN_SCOPE)
-        {
-            mainFunctionCallsCount++;   
-            return;
-        }
-    }
-    
-    void InScope(SCOPE newScope)
-    {
-        if (nestedScopes.empty())
-        {
-            nestedScopes.push(newScope);
-            return;
-        }
-        
-        if (nestedScopes.peek() == SCOPE.CLASS_SCOPE && newScope == SCOPE.METHOD_SCOPE)
-        {
-            nestedScopes.push(SCOPE.CLASS_METHOD_SCOPE);
-            return;
-        }
-        nestedScopes.push(newScope);   
-    }
-    
-    void OutOfCurrentScope()
-    {
-        if (!nestedScopes.empty())
-        {
-            nestedScopes.pop();
-        }
-    }
-    
-    void VariableDeclaration(String name, int nameLocation, int objectType, 
-        Obj assignedType, int assignLocation, boolean isConst)
-    {
         if( Tab.currentScope.findSymbol(name) != null)
         {
              report_error(" " + name + " je vec deklarisano ("+nameLocation+")" ,null );
-             return;
+             return false;
         }
         
+        if (type == null || type == Tab.noType)
+        {
+            report_error("Greska u tipu pri deklaraciji ", null);
+            return false; 
+        }
+        
+        return true;
+    }
+    
+    void VariableDeclaration(String name, int nameLocation, int objectKind, 
+        Obj assignedType, int assignLocation, boolean isConst)
+    {
+    	if (!CorrectNameAndType(name, lastType))
+    	{
+    		return;
+    	}
+    	
         if(assignedType != null && assignedType.getType() != lastType)
         {
-            report_error("neispravan tip promenljive koja se dodeljuje "+ StructToTypeName(lastType) +" = "+ StructToTypeName(assignedType.getType()) +"("+assignLocation+")",null );
+            report_error("neispravan tip promenljive koja se dodeljuje "+ UtilFunctions.StructToTypeName(lastType) +" = "+ UtilFunctions.StructToTypeName(assignedType.getType()) +"("+assignLocation+")",null );
             return;
         }
         
-        if (lastType == null || lastType == Tab.noType)
-        {
-            report_error("Greska pri deklaraciji promenljive", null);
-            return; 
-        }
+        Tab.insert(objectKind, name, lastType);
         
-        Tab.insert(objectType, name, lastType);
+        if (isConst) ScopeEntityCounter.IncreaseConstVariableCount();
+        else ScopeEntityCounter.IncreaseVariableCount();
         
-        if (isConst) IncreaseConstVariableCount();
-        else IncreaseVariableCount();
-        
-        report_info("Definisana promenljiva " + name + " tipa: "+StructToTypeName(lastType)+ " na liniji "+nameLocation, null);
+        report_info("Definisana promenljiva " + name + " tipa: "+UtilFunctions.StructToTypeName(lastType)+ " na liniji "+nameLocation, null);
     }
 
     // Overloading
@@ -230,7 +103,7 @@ parser code {:
         }
         
         lastClass = Tab.insert(Obj.Type, className, new Struct(Struct.Class));
-        InScope(SCOPE.CLASS_SCOPE);
+        ScopeEntityCounter.InScope(ScopeEntityCounter.SCOPE.CLASS_SCOPE);
         Tab.openScope();
         classCount++;
         
@@ -249,7 +122,7 @@ parser code {:
        
         // if (!nestedScopes.empty() && nestedScopes.peek() == SCOPE.CLASS_SCOPE)
         {
-            OutOfCurrentScope();
+        	ScopeEntityCounter.OutOfCurrentScope();
             Tab.chainLocalSymbols(lastClass.getType());
             Tab.closeScope();
             lastClass = null;
@@ -289,7 +162,7 @@ parser code {:
                 return;
             }
 
-            InScope(SCOPE.MAIN_SCOPE);
+            ScopeEntityCounter.InScope(ScopeEntityCounter.SCOPE.MAIN_SCOPE);
             InsertMethod(methodName, methodLocation, type.getKind());
             Tab.openScope();
             lastMethType = type;
@@ -306,14 +179,14 @@ parser code {:
        }
        
        lastMethType = type;
-       InScope(SCOPE.METHOD_SCOPE);
+       ScopeEntityCounter.InScope(ScopeEntityCounter.SCOPE.METHOD_SCOPE);
        Tab.openScope();
     }
     
     void InsertMethod(String methodName, int methodLocation, int methodType)
     {
-           if (methodType == 7 ) IncreaseFunctionCount();
-           else IncreaseStaticFunctionCount();
+           if (methodType == 7 ) ScopeEntityCounter.IncreaseFunctionCount();
+           else ScopeEntityCounter.IncreaseStaticFunctionCount();
            lastType.setElementType(new Struct(methodType));
            lastMethod = Tab.insert(Obj.Meth, methodName, lastType);
            report_info("Ubacena metoda "+methodName+" u tabelu simbola na liniji "+ methodLocation,null );
@@ -334,7 +207,7 @@ parser code {:
     
     void HandleScopeEnd(Obj scopeName)
     {
-        OutOfCurrentScope();
+    	ScopeEntityCounter.OutOfCurrentScope();
         Tab.chainLocalSymbols(scopeName);
         Tab.closeScope();
     }
@@ -469,8 +342,8 @@ List<Struct> actParams= new LinkedList<Struct>();
 
         if (expr != null && expr.getKind() != parser.lastMethType.getKind())
         {
-            parser.report_error("Funkcija vraca tip "+ parser.StructToTypeName(expr) +" A mora vracati tip "+ 
-            parser.StructToTypeName(parser.lastMethod.getType()) + "("+returnLocation+")", null);
+            parser.report_error("Funkcija vraca tip "+ UtilFunctions.StructToTypeName(expr) +" A mora vracati tip "+ 
+            		UtilFunctions.StructToTypeName(parser.lastMethod.getType()) + "("+returnLocation+")", null);
         }
     }
     
@@ -505,7 +378,7 @@ int [] correctStructTypes = {Struct.Int, Struct.Char, Struct.None};
         if (IsObjectVarElemOrFieldError(designator, designatorLocation) &&
             IsStructIntCharOrNone(designator.getType(), designatorLocation))
          {
-            parser.IncreaseFunctionCallsCount(); 
+        	ScopeEntityCounter.IncreaseFunctionCallsCount(); 
          }
     }
     
@@ -546,8 +419,8 @@ int [] correctStructTypes = {Struct.Int, Struct.Char, Struct.None};
             return result;
         }
         
-       parser.report_error("Poslali ste tipove" + parser.StructToTypeName(parser.lastMethod.getType()) +
-            " i " + parser.StructToTypeName(term) + " a moraju biti int ("+resultLocation+")", null);
+       parser.report_error("Poslali ste tipove" + UtilFunctions.StructToTypeName(parser.lastMethod.getType()) +
+            " i " + UtilFunctions.StructToTypeName(term) + " a moraju biti int ("+resultLocation+")", null);
         return Tab.noObj;
     }
     
@@ -589,7 +462,7 @@ int [] correctStructTypes = {Struct.Int, Struct.Char, Struct.None};
                  return false;
              }
         }
-        parser.IncreaseFunctionCallsCount();
+        ScopeEntityCounter.IncreaseFunctionCallsCount();
         return true;
     }
     
@@ -599,8 +472,7 @@ int [] correctStructTypes = {Struct.Int, Struct.Char, Struct.None};
      
         if(parser.lastMethod != null) 
         {
-          if(parser.nestedScopes.empty() || parser.nestedScopes.peek() != SCOPE.CLASS_METHOD_SCOPE ||
-          parser.lastMethod.getType().getElemType().getKind() == STATIC)
+          if(!ScopeEntityCounter.IsInClassScope() || parser.lastMethod.getType().getElemType().getKind() == STATIC)
           {
                parser.report_error("This se moze navoditi samo u nestatickim metodama ("+nameLocation+")", null);
           }
@@ -703,9 +575,9 @@ VarDeclList ::= VarDeclList COMMA Var
                 ;
 
 Var ::= IDENT:name LBRACK RBRACK  
-        {: parser.IncreaseVariableCount();
-            if (parser.nestedScopes.empty()) {
-                    parser.globalVarCount++;
+        {: ScopeEntityCounter.IncreaseVariableCount();
+            if (ScopeEngine.IsInGlobalScope()) {
+                    // parser.globalVarCount++;
                       if( Tab.currentScope.findSymbol(name) != null)
                       parser.report_error(" " + name + " vec deklarisano", nameleft);
                       else {
@@ -715,7 +587,7 @@ Var ::= IDENT:name LBRACK RBRACK
                           }    
                 }
                 else
-             if(parser.nestedScopes.peek() == SCOPE.MAIN_SCOPE) {
+             if(ScopeEngine.IsInMainScope()) {
                     //parser.localVarCount++;
                     if( Tab.currentScope.findSymbol(name) != null)
                       parser.report_error(" " + name + " vec deklarisano", nameleft);
@@ -724,7 +596,7 @@ Var ::= IDENT:name LBRACK RBRACK
                                 Tab.insert(Obj.Var, name, new Struct(Struct.Array, parser.lastType));
                               parser.report_info("Definisana lokalna promenljiva " + name + " tipa "+Struct.Array+" na liniji " + nameleft, null);
                           }
-                } else if(parser.nestedScopes.peek() == SCOPE.METHOD_SCOPE) {
+                } else if(ScopeEngine.IsInMethodScope()) {
                     if( Tab.currentScope.findSymbol(name) != null)
                       parser.report_error(" " + name + " vec deklarisano", nameleft);
                       else {
@@ -732,7 +604,7 @@ Var ::= IDENT:name LBRACK RBRACK
                               Tab.insert(Obj.Var, name, new Struct(Struct.Array, parser.lastType));
                               parser.report_info("Definisana lokalna promenljiva " + name + " tipa: "+Struct.Array+" na liniji " + nameleft, null);
                           }
-                } else if(parser.nestedScopes.peek() == SCOPE.CLASS_SCOPE) {
+                } else if(ScopeEngine.IsInClassScope()) {
                     //parser.varClassDeclCount++;
                     if( Tab.currentScope.findSymbol(name) != null)
                       parser.report_error(" " + name + " vec deklarisano", nameleft);
@@ -828,7 +700,7 @@ FormParamsOpt:numOfParams RPAREN MethodVarDeclListOpt LBRACE StatementListOpt RB
     {
         parser.report_error("Fali vam povratna vrednost funkcije!",null);
     }
-    Code.mainPc = lastMethod.getAdr();
+    Code.mainPc = parser.lastMethod.getAdr();
     parser.MethodEnding();
    parser.returnHappend = false;
 :};
@@ -970,7 +842,7 @@ Statement ::=   DesignatorStatement SEMI
                 {: 
                 if (IsStructIntCharOrNone(expr, exprleft))
                 {
-                    parser.IncreaseFunctionCallsCount(); 
+                	ScopeEntityCounter.IncreaseFunctionCallsCount(); 
                      if (expr.getKind() == Struct.Char ) {
                     Code.loadConst(width);
                     Code.put(Code.bprint);
@@ -1170,7 +1042,7 @@ Designator ::= IDENT:name
                 {:
                   if(name.equals("this")) {
                     if(parser.lastMethod != null) {
-                        if(parser.nestedScopes.empty() || parser.nestedScopes.peek() != SCOPE.CLASS_METHOD_SCOPE ||
+                        if(ScopeEngine.IsInGlobalScope() || !ScopeEngine.IsInClassMethodScope() ||
                         parser.lastMethod.getType().getElemType().getKind() == STATIC)
                         {
                          parser.report_error("this moze postojati samo u nestatickim metodama", nameleft);
@@ -1630,7 +1502,7 @@ Factor ::=  Designator:designator
             :}
             | Designator:designator  LPAREN ActParsListOpt:params RPAREN
             {:
-                parser.IncreaseFunctionCallsCount();
+            	ScopeEntityCounter.IncreaseFunctionCallsCount();
                 if (designator.getKind() != Obj.Meth)
                 { 
                     parser.report_error("Funkcija nije deklarisana",designatorleft);
