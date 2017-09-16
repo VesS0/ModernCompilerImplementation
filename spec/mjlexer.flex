@@ -91,11 +91,12 @@ import java_cup.runtime.Symbol;
 ";" 		{ return new_symbol(sym.SEMI, yytext()); }
 "," 		{ return new_symbol(sym.COMMA, yytext()); }
 "." 		{ return new_symbol(sym.DOT, yytext()); }
-/*
+
 "#"         { return new_symbol(sym.HASHTAG, yytext()); }
 "->"        { return new_symbol(sym.ARROW, yytext()); }
-"*"         { return new_symbol(sym.STAR, yytext()); }
-*/
+"'*'"         { return new_symbol(sym.STAR, yytext()); }
+":"         { return new_symbol(sym.DOTDOT, yytext()); }
+
 "true" 		{ return new_symbol(sym.BOOL, new Boolean(yytext())); }
 "false" 	{ return new_symbol(sym.BOOL, new Boolean(yytext())); }
 "'"."'" 	{ return new_symbol(sym.CHAR, new Character (yytext().charAt(1))); }
