@@ -1198,7 +1198,7 @@ DesignatorIdent ::=  DOT IDENT:name
                             RESULT = lastDesignator = new Obj(Obj.Elem, backupDesig.getName(), backupDesig.getType().getElemType(), backupDesig.getAdr(), backupDesig.getLevel());
                         else
                             RESULT = lastDesignator = Tab.noObj; 
-                    //}
+                    }//
                 }
                 
             :}
