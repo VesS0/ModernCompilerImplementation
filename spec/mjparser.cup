@@ -1015,20 +1015,20 @@ Designator ::= IDENT:name
                                 lastDesignator = o1;
                     }
                     else {
-                            Obj found = null;  
+                            Obj acquired = null;  
                             if(parser.extendedClass != null) {
                                 for (Obj o2 : parser.extendedClass.getType().getMembers()) {
                                     if(o2.getName().equals(name))
-                                        found = o2;  
+                                    	acquired = o2;  
                                 }
                             }
-                            if(found != null) {
-                                if(found.getType().getKind() == Struct.Array) {  
-                                    lastDesignator = found;
+                            if(acquired != null) {
+                                if(acquired.getType().getKind() == Struct.Array) {  
+                                    lastDesignator = acquired;
                                     if(lastDesignator != null && lastDesignator.getType() != null)
                                         classFields = lastDesignator.getType().getMembers();
                                 }
-                                o1 = found;
+                                o1 = acquired;
                             } else   
                                 parser.report_error("" + name + "nije nadjeno "+nameleft,null );
                         }  
@@ -1073,22 +1073,22 @@ DesignatorIdent ::=  DOT IDENT:name
                                 }
                                 else { // ako koristimo this a nema ga u toj klasi, proveravamo da li je klasa izvedena
                                       // i ima li u osnovnoj onda
-                                    Obj found = null;
+                                    Obj acquired = null;
                                     if(parser.extendedClass != null) {
                                          for (Obj o1 : parser.extendedClass.getType().getMembers()) {
                                             if(o1.getName().equals(name))
-                                                 found = o1;
+                                            	acquired = o1;
                                         }
                                     }
-                                    if(found != null) {
-                                        if(found.getKind() != Obj.Meth) {
+                                    if(acquired != null) {
+                                        if(acquired.getKind() != Obj.Meth) {
                                              parser.report_error(": za klasu se mogu pozvati samo staticke metode", nameleft);
                                             lastDesignator = Tab.noObj;
-                                        } else if(found.getType().getElemType().getKind() != 6) {
+                                        } else if(acquired.getType().getElemType().getKind() != 6) {
                                              parser.report_error(": za klasu se mogu pozvati samo staticke metode", nameleft);
                                             lastDesignator = Tab.noObj; 
                                         } else { 
-                                            lastDesignator = found;
+                                            lastDesignator = acquired;
                                          }
                                     } else {
                                         parser.report_error("(this." + name + ") nije nadjeno", nameleft);
@@ -1096,21 +1096,21 @@ DesignatorIdent ::=  DOT IDENT:name
                                     } 
                                 } 
                             } else { 
-                                Obj found = null;
+                                Obj acquired = null;
                                 if(lastDesignator != null) {
                                     for (Obj o : lastDesignator.getType().getMembers()) { //pronalazimo u klasi ovaj naziv
                                          if(o.getName().equals(name)) 
-                                            found = o;
+                                        	 acquired = o;
                                     }
-                                    if(found != null){  
-                                        if(found.getKind() != Obj.Meth) {  
+                                    if(acquired != null){  
+                                        if(acquired.getKind() != Obj.Meth) {  
                                             parser.report_error(": za klasu se mogu pozvati samo staticke metode", nameleft);   
                                             lastDesignator = Tab.noObj; 
-                                         } else if(found.getType().getElemType().getKind() != 6) {  
+                                         } else if(acquired.getType().getElemType().getKind() != 6) {  
                                             parser.report_error(": za klasu se mogu pozvati samo staticke metode", nameleft); 
                                             lastDesignator = Tab.noObj;  
                                         } else {
-                                            lastDesignator = found; 
+                                            lastDesignator = acquired; 
                                          }
                                      } else {
                                         parser.report_error("(" + lastDesignator.getName() + "." + name + ") nije nadjeno", nameleft);  
@@ -1138,39 +1138,42 @@ DesignatorIdent ::=  DOT IDENT:name
                          }
                         else { // ako koristimo this a nema ga u toj klasi, proveravamo da li je klasa izvedena
                               // i ima li u osnovnoj onda
-                             Obj found = null;
+                             Obj acquired = null;
                               if(parser.extendedClass != null) {
                                 for (Obj o1 : parser.extendedClass.getType().getMembers()) {
                                     if(o1.getName().equals(name))
-                                          found = o1;
+                                    	acquired = o1;
                                 }
                             }
-                              if(found != null) {  
-                                 if(found.getType().getKind() == Struct.Array) {   
-                                      lastDesignator = found;  
+                              if(acquired != null) {  
+                                 if(acquired.getType().getKind() == Struct.Array) {   
+                                      lastDesignator = acquired;  
                                     if(lastDesignator != null && lastDesignator.getType() != null)
                                           classFields = lastDesignator.getType().getMembers();  
                                 }
-                                   lastDesignator = found;
+                                   lastDesignator = acquired;
                             } else
                                  parser.report_error("(this." + name + ") nije nadjeno", nameleft);  
                         }
                     } else {
-                        Obj found = null;
+                        Obj acquired = null;
                         if(lastDesignator != null) {
                             for (Obj o : lastDesignator.getType().getMembers()) { //pbb ronalazimb o u kb lasi ov vajv  naziv v
                                 if(o.getName().equals(name))
-                                    found = o;
+                                	acquired = o;
                             }   
-                            if(found != null){
-                                if(found.getType().getKind() == Struct.Array) { 
-                                     lastDesignator = found;
+                            if(acquired == null) 
+                            	 parser.report_error("(" + lastDesignator.getName() + "." + name + ") nije nadjeno", nameleft);   
+                            else
+                            {
+                                if(acquired.getType().getKind() == Struct.Array) { 
+                                     lastDesignator = acquired;
                                     if(lastDesignator != null && lastDesignator.getType() != null) 
                                         classFields = lastDesignator.getType().getMembers();
                                 }
-                                lastDesignator = found; 
-                            } else
-                                parser.report_error("(" + lastDesignator.getName() + "." + name + ") nije nadjeno", nameleft);   
+                                lastDesignator = acquired; 
+                            }
+                               
                         }  
                     }
                     isThisSpecified = false;    
@@ -1292,31 +1295,31 @@ Expression ::= SUB AddopTermCombList:result
             :}
             ;
 
-AddopTermCombList ::=   AddopTermList:atl
+AddopTermCombList ::=   AddopTermList:addo
                     
                     {:
-                    if(atl.getKind() == Obj.Elem) {
+                    if(addo.getKind() == Obj.Elem) {
                                 Code.put(Code.dup2);
                                 Code.put(Code.dup2); 
                             }
-                            if(atl.getKind() != Obj.Con) 
-                    Code.load(atl); 
+                            if(addo.getKind() != Obj.Con) 
+                    Code.load(addo); 
                     :}
                     
                      AddopRight:op  AddopTermCombList:atcl  
                         {:
                         Code.put((int)op);   
-                            Code.store(atl);   
-                            Code.load(atl);  
-                        if(atl.getKind() != Obj.Var && atl.getKind()!= Obj.Fld && atl.getKind() != Obj.Elem)  
+                            Code.store(addo);   
+                            Code.load(addo);  
+                        if(addo.getKind() != Obj.Var && addo.getKind()!= Obj.Fld && addo.getKind() != Obj.Elem)  
                                 {  
-                                parser.report_error(" " + atl.getName() + " mora oznacavati  promenljivu, element niza ili polje objekta unutrasnje objekta", atlleft);  
+                                parser.report_error(" " + addo.getName() + " mora oznacavati  promenljivu, element niza ili polje objekta unutrasnje objekta", addoleft);  
                                 RESULT = Tab.noType;   
                                 }  
                             else{
-                                if(atl.getType().getKind() != Struct.Int)  // jj 
+                                if(addo.getType().getKind() != Struct.Int)  // jj 
                                     {   
-                                    parser.report_error(" mora biti int ", atlleft);  
+                                    parser.report_error(" mora biti int ", addoleft);  
                                     RESULT = Tab.noType;  
                                     }
                                 else{
@@ -1326,19 +1329,19 @@ AddopTermCombList ::=   AddopTermList:atl
                                         RESULT = Tab.noType;  
                                     }
                                     else{
-                                        RESULT = atl.getType(); 
+                                        RESULT = addo.getType(); 
                                     }
                                 }
                             }
                         :}
                         |
-                        AddopTermList:atl 
+                        AddopTermList:addo 
                         {:
-                        if(atl != null)
+                        if(addo != null)
                         {
-                        RESULT = atl.getType(); 
-                        if(atl.getKind() == Obj.Var || atl.getKind() == Obj.Elem) 
-                            Code.load(atl);
+                        RESULT = addo.getType(); 
+                        if(addo.getKind() == Obj.Var || addo.getKind() == Obj.Elem) 
+                            Code.load(addo);
                         }
                         else
                         RESULT = Tab.noType;
