@@ -6,7 +6,12 @@ This includes 4 parts:
   3. Semnatic Analysis
   4. Code generation
 
-Details of all things that are implemented are located here:
+Details of all things that are implemented are located [here](https://github.com/VesS0/ModernCompilerImplementation/blob/ModernJavaCompiler/pp1-1617-jul.pdf)
+
 (Note: Not all things are implemented, but most  things from A and B part, and some from C)
+
+Running of lexer generator, parser generator and DisASM is located [here](https://github.com/VesS0/ModernCompilerImplementation/blob/ModernJavaCompiler/ProgramCompilers1_Documentation.pdf)
+
+
 
 All code is in branch ModernJavaCompiler
