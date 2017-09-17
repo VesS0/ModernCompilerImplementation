@@ -94,8 +94,8 @@ import java_cup.runtime.Symbol;
 
 "#"         { return new_symbol(sym.HASHTAG, yytext()); }
 "->"        { return new_symbol(sym.ARROW, yytext()); }
-"'*'"         { return new_symbol(sym.STAR, yytext()); }
 ":"         { return new_symbol(sym.DOTDOT, yytext()); }
+"**"        { return new_symbol(sym.STARSTAR, yytext()); }
 
 "true" 		{ return new_symbol(sym.BOOL, new Boolean(yytext())); }
 "false" 	{ return new_symbol(sym.BOOL, new Boolean(yytext())); }

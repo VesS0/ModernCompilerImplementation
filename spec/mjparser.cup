@@ -500,7 +500,7 @@ terminal Integer NUMBER;
 terminal char CHAR;
 terminal Boolean BOOL;
 terminal String IDENT;
-terminal HASHTAG, STAR, DOTDOT, ARROW;
+terminal HASHTAG, STARSTAR, DOTDOT, ARROW;
 
 
 non terminal ClassDecl, ClassVarDecl, ClassVarDeclListOpt;
@@ -1288,6 +1288,50 @@ Expression ::= SUB AddopTermCombList:result
                      parser.report_error("izraz nakon minusa mora biti tipa int", resultleft); // 
                 }
                 Code.put(Code.neg);
+            :}
+			| Designator:designator STARSTAR
+			{: 
+				 if (IsObjectVarElemOrFieldError(designator, designatorleft))
+                 {
+                     if(designator.getType().getKind() != Struct.Int)
+                     {
+                         parser.report_error("Prilikom STARSTAR " + designator.getName() + " mora biti int ", designatorleft);
+                     }else
+                     {
+                     	if(designator.getKind() == Obj.Elem)
+                     		Code.put(Code.dup2);
+                     	Code.load(designator);
+                     	Code.put(Code.dup);
+                     	Code.put(Code.dup2);
+	                    Code.put(Code.mul);
+	                    Code.put(Code.mul);
+	                    Code.store(designator);
+                     }
+                 }
+				RESULT = Tab.intType;
+            :}
+            | STARSTAR Designator:designator
+            {: 
+				 if (IsObjectVarElemOrFieldError(designator, designatorleft))
+                 {
+                     if(designator.getType().getKind() != Struct.Int)
+                     {
+                         parser.report_error("Prilikom STARSTAR " + designator.getName() + " mora biti int ", designatorleft);
+                     }else
+                     {
+                     	if(designator.getKind() == Obj.Elem)
+                     		Code.put(Code.dup2);
+                     	Code.load(designator);
+                     	Code.put(Code.dup);
+                     	Code.put(Code.dup);
+	                    Code.put(Code.mul);
+	                    Code.put(Code.mul);
+	                    Code.put(Code.dup);
+	                    Code.store(designator);
+                     }
+                 }
+
+            	RESULT = Tab.intType;
             :}
             | AddopTermCombList:result
             {:
