@@ -1,0 +1,7 @@
+/MJCompiler/bin/
+/MJCompiler/logs/
+/MJCompiler/.metadata/
+/.metadata/
+/MJCompiler/src/rs/ac/bg/etf/pp1/ast/
+/MJCompiler/src/rs/ac/bg/etf/pp1/sym.java
+/MJCompiler/src/rs/ac/bg/etf/pp1/MJParser.java
