@@ -1,0 +1,171 @@
+package rs.ac.bg.etf.pp1;
+
+import java_cup.runtime.*;
+import org.apache.log4j.*;
+
+// import java.io.*;
+import rs.ac.bg.etf.pp1.ast.*;
+
+
+parser code {:
+	boolean errorDetected = false;
+	Logger log = Logger.getLogger(getClass());
+
+    // following redefined methods are used for redefinition of error messages 
+    public void report_fatal_error(String message, Object info) throws java.lang.Exception {
+      done_parsing();
+      report_error(message, info);
+    }
+
+    public void syntax_error(Symbol cur_token) {
+        report_error("\nSintaksna greska", cur_token);
+    }
+  
+    public void unrecovered_syntax_error(Symbol cur_token) throws java.lang.Exception {
+        report_fatal_error("Fatalna greska, parsiranje se ne moze nastaviti", cur_token);
+    }
+
+    public void report_error(String message, Object info) {
+    	errorDetected = true;
+    	StringBuilder msg = new StringBuilder(message); 
+    	if (info instanceof Symbol)
+            msg.append (" na liniji ").append(((Symbol)info).left);
+        log.error(msg.toString());
+    }
+    
+    public void report_info(String message, Object info) {
+    	StringBuilder msg = new StringBuilder(message); 
+    	if (info instanceof Symbol)
+            msg.append (" na liniji ").append(((Symbol)info).left);
+        log.info(msg.toString());
+    }
+:}
+
+scan with {:
+	// Scanner is called for getting new token from lexical analyzator
+	// Here we can intercept token fetching in order to do something with token
+	
+	Symbol s = this.getScanner().next_token();
+	if (s != null && s.value != null) 
+		log.info(s.toString() + " " + s.value.toString());
+	return s;
+:}
+
+/* Unused */
+terminal FOR, STATIC, EXTENDS, IF, ELSE, DOT, DOTDOT, NOT_EQUAL, ARROW, VOID, ASSIGN_ADD, ASSIGN_SUB, AND, EQUAL, ASSIGN_DIV;
+terminal BREAK, STARSTAR, GREATER, ASSIGN_MUL, ASSIGN_MOD, LESS_EQUAL, GREATER_EQUAL, CLASS, HASHTAG, CONTINUE, OR,LESS;
+/* Unused */
+
+terminal PROG, LBRACE, RBRACE, LPAREN, RPAREN, LBRACK, RBRACK, DEC, INC, SEMI, COMMA, ASSIGN;
+terminal ADD, SUB, MUL, DIV, MOD, CHAR, BOOL, NEW, CONST;
+terminal READ, PRINT, RETURN;
+terminal Integer NUMBER;
+terminal String IDENT;
+
+nonterminal rs.etf.pp1.symboltable.concepts.Obj Program, ProgramName, Designator;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct Type, Term, Expr, Factor, OptVarDeclList;
+
+
+nonterminal Statement, DesignatorStatement, ExprOrError;
+nonterminal OptTermAddopList, OptFactorMulopList, VarDecl, OptBrackExpr;
+nonterminal Addop, Mulop, OptPostfixOperation, OptCommaNumber, OptConst; 
+nonterminal OptArrayIndexer, OptArrayBrackets, Const;
+
+/* July 2017/2018 Addition for level A */
+nonterminal rs.etf.pp1.symboltable.concepts.Obj MethodDecl;
+nonterminal OptMethodDeclList, FormalParam, FormalParamList, FormalParamDecl, OptFormalParamList, OptStatementList;
+nonterminal OptActualParamList, OptMultipleActualParamList, ActualParamList;
+nonterminal MethodTypeName, MethodReturnType, Var, SemiCommaVarDecl;
+/* End A  */
+
+Program ::= (Program) PROG ProgramName:progName OptVarDeclList LBRACE OptMethodDeclList RBRACE ;
+
+ProgramName ::= (ProgramName) IDENT:pName;
+
+Statement ::= 	(DesignatorStmt) DesignatorStatement SEMI |
+				(ReadStmt) READ LPAREN Designator RPAREN SEMI |
+				(PrintStmt) PRINT LPAREN Expr OptCommaNumber RPAREN SEMI |
+				(ReturnVoid) RETURN SEMI |
+				(ReturnExpr) RETURN Expr:returnType SEMI
+				;
+
+OptCommaNumber ::= (CommaNumber) COMMA NUMBER | (NoCommaNumber) /* epsilon */ ;
+
+DesignatorStatement ::= (AssignmentStmt) Designator ASSIGN ExprOrError |
+						(PostfixStmt) Designator OptPostfixOperation |
+						(ProcCall)  Designator:funcName LPAREN OptActualParamList RPAREN
+						;
+
+ExprOrError ::= Expr | error:err {: parser.log.debug("Error successfully recovered in expression after assign operator before \";\"  on line " + errleft); :} ;
+
+OptPostfixOperation ::= (DecOperation) DEC  | (IncOperation) INC | (NoPosfixOperation) /* epsilon */ ;
+
+Expr ::= (TermAddopListExpr) SUB Term OptTermAddopList |
+		 (TermAddopListExprNoSub) Term OptTermAddopList
+		 | (FuncCall) Designator LPAREN OptActualParamList RPAREN /* optionally move down */
+		 ;
+
+OptTermAddopList ::= (TermAddopList) Addop Term OptTermAddopList | (NoTerm) /* epsilon */ ;
+
+Term::= (Term) Factor OptFactorMulopList ;
+
+OptFactorMulopList::= (FactorMulopList) Mulop Factor OptFactorMulopList | (NoFactor) /* epsilon */ ;
+
+Factor ::=  (ConstVar) Const |
+			(ParenExpr) LPAREN Expr RPAREN |
+			(NewType) NEW Type OptBrackExpr |
+			(DefinedVariable) Designator OptPostfixOperation /* |(FuncCall) Designator LPAREN OptActualParamList RPAREN */ ;
+
+Const ::= 	(ConstNum) NUMBER | 
+			(ConstChar) CHAR |
+			(ConstBool) BOOL ;
+
+OptBrackExpr ::= (BrackExpr) LBRACK Expr RBRACK | (NoBrackExpr) /* epsilon */ ;
+
+Designator ::= (DesignatorSimple) IDENT OptArrayIndexer ;
+
+OptArrayIndexer ::= (ArrayIndexer) LBRACK Expr RBRACK | (NoArrayIndexer) /* epsilon */ ;
+
+Addop ::= (AddopAdd) ADD | (AddopSub) SUB ;
+
+Mulop ::= (MulopMul) MUL | (MulopDiv) DIV | (MulopMod) MOD ;
+
+OptVarDeclList ::= (VarDeclList) VarDecl OptVarDeclList | (NoVarDecl) /*ERROR COMMA VarDecl | */ /* epsilon */ ;
+
+VarDecl ::= (VarDecl) OptConst Type:varType Var ;
+
+OptConst ::= (ConstType) CONST | (NotConstType) /* epsilon */ ;
+
+Var ::= (VarList) IDENT:varName OptArrayBrackets SemiCommaVarDecl |
+(ParamDefinitionError) error:err {: parser.log.debug("Error successfully recovered in variable definition before \",\" or \";\" on line " + errleft); :}  SemiCommaVarDecl 
+;
+
+SemiCommaVarDecl ::= (Semi) SEMI | (CommaVarDecl) COMMA Var ;
+
+OptArrayBrackets ::= (ArrayType) LBRACK RBRACK | (NoBrack) /* epsilon */ ;
+
+Type ::= (Type) IDENT:typeName ;
+
+/* July 2017/2018 Addition for level A */
+
+MethodDecl ::= (MethodDecl) MethodTypeName LPAREN OptFormalParamList RPAREN OptVarDeclList LBRACE OptStatementList RBRACE ;
+
+MethodTypeName ::= (MethodTypeName) MethodReturnType:retType IDENT:methodName ;
+
+MethodReturnType ::= (MethodReturnType) OptConst Type OptArrayBrackets;
+
+OptMethodDeclList ::= (MethodDeclList) MethodDecl OptMethodDeclList | (NoMethodDecl) /* epsilon */ ;
+
+OptFormalParamList ::= (FormalParamListOpt) FormalParamList | (NoFormalParam) /* epsilon */ ;
+
+FormalParamList ::= (FormalParamDeclList) FormalParamDecl COMMA FormalParamList | (SingleFormalParamDecl) FormalParamDecl ;
+
+FormalParamDecl ::= (FormalParamDecl) OptConst Type IDENT ;
+
+OptStatementList ::= (StatementList) Statement OptStatementList | (NoStatement) /* epsilon */ ;
+
+OptActualParamList ::= (ActualParams) ActualParamList | (NoActualParams) /* epsilon */ ;
+
+ActualParamList ::= (MultipleActualParams) Expr COMMA ActualParamList | (ActualParam) Expr /* epsilon */ ;
+
+/* End A  */

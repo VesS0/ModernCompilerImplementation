@@ -1,0 +1,21 @@
+program MJprogram
+	int x,y;		
+{      
+ 	void main(){
+ 	
+ 	
+ 		// Comments. should . ".' be ingored ds 323 .32 /* \
+ 		x = 3, y = 0;
+ 		y = ((x*2 + y++) - 8)/2 + 4;
+ 		x = y++; 
+ 		y = (y++ + 1);
+ 		y = ((y-1)+3) % 2;
+ 		t = new int[];
+ 		// String Vesic = "Vesic.", Vladimir = "Vladimir";
+ 		print(Vesic);
+ 		read(Vladimir);
+ 		
+ 		/* Lexer error not expected */
+ 		// \ExpectedError
+ 	}
+}
