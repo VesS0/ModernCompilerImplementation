@@ -2,10 +2,11 @@ package rs.ac.bg.etf.pp1;
 
 import java_cup.runtime.*;
 import org.apache.log4j.*;
+import rs.etf.pp1.symboltable.concepts.*;
+import java.lang.Boolean;
 
 // import java.io.*;
 import rs.ac.bg.etf.pp1.ast.*;
-
 
 parser code {:
 	boolean errorDetected = false;
@@ -57,8 +58,10 @@ terminal BREAK, STARSTAR, GREATER, ASSIGN_MUL, ASSIGN_MOD, LESS_EQUAL, GREATER_E
 /* Unused */
 
 terminal PROG, LBRACE, RBRACE, LPAREN, RPAREN, LBRACK, RBRACK, DEC, INC, SEMI, COMMA, ASSIGN;
-terminal ADD, SUB, MUL, DIV, MOD, CHAR, BOOL, NEW, CONST;
+terminal ADD, SUB, MUL, DIV, MOD, NEW, CONST;
 terminal READ, PRINT, RETURN;
+terminal Boolean BOOL;
+terminal char CHAR;
 terminal Integer NUMBER;
 terminal String IDENT;
 
@@ -67,15 +70,15 @@ nonterminal rs.etf.pp1.symboltable.concepts.Struct Type, Term, Expr, Factor, Opt
 
 
 nonterminal Statement, DesignatorStatement, ExprOrError;
-nonterminal OptTermAddopList, OptFactorMulopList, VarDecl, OptBrackExpr;
+nonterminal TermAddopList, FactorMulopList, VarDecl, OptBrackExpr;
 nonterminal Addop, Mulop, OptPostfixOperation, OptCommaNumber, OptConst; 
-nonterminal OptArrayIndexer, OptArrayBrackets, Const;
+nonterminal OptArray, OptArrayBrackets, Const;
 
 /* July 2017/2018 Addition for level A */
 nonterminal rs.etf.pp1.symboltable.concepts.Obj MethodDecl;
 nonterminal OptMethodDeclList, FormalParam, FormalParamList, FormalParamDecl, OptFormalParamList, OptStatementList;
-nonterminal OptActualParamList, OptMultipleActualParamList, ActualParamList;
-nonterminal MethodTypeName, MethodReturnType, Var, SemiCommaVarDecl;
+nonterminal OptArgumentParamList, ArgumentParamList;
+nonterminal MethodTypeName, MethodReturnType, VarList, SemiCommaVarList;
 /* End A  */
 
 Program ::= (Program) PROG ProgramName:progName OptVarDeclList LBRACE OptMethodDeclList RBRACE ;
@@ -83,89 +86,88 @@ Program ::= (Program) PROG ProgramName:progName OptVarDeclList LBRACE OptMethodD
 ProgramName ::= (ProgramName) IDENT:pName;
 
 Statement ::= 	(DesignatorStmt) DesignatorStatement SEMI |
-				(ReadStmt) READ LPAREN Designator RPAREN SEMI |
-				(PrintStmt) PRINT LPAREN Expr OptCommaNumber RPAREN SEMI |
+				(ReadStmt) READ LPAREN Designator:designator RPAREN SEMI |
+				(PrintStmt) PRINT LPAREN Expr:expr OptCommaNumber:width RPAREN SEMI |
 				(ReturnVoid) RETURN SEMI |
 				(ReturnExpr) RETURN Expr:returnType SEMI
 				;
 
-OptCommaNumber ::= (CommaNumber) COMMA NUMBER | (NoCommaNumber) /* epsilon */ ;
+OptCommaNumber ::= (CommaNumber) COMMA NUMBER:num | (NoCommaNumber) /* epsilon */ ;
 
-DesignatorStatement ::= (AssignmentStmt) Designator ASSIGN ExprOrError |
-						(PostfixStmt) Designator OptPostfixOperation |
-						(ProcCall)  Designator:funcName LPAREN OptActualParamList RPAREN
+DesignatorStatement ::= (AssignmentStmt) Designator:designator ASSIGN ExprOrError:expr |
+						(PostfixStmt) Designator:designator OptPostfixOperation |
+						(ProcCall)  Designator:funcName LPAREN OptArgumentParamList:args RPAREN
 						;
 
-ExprOrError ::= Expr | error:err {: parser.log.debug("Error successfully recovered in expression after assign operator before \";\"  on line " + errleft); :} ;
+ExprOrError ::= Expr:expr | error:err {: parser.log.debug("Error successfully recovered in expression after assign operator before \";\"  on line " + errleft); :} ;
 
 OptPostfixOperation ::= (DecOperation) DEC  | (IncOperation) INC | (NoPosfixOperation) /* epsilon */ ;
 
-Expr ::= (TermAddopListExpr) SUB Term OptTermAddopList |
-		 (TermAddopListExprNoSub) Term OptTermAddopList
-		 | (FuncCall) Designator LPAREN OptActualParamList RPAREN /* optionally move down */
+Expr ::= (TermAddopListExprSub) SUB TermAddopList:res |
+		 (TermAddopListExpr) TermAddopList:res |
+		 (FuncCall) Designator:designator LPAREN OptArgumentParamList:args RPAREN /* optionally move down */
 		 ;
 
-OptTermAddopList ::= (TermAddopList) Addop Term OptTermAddopList | (NoTerm) /* epsilon */ ;
+TermAddopList ::= (TermAddops) Term Addop:op TermAddopList:res |  (SingleTerm) Term:res ;
 
-Term::= (Term) Factor OptFactorMulopList ;
+Term::= (Term) FactorMulopList:res ;
 
-OptFactorMulopList::= (FactorMulopList) Mulop Factor OptFactorMulopList | (NoFactor) /* epsilon */ ;
+FactorMulopList::= (FactorMulops) Factor:fact Mulop:op FactorMulopList:res | (SingleFactor) Factor:res ;
 
-Factor ::=  (ConstVar) Const |
-			(ParenExpr) LPAREN Expr RPAREN |
-			(NewType) NEW Type OptBrackExpr |
-			(DefinedVariable) Designator OptPostfixOperation /* |(FuncCall) Designator LPAREN OptActualParamList RPAREN */ ;
+Factor ::=  (ConstVar) Const:val |
+			(ParenExpr) LPAREN Expr:expr RPAREN |
+			(NewType) NEW Type:creationType OptArray:arrayLength |
+			(DefinedVariable) Designator:designator OptPostfixOperation:op /* |(FuncCall) Designator LPAREN OptArgumentParamList RPAREN */ ;
 
-Const ::= 	(ConstNum) NUMBER | 
-			(ConstChar) CHAR |
-			(ConstBool) BOOL ;
+Const ::= 	(ConstNum) NUMBER:numm | 
+			(ConstChar) CHAR:charr |
+			(ConstBool) BOOL:booll ;
 
-OptBrackExpr ::= (BrackExpr) LBRACK Expr RBRACK | (NoBrackExpr) /* epsilon */ ;
+ /* OptBrackExpr ::= (BrackExpr) LBRACK Expr:val RBRACK | (NoBrackExpr)  epsilon ; */
 
-Designator ::= (DesignatorSimple) IDENT OptArrayIndexer ;
+Designator ::= (DesignatorSimple) IDENT:designatorName OptArray:arrayIndex ;
 
-OptArrayIndexer ::= (ArrayIndexer) LBRACK Expr RBRACK | (NoArrayIndexer) /* epsilon */ ;
+OptArray ::= (ArrayIndexer) LBRACK Expr:val RBRACK | (NoArrayIndexer) /* epsilon */ ;
 
 Addop ::= (AddopAdd) ADD | (AddopSub) SUB ;
 
 Mulop ::= (MulopMul) MUL | (MulopDiv) DIV | (MulopMod) MOD ;
 
-OptVarDeclList ::= (VarDeclList) VarDecl OptVarDeclList | (NoVarDecl) /*ERROR COMMA VarDecl | */ /* epsilon */ ;
+OptVarDeclList ::= (VarDeclList) VarDecl OptVarDeclList | (NoVarDecl) /* epsilon */ ;
 
-VarDecl ::= (VarDecl) OptConst Type:varType Var ;
+VarDecl ::= (VarDecl) OptConst Type:varType VarList:list ;
 
 OptConst ::= (ConstType) CONST | (NotConstType) /* epsilon */ ;
 
-Var ::= (VarList) IDENT:varName OptArrayBrackets SemiCommaVarDecl |
-(ParamDefinitionError) error:err {: parser.log.debug("Error successfully recovered in variable definition before \",\" or \";\" on line " + errleft); :}  SemiCommaVarDecl 
-;
+VarList ::= (Vars) IDENT:varName OptArrayBrackets:isArray /* here insert! */ SemiCommaVarList |
+(ParamDefinitionError) error:err
+{: parser.log.debug("Error successfully recovered in variable definition before \",\" or \";\" on line " + errleft); :}
+SemiCommaVarList ;
 
-SemiCommaVarDecl ::= (Semi) SEMI | (CommaVarDecl) COMMA Var ;
+SemiCommaVarList ::= (Semi) SEMI | (CommaVarDecl) COMMA VarList ;
 
-OptArrayBrackets ::= (ArrayType) LBRACK RBRACK | (NoBrack) /* epsilon */ ;
+OptArrayBrackets ::= (ArrayType) LBRACK RBRACK | (SimpleType) /* epsilon */ ;
 
 Type ::= (Type) IDENT:typeName ;
 
 /* July 2017/2018 Addition for level A */
 
-MethodDecl ::= (MethodDecl) MethodTypeName LPAREN OptFormalParamList RPAREN OptVarDeclList LBRACE OptStatementList RBRACE ;
-
-MethodTypeName ::= (MethodTypeName) MethodReturnType:retType IDENT:methodName ;
-
-MethodReturnType ::= (MethodReturnType) OptConst Type OptArrayBrackets;
-
 OptMethodDeclList ::= (MethodDeclList) MethodDecl OptMethodDeclList | (NoMethodDecl) /* epsilon */ ;
 
-OptFormalParamList ::= (FormalParamListOpt) FormalParamList | (NoFormalParam) /* epsilon */ ;
+MethodDecl ::= (MethodDecl) MethodTypeName:signature LPAREN OptFormalParamList:numOfParams RPAREN OptVarDeclList LBRACE OptStatementList RBRACE ;
 
-FormalParamList ::= (FormalParamDeclList) FormalParamDecl COMMA FormalParamList | (SingleFormalParamDecl) FormalParamDecl ;
+MethodTypeName ::= (MethodTypeName) OptConst:isConst Type:retType OptArrayBrackets:isArray IDENT:methodName ;
 
-FormalParamDecl ::= (FormalParamDecl) OptConst Type IDENT ;
+OptFormalParamList ::= (FormalParamListOpt) FormalParamList:formalParams | (NoFormalParam) /* epsilon */ ;
+
+FormalParamList ::= (FormalParamDeclList) FormalParamDecl:param COMMA FormalParamList:formalParams | (SingleFormalParamDecl) FormalParamDecl:param ;
+
+FormalParamDecl ::= (FormalParamDecl) OptConst:isConst Type:paramType IDENT:paramName ;
 
 OptStatementList ::= (StatementList) Statement OptStatementList | (NoStatement) /* epsilon */ ;
 
-OptActualParamList ::= (ActualParams) ActualParamList | (NoActualParams) /* epsilon */ ;
+OptArgumentParamList ::= (ArgumentParams) ArgumentParamList | (NoArgumentParams) /* epsilon */ ;
 
-ActualParamList ::= (MultipleActualParams) Expr COMMA ActualParamList | (ActualParam) Expr /* epsilon */ ;
+ArgumentParamList ::= (MultipleArgumentParams) Expr:expr COMMA ArgumentParamList:args | (ArgumentParam) Expr:expr ;
 
 /* End A  */
