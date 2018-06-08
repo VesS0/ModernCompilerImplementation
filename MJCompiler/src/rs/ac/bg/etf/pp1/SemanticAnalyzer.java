@@ -19,16 +19,16 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		errorDetected = true;
 		StringBuilder msg = new StringBuilder(message);
 		int line = (info == null) ? 0: info.getLine();
-		if (line != 0)
-			msg.append (" na liniji ").append(line);
+		// if (line != 0)
+			//msg.append (" na liniji ").append(line);
 		log.error(msg.toString());
 	}
 
 	public void report_info(String message, SyntaxNode info) {
 		StringBuilder msg = new StringBuilder(message); 
 		int line = (info == null) ? 0: info.getLine();
-		if (line != 0)
-			msg.append (" na liniji ").append(line);
+		//if (line != 0)
+			// msg.append (" na liniji ").append(line);
 		log.info(msg.toString());
 	}
 	
@@ -146,8 +146,8 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		{
 			report_error(
 					"Semantic Error on line " + Designator.getLine() +
-					" : Name " + Designator.getDesignatorName() +
-					" is not declared! ", Designator);
+					" : Name \"" + Designator.getDesignatorName() +
+					"\" is not declared! ", Designator);
 			Designator.obj = Tab.noObj;
 			return;
 		} 
@@ -306,7 +306,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	@Override
 	public void visit(MethodDecl MethodDecl) {
 		if (!returnFound && currentMethod.getType() != Tab.noType) {
-			report_error("Semantic Error on line " + MethodDecl.getLine() + ": function " + currentMethod.getName() + " doesn't have return expression!", MethodDecl);
+			report_error("Semantic Error on line " + MethodDecl.getLine() + ": function \"" + currentMethod.getName() + "\" doesn't have return expression!", MethodDecl);
 			return;
 		}
 		
@@ -338,12 +338,12 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		Obj typeNode = Tab.find(Type.getTypeName());
 		
 		if (typeNode == Tab.noObj) {
-			report_error("Semnatic Error on line "+ Type.getLine() + " : Type " + Type.getTypeName() + " not found in symbol table ", Type);
+			report_error("Semnatic Error on line "+ Type.getLine() + " : Type \"" + Type.getTypeName() + "\" not found in symbol table ", Type);
 			return;
 		}
 		
 		if (Obj.Type != typeNode.getKind()) {
-			report_error("Semantic Error on line "+ Type.getLine() + " : Name "+ Type.getTypeName() + " does not represent type", Type);
+			report_error("Semantic Error on line "+ Type.getLine() + " : Name \""+ Type.getTypeName() + "\" does not represent type", Type);
 			return;
 		}
 		
@@ -519,7 +519,9 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		}
 		
 		FactorMulops.struct = Tab.noType;
-		report_error("Semantic Error on line "+ FactorMulops.getLine()+" : incompatible types in multiplication expression ", FactorMulops);
+		report_error("Semantic Error on line "+ FactorMulops.getLine() +
+				" : incompatible types in multiplication expression ( " +factor + " and mul " + factorMulList + " )"
+				, FactorMulops);
 	}
 
 	@Override
@@ -544,7 +546,8 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		}
 		
 		TermAddops.struct = Tab.noType;
-		report_error("Semantic Error on line "+ TermAddops.getLine()+" : incompatible types in addition expression ", TermAddops);
+		report_error("Semantic Error on line "+ TermAddops.getLine() +
+				" : incompatible types in addition expression ( " +term + " and sum " + termSumList + " )", TermAddops);
 	}
 
 	@Override
@@ -552,7 +555,8 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		Obj function = FuncCall.getDesignator().obj;
 		if (Obj.Meth != function.getKind())
 		{
-			report_error("Semantic Error on line " + FuncCall.getLine()+" : " + function.getName() + " is not a function!", FuncCall);
+			report_error("Semantic Error on line " + FuncCall.getLine() +
+					" : \"" + function.getName() + "\" is not a function! ( It is of kind "+ function.getKind(), FuncCall);
 			FuncCall.struct = Tab.noType;
 			return;
 		}
@@ -601,7 +605,8 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	public void visit(AssignmentStmt AssignmentStmt) {
 		if (!AssignmentStmt.getExprOrError().struct.assignableTo(AssignmentStmt.getDesignator().obj.getType()))
 		{
-			report_error("Semantic Error on line " + AssignmentStmt.getLine() + " : incompatible types in assignment ", AssignmentStmt);
+			report_error("Semantic Error on line " + AssignmentStmt.getLine() +" : incompatible types in assignment ("+
+					AssignmentStmt.getExprOrError().struct + " is not assignable to " + AssignmentStmt.getDesignator().obj.getType(), AssignmentStmt);
 		}
 	}
 
@@ -626,7 +631,8 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	public void visit(ReturnExpr ReturnExpr) {
 		returnFound = true;
 		if (!currentMethod.getType().compatibleWith(ReturnExpr.getExpr().struct) ) {
-			report_error("Semantic Error on line " + ReturnExpr.getLine() + " : " + " type of expression in return statement is incompatible with return value type of method " + currentMethod.getName(), ReturnExpr);
+			report_error("Semantic Error on line " + ReturnExpr.getLine() + " : " + " Type of expression in return statement is incompatible with return value type of method " + currentMethod.getName() +
+						"( Return expression of type " + ReturnExpr.getExpr().struct.getKind() + ", current method needs type "+ currentMethod.getType().getKind(), ReturnExpr);
 		}
 	}
 
