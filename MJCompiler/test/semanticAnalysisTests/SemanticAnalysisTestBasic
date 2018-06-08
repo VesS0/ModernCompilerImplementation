@@ -1,0 +1,71 @@
+program MJProgram
+	int global, globalComma;
+	int globalArray[], glovalInt, globalArray2[];
+{
+	
+	int retConstNum()
+	int a,b;
+	{
+		return 1;
+	}
+	
+	bool retConstBool(int i, bool p, char c)
+	{
+		return false;
+	}
+	
+	const int retConstChar()
+	{
+		return 'a';
+	}
+	
+	const int[] retNew()
+	{
+		return new int;
+	}
+	
+	int retArrayElement(int t, const int g)
+	const int a[], b;
+	{
+		return a[t];
+	}
+	
+	int k () int c;
+	int t; 
+	int g[];
+	{
+		g = new int[4];
+		g[1] = 1;
+		g[2] = 'c';
+		g[3] = false;
+
+		// return c + 2; not working, failing right after +
+		t = 1;
+		read(c);
+		t;
+		t++;
+		c = (1 + 4*3) - 2%2 + t++/2 + t--;
+		retConstNum();
+
+		print(t--, 1);
+		print(g[3]+3);
+		print(retConstNum());
+		
+		c = (retConstNum()) + 3; // Function calls per specification should only work when they are alone surrounded 
+		// by left and right parenthessis.
+		// Example: c = retConstNum() + 3; is not working neither it is expected
+		// Not expected to work:
+		// retConstNum()[2];
+		// retConstNum()--;
+		// retConstNum() = 2;
+		// 2[3]
+		retArrayElement(2, c);
+		return c + 2 - (retConstNum());
+	}
+	
+	int ErrorRecoveryParameter()
+	{
+		t = t + 2 - 4;
+		t = -3;
+	}
+}

@@ -27,8 +27,11 @@ public class MJParserTest {
 		String objectFilePath, sourceFilePath;
 		if (args.length < 2) {
 			log.error("Not enough arguments supplied! Usage: MJParser <source-file> <obj-file> ");
-			sourceFilePath = "test/parserTests/ParserTestBasic";
-			objectFilePath = "test/ParserTestBasic.obj";
+			// sourceFilePath = "test/parserTests/ParserTestBasic";
+			// objectFilePath = "test/ParserTestBasic.obj";
+			
+			sourceFilePath = "test/semanticAnalysisTests/SemanticAnalysisTestBasic";
+			objectFilePath = "test/SemanticAnalysisTestBasic.obj";
 		}
 		else
 		{
@@ -52,18 +55,17 @@ public class MJParserTest {
 	        SyntaxNode prog = (SyntaxNode)(s.value);
 	 
 	        log.info("Prog = " + prog.toString());
-	        log.info("Symb = " + s.toString());
-	        /*       
+	        log.info("Symb = " + s.toString());      
 	        
 	        
 			Tab.init(); // Universe scope
 			
-			SemanticPass semanticCheck = new SemanticPass();
+			SemanticAnalyzer semanticCheck = new SemanticAnalyzer();
 			prog.traverseBottomUp(semanticCheck);
 			
-	        log.info("Print calls = " + semanticCheck.printCallCount);
+	        log.info("Semantic Error Detected = " + semanticCheck.isErrorDetected());
 	        Tab.dump();
-	        
+	        /*
 	        if (!p.errorDetected && semanticCheck.passed()) {
 	        	
 	        	File objFile = new File(objectFilePath);

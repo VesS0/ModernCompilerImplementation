@@ -4,9 +4,13 @@ import org.apache.log4j.Logger;
 import rs.ac.bg.etf.pp1.ast.*;
 import rs.etf.pp1.symboltable.Tab;
 import rs.etf.pp1.symboltable.concepts.Obj;
+import rs.etf.pp1.symboltable.concepts.Struct;
 
 public class SemanticAnalyzer extends VisitorAdaptor {
 	boolean errorDetected = false;
+	Obj currentMethod = null;
+	Struct currentVarDeclTypeStruct = null;
+	boolean returnFound = false;
 	int nVars;
 	
 	Logger log = Logger.getLogger(getClass());
@@ -27,12 +31,27 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			msg.append (" na liniji ").append(line);
 		log.info(msg.toString());
 	}
+	
+	public boolean isErrorDetected() {
+		return errorDetected;
+	}
+	
+	@Override
+	public void visit(ProgramName ProgramName) {
+		ProgramName.obj = Tab.insert(Obj.Prog, ProgramName.getPName(), Tab.noType);
+		Tab.openScope(); 
+	}
 
+	@Override
+	public void visit(Program Program) {
+		nVars = Tab.currentScope.getnVars();
+		Tab.chainLocalSymbols(Program.getProgramName().obj);
+		Tab.closeScope();
+	}
 
 	@Override
 	public void visit(ExprOrError ExprOrError) {
-		// TODO Auto-generated method stub
-		super.visit(ExprOrError);
+		// ExprOrError.struct = ExprOrError.getExpr();
 	}
 
 	@Override
@@ -60,15 +79,21 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 
 	@Override
-	public void visit(OptFactorMulopList OptFactorMulopList) {
+	public void visit(OptArray OptArray) {
 		// TODO Auto-generated method stub
-		super.visit(OptFactorMulopList);
+		super.visit(OptArray);
 	}
 
 	@Override
-	public void visit(Var Var) {
+	public void visit(OptArgumentParamList OptArgumentParamList) {
 		// TODO Auto-generated method stub
-		super.visit(Var);
+		super.visit(OptArgumentParamList);
+	}
+
+	@Override
+	public void visit(SemiCommaVarList SemiCommaVarList) {
+		// TODO Auto-generated method stub
+		super.visit(SemiCommaVarList);
 	}
 
 	@Override
@@ -102,27 +127,45 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 
 	@Override
+	public void visit(VarList VarList) {
+		// TODO Auto-generated method stub
+		super.visit(VarList);
+	}
+
+	@Override
+	public void visit(TermAddopList TermAddopList) {
+		// TODO Auto-generated method stub
+		super.visit(TermAddopList);
+	}
+
+	@Override
 	public void visit(Designator Designator) {
-		// TODO Auto-generated method stub
-		super.visit(Designator);
+		Obj obj = Tab.find(Designator.getDesignatorName());
+
+		if (Tab.noObj == obj)
+		{
+			report_error(
+					"Semantic Error on line " + Designator.getLine() +
+					" : Name " + Designator.getDesignatorName() +
+					" is not declared! ", Designator);
+			Designator.obj = Tab.noObj;
+			return;
+		} 
+		/*else if (Struct.Array == obj.getType().getKind() && !Designator.getOptArray().struct.getType().getKind())
+		{
+			report_error(
+					"Semantic Error on line " + Designator.getLine() +
+					" : Name " + Designator.getDesignatorName() +
+					" is an array ", Designator);
+			return;
+		}*/
+		Designator.obj = obj;
 	}
 
 	@Override
-	public void visit(OptTermAddopList OptTermAddopList) {
+	public void visit(ArgumentParamList ArgumentParamList) {
 		// TODO Auto-generated method stub
-		super.visit(OptTermAddopList);
-	}
-
-	@Override
-	public void visit(ActualParamList ActualParamList) {
-		// TODO Auto-generated method stub
-		super.visit(ActualParamList);
-	}
-
-	@Override
-	public void visit(OptArrayIndexer OptArrayIndexer) {
-		// TODO Auto-generated method stub
-		super.visit(OptArrayIndexer);
+		super.visit(ArgumentParamList);
 	}
 
 	@Override
@@ -150,12 +193,6 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 
 	@Override
-	public void visit(SemiCommaVarDecl SemiCommaVarDecl) {
-		// TODO Auto-generated method stub
-		super.visit(SemiCommaVarDecl);
-	}
-
-	@Override
 	public void visit(DesignatorStatement DesignatorStatement) {
 		// TODO Auto-generated method stub
 		super.visit(DesignatorStatement);
@@ -165,6 +202,12 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	public void visit(Const Const) {
 		// TODO Auto-generated method stub
 		super.visit(Const);
+	}
+
+	@Override
+	public void visit(FactorMulopList FactorMulopList) {
+		// TODO Auto-generated method stub
+		super.visit(FactorMulopList);
 	}
 
 	@Override
@@ -186,39 +229,27 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 
 	@Override
-	public void visit(OptMultipleActualParamList OptMultipleActualParamList) {
+	public void visit(ArgumentParam ArgumentParam) {
 		// TODO Auto-generated method stub
-		super.visit(OptMultipleActualParamList);
+		super.visit(ArgumentParam);
 	}
 
 	@Override
-	public void visit(OptActualParamList OptActualParamList) {
+	public void visit(MultipleArgumentParams MultipleArgumentParams) {
 		// TODO Auto-generated method stub
-		super.visit(OptActualParamList);
+		super.visit(MultipleArgumentParams);
 	}
 
 	@Override
-	public void visit(ActualParam ActualParam) {
+	public void visit(NoArgumentParams NoArgumentParams) {
 		// TODO Auto-generated method stub
-		super.visit(ActualParam);
+		super.visit(NoArgumentParams);
 	}
 
 	@Override
-	public void visit(MultipleActualParams MultipleActualParams) {
+	public void visit(ArgumentParams ArgumentParams) {
 		// TODO Auto-generated method stub
-		super.visit(MultipleActualParams);
-	}
-
-	@Override
-	public void visit(NoActualParams NoActualParams) {
-		// TODO Auto-generated method stub
-		super.visit(NoActualParams);
-	}
-
-	@Override
-	public void visit(ActualParams ActualParams) {
-		// TODO Auto-generated method stub
-		super.visit(ActualParams);
+		super.visit(ArgumentParams);
 	}
 
 	@Override
@@ -264,6 +295,32 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 
 	@Override
+	public void visit(MethodTypeName MethodTypeName) {
+		currentMethod = Tab.insert(Obj.Meth, MethodTypeName.getMethodName(), MethodTypeName.getType().struct);
+
+		MethodTypeName.obj  = currentMethod;
+		Tab.openScope();
+		report_info("Processing function " + MethodTypeName.getMethodName(), MethodTypeName);
+	}
+
+	@Override
+	public void visit(MethodDecl MethodDecl) {
+		if (!returnFound && currentMethod.getType() != Tab.noType) {
+			report_error("Semantic Error on line " + MethodDecl.getLine() + ": function " + currentMethod.getName() + " doesn't have return expression!", MethodDecl);
+			return;
+		}
+		
+		assert(MethodDecl.getMethodTypeName().obj == currentMethod)
+			: "currentMethod should be same as object in MethodTypeName";
+		
+		Tab.chainLocalSymbols(MethodDecl.getMethodTypeName().obj);
+		Tab.closeScope();
+		
+		returnFound = false;
+		currentMethod = null;
+	}
+
+	@Override
 	public void visit(NoMethodDecl NoMethodDecl) {
 		// TODO Auto-generated method stub
 		super.visit(NoMethodDecl);
@@ -276,33 +333,27 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 
 	@Override
-	public void visit(MethodReturnType MethodReturnType) {
-		// TODO Auto-generated method stub
-		super.visit(MethodReturnType);
-	}
-
-	@Override
-	public void visit(MethodTypeName MethodTypeName) {
-		// TODO Auto-generated method stub
-		super.visit(MethodTypeName);
-	}
-
-	@Override
-	public void visit(MethodDecl MethodDecl) {
-		// TODO Auto-generated method stub
-		super.visit(MethodDecl);
-	}
-
-	@Override
 	public void visit(Type Type) {
-		// TODO Auto-generated method stub
-		super.visit(Type);
+		Type.struct = Tab.noType;
+		Obj typeNode = Tab.find(Type.getTypeName());
+		
+		if (typeNode == Tab.noObj) {
+			report_error("Semnatic Error on line "+ Type.getLine() + " : Type " + Type.getTypeName() + " not found in symbol table ", Type);
+			return;
+		}
+		
+		if (Obj.Type != typeNode.getKind()) {
+			report_error("Semantic Error on line "+ Type.getLine() + " : Name "+ Type.getTypeName() + " does not represent type", Type);
+			return;
+		}
+		
+		Type.struct = typeNode.getType();
 	}
 
 	@Override
-	public void visit(NoBrack NoBrack) {
+	public void visit(SimpleType SimpleType) {
 		// TODO Auto-generated method stub
-		super.visit(NoBrack);
+		super.visit(SimpleType);
 	}
 
 	@Override
@@ -330,9 +381,12 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 
 	@Override
-	public void visit(VarList VarList) {
-		// TODO Auto-generated method stub
-		super.visit(VarList);
+	public void visit(Vars Vars) {
+		// Is it array? Vars.getOptArrayBrackets();
+		// Is it const?
+		
+		report_info("Variable "+ Vars.getVarName() + " declared on line " + Vars.getLine(), Vars);
+		Obj varNode = Tab.insert(Obj.Var, Vars.getVarName(), currentVarDeclTypeStruct);
 	}
 
 	@Override
@@ -349,8 +403,9 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 	@Override
 	public void visit(VarDecl VarDecl) {
-		// TODO Auto-generated method stub
-		super.visit(VarDecl);
+		// Is it const? VarDecl.getOptConst();
+		// Get list here and insert all at this point? VarDecl.getVarList();
+		currentVarDeclTypeStruct = VarDecl.getType().struct;
 	}
 
 	@Override
@@ -403,26 +458,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 	@Override
 	public void visit(ArrayIndexer ArrayIndexer) {
-		// TODO Auto-generated method stub
-		super.visit(ArrayIndexer);
-	}
-
-	@Override
-	public void visit(DesignatorSimple DesignatorSimple) {
-		// TODO Auto-generated method stub
-		super.visit(DesignatorSimple);
-	}
-
-	@Override
-	public void visit(NoBrackExpr NoBrackExpr) {
-		// TODO Auto-generated method stub
-		super.visit(NoBrackExpr);
-	}
-
-	@Override
-	public void visit(BrackExpr BrackExpr) {
-		// TODO Auto-generated method stub
-		super.visit(BrackExpr);
+		ArrayIndexer.struct = ArrayIndexer.getExpr().struct;
 	}
 
 	@Override
@@ -468,51 +504,73 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 
 	@Override
-	public void visit(NoFactor NoFactor) {
-		// TODO Auto-generated method stub
-		super.visit(NoFactor);
+	public void visit(SingleFactor SingleFactor) {
+		SingleFactor.struct = SingleFactor.getFactor().struct;
 	}
 
 	@Override
-	public void visit(FactorMulopList FactorMulopList) {
-		// TODO Auto-generated method stub
-		super.visit(FactorMulopList);
+	public void visit(FactorMulops FactorMulops) {
+		Struct factor = FactorMulops.getFactor().struct;
+		Struct factorMulList = FactorMulops.getFactorMulopList().struct;
+		if (factor.equals(factorMulList) && factor == Tab.intType)
+		{
+			FactorMulops.struct = factor;
+			return;
+		}
+		
+		FactorMulops.struct = Tab.noType;
+		report_error("Semantic Error on line "+ FactorMulops.getLine()+" : incompatible types in multiplication expression ", FactorMulops);
 	}
 
 	@Override
 	public void visit(Term Term) {
-		// TODO Auto-generated method stub
-		super.visit(Term);
+		Term.struct = Term.getFactorMulopList().struct;
 	}
 
 	@Override
-	public void visit(NoTerm NoTerm) {
-		// TODO Auto-generated method stub
-		super.visit(NoTerm);
+	public void visit(SingleTerm SingleTerm) {
+		SingleTerm.struct = SingleTerm.getTerm().struct;
 	}
 
 	@Override
-	public void visit(TermAddopList TermAddopList) {
-		// TODO Auto-generated method stub
-		super.visit(TermAddopList);
+	public void visit(TermAddops TermAddops) {
+		Struct term = TermAddops.getTerm().struct;
+		Struct termSumList = TermAddops.getTermAddopList().struct;
+		
+		if (term.equals(termSumList) && term == Tab.intType)
+		{
+			TermAddops.struct = term;
+			return;
+		}
+		
+		TermAddops.struct = Tab.noType;
+		report_error("Semantic Error on line "+ TermAddops.getLine()+" : incompatible types in addition expression ", TermAddops);
 	}
 
 	@Override
 	public void visit(FuncCall FuncCall) {
-		// TODO Auto-generated method stub
-		super.visit(FuncCall);
-	}
-
-	@Override
-	public void visit(TermAddopListExprNoSub TermAddopListExprNoSub) {
-		// TODO Auto-generated method stub
-		super.visit(TermAddopListExprNoSub);
+		Obj function = FuncCall.getDesignator().obj;
+		if (Obj.Meth != function.getKind())
+		{
+			report_error("Semantic Error on line " + FuncCall.getLine()+" : " + function.getName() + " is not a function!", FuncCall);
+			FuncCall.struct = Tab.noType;
+			return;
+		}
+		
+		report_info("Function " + function.getName() + " call was found on line " + FuncCall.getLine(), FuncCall);
+		FuncCall.struct = function.getType();
 	}
 
 	@Override
 	public void visit(TermAddopListExpr TermAddopListExpr) {
 		// TODO Auto-generated method stub
 		super.visit(TermAddopListExpr);
+	}
+
+	@Override
+	public void visit(TermAddopListExprSub TermAddopListExprSub) {
+		// TODO Auto-generated method stub
+		super.visit(TermAddopListExprSub);
 	}
 
 	@Override
@@ -534,24 +592,6 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 
 	@Override
-	public void visit(ExprOrErrorDerived2 ExprOrErrorDerived2) {
-		// TODO Auto-generated method stub
-		super.visit(ExprOrErrorDerived2);
-	}
-
-	@Override
-	public void visit(ExprOrErrorDerived1 ExprOrErrorDerived1) {
-		// TODO Auto-generated method stub
-		super.visit(ExprOrErrorDerived1);
-	}
-
-	@Override
-	public void visit(ProcCall ProcCall) {
-		// TODO Auto-generated method stub
-		super.visit(ProcCall);
-	}
-
-	@Override
 	public void visit(PostfixStmt PostfixStmt) {
 		// TODO Auto-generated method stub
 		super.visit(PostfixStmt);
@@ -559,8 +599,10 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 	@Override
 	public void visit(AssignmentStmt AssignmentStmt) {
-		// TODO Auto-generated method stub
-		super.visit(AssignmentStmt);
+		if (!AssignmentStmt.getExprOrError().struct.assignableTo(AssignmentStmt.getDesignator().obj.getType()))
+		{
+			report_error("Semantic Error on line " + AssignmentStmt.getLine() + " : incompatible types in assignment ", AssignmentStmt);
+		}
 	}
 
 	@Override
@@ -571,14 +613,21 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 	@Override
 	public void visit(CommaNumber CommaNumber) {
-		// TODO Auto-generated method stub
-		super.visit(CommaNumber);
+		if (CommaNumber.getNum() <= 0)
+		{
+			CommaNumber.struct = Tab.noType;
+			return;
+		}
+		
+		CommaNumber.struct = Tab.intType;
 	}
 
 	@Override
 	public void visit(ReturnExpr ReturnExpr) {
-		// TODO Auto-generated method stub
-		super.visit(ReturnExpr);
+		returnFound = true;
+		if (!currentMethod.getType().compatibleWith(ReturnExpr.getExpr().struct) ) {
+			report_error("Semantic Error on line " + ReturnExpr.getLine() + " : " + " type of expression in return statement is incompatible with return value type of method " + currentMethod.getName(), ReturnExpr);
+		}
 	}
 
 	@Override
@@ -606,16 +655,26 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 
 	@Override
-	public void visit(ProgramName ProgramName) {
-		ProgramName.obj = Tab.insert(Obj.Prog, ProgramName.getPName(), Tab.noType);
-		Tab.openScope(); 
+	public void visit(ExprFuncCall ExprFuncCall) {
+		// TODO Auto-generated method stub
+		super.visit(ExprFuncCall);
 	}
 
 	@Override
-	public void visit(Program Program) {
-		nVars = Tab.currentScope.getnVars();
-		Tab.chainLocalSymbols(Program.getProgramName().obj);
-		Tab.closeScope();
+	public void visit(Err Err) {
+		// TODO Auto-generated method stub
+		super.visit(Err);
+	}
+
+	@Override
+	public void visit(Expression Expression) {
+		Expression.struct = Expression.getExpr().struct;
+	}
+
+	@Override
+	public void visit(StmtFuncCall StmtFuncCall) {
+		// TODO Auto-generated method stub
+		super.visit(StmtFuncCall);
 	}
 
 	@Override

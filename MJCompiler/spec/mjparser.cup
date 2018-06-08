@@ -53,11 +53,11 @@ scan with {:
 :}
 
 /* Unused */
-terminal FOR, STATIC, EXTENDS, IF, ELSE, DOT, DOTDOT, NOT_EQUAL, ARROW, VOID, ASSIGN_ADD, ASSIGN_SUB, AND, EQUAL, ASSIGN_DIV;
+terminal FOR, STATIC, EXTENDS, IF, ELSE, DOT, DOTDOT, NOT_EQUAL, ARROW, ASSIGN_ADD, ASSIGN_SUB, AND, EQUAL, ASSIGN_DIV;
 terminal BREAK, STARSTAR, GREATER, ASSIGN_MUL, ASSIGN_MOD, LESS_EQUAL, GREATER_EQUAL, CLASS, HASHTAG, CONTINUE, OR,LESS;
 /* Unused */
 
-terminal PROG, LBRACE, RBRACE, LPAREN, RPAREN, LBRACK, RBRACK, DEC, INC, SEMI, COMMA, ASSIGN;
+terminal PROG, LBRACE, RBRACE, LPAREN, RPAREN, LBRACK, RBRACK, DEC, INC, SEMI, COMMA, ASSIGN, VOID;
 terminal ADD, SUB, MUL, DIV, MOD, NEW, CONST;
 terminal READ, PRINT, RETURN;
 terminal Boolean BOOL;
@@ -65,20 +65,19 @@ terminal char CHAR;
 terminal Integer NUMBER;
 terminal String IDENT;
 
-nonterminal rs.etf.pp1.symboltable.concepts.Obj Program, ProgramName, Designator;
-nonterminal rs.etf.pp1.symboltable.concepts.Struct Type, Term, Expr, Factor, OptVarDeclList;
+nonterminal Obj Program, ProgramName, Designator;
+nonterminal Struct Type, Term, Expr, Factor, OptVarDeclList, TermAddopList, FactorMulopList, FuncCall, OptArray, OptArrayBrackets, OptCommaNumber, ExprOrError, OptCommaNumber;
 
-
-nonterminal Statement, DesignatorStatement, ExprOrError;
-nonterminal TermAddopList, FactorMulopList, VarDecl, OptBrackExpr;
-nonterminal Addop, Mulop, OptPostfixOperation, OptCommaNumber, OptConst; 
-nonterminal OptArray, OptArrayBrackets, Const;
+nonterminal Statement, DesignatorStatement;
+nonterminal VarDecl, OptBrackExpr;
+nonterminal Addop, Mulop, OptPostfixOperation, OptConst; 
+nonterminal Const;
 
 /* July 2017/2018 Addition for level A */
-nonterminal rs.etf.pp1.symboltable.concepts.Obj MethodDecl;
+nonterminal Obj MethodDecl, MethodTypeName;
 nonterminal OptMethodDeclList, FormalParam, FormalParamList, FormalParamDecl, OptFormalParamList, OptStatementList;
 nonterminal OptArgumentParamList, ArgumentParamList;
-nonterminal MethodTypeName, MethodReturnType, VarList, SemiCommaVarList;
+nonterminal VarList, SemiCommaVarList;
 /* End A  */
 
 Program ::= (Program) PROG ProgramName:progName OptVarDeclList LBRACE OptMethodDeclList RBRACE ;
@@ -96,16 +95,18 @@ OptCommaNumber ::= (CommaNumber) COMMA NUMBER:num | (NoCommaNumber) /* epsilon *
 
 DesignatorStatement ::= (AssignmentStmt) Designator:designator ASSIGN ExprOrError:expr |
 						(PostfixStmt) Designator:designator OptPostfixOperation |
-						(ProcCall)  Designator:funcName LPAREN OptArgumentParamList:args RPAREN
+						(StmtFuncCall)  FuncCall
 						;
 
-ExprOrError ::= Expr:expr | error:err {: parser.log.debug("Error successfully recovered in expression after assign operator before \";\"  on line " + errleft); :} ;
+FuncCall ::= (FuncCall) Designator:funcName LPAREN OptArgumentParamList:args RPAREN ;
+
+ExprOrError ::= (Expression) Expr:expr | (Err) error:err {: parser.log.debug("Error successfully recovered in expression after assign operator before \";\"  on line " + errleft); :} ;
 
 OptPostfixOperation ::= (DecOperation) DEC  | (IncOperation) INC | (NoPosfixOperation) /* epsilon */ ;
 
 Expr ::= (TermAddopListExprSub) SUB TermAddopList:res |
 		 (TermAddopListExpr) TermAddopList:res |
-		 (FuncCall) Designator:designator LPAREN OptArgumentParamList:args RPAREN /* optionally move down */
+		 (ExprFuncCall) FuncCall
 		 ;
 
 TermAddopList ::= (TermAddops) Term Addop:op TermAddopList:res |  (SingleTerm) Term:res ;
@@ -125,7 +126,7 @@ Const ::= 	(ConstNum) NUMBER:numm |
 
  /* OptBrackExpr ::= (BrackExpr) LBRACK Expr:val RBRACK | (NoBrackExpr)  epsilon ; */
 
-Designator ::= (DesignatorSimple) IDENT:designatorName OptArray:arrayIndex ;
+Designator ::= (Designator) IDENT:designatorName OptArray:arrayIndex ;
 
 OptArray ::= (ArrayIndexer) LBRACK Expr:val RBRACK | (NoArrayIndexer) /* epsilon */ ;
 
@@ -135,16 +136,16 @@ Mulop ::= (MulopMul) MUL | (MulopDiv) DIV | (MulopMod) MOD ;
 
 OptVarDeclList ::= (VarDeclList) VarDecl OptVarDeclList | (NoVarDecl) /* epsilon */ ;
 
-VarDecl ::= (VarDecl) OptConst Type:varType VarList:list ;
+VarDecl ::= (VarDecl) OptConst:isConst Type:varType VarList:list ;
 
 OptConst ::= (ConstType) CONST | (NotConstType) /* epsilon */ ;
 
-VarList ::= (Vars) IDENT:varName OptArrayBrackets:isArray /* here insert! */ SemiCommaVarList |
+VarList ::= (Vars) IDENT:varName OptArrayBrackets:isArray /* here insert! */ SemiCommaVarList:list |
 (ParamDefinitionError) error:err
 {: parser.log.debug("Error successfully recovered in variable definition before \",\" or \";\" on line " + errleft); :}
 SemiCommaVarList ;
 
-SemiCommaVarList ::= (Semi) SEMI | (CommaVarDecl) COMMA VarList ;
+SemiCommaVarList ::= (Semi) SEMI | (CommaVarDecl) COMMA VarList:list ;
 
 OptArrayBrackets ::= (ArrayType) LBRACK RBRACK | (SimpleType) /* epsilon */ ;
 
