@@ -90,5 +90,10 @@ program MJProgram
 	{
 		// Recvery t = t + 2 - 4;
 		// recovery t = -3;
+		return 0;
+	}
+	
+	void NoReturn()
+	{
 	}
 }

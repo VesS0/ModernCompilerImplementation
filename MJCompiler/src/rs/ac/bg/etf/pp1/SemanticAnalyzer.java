@@ -383,7 +383,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		// Is it array? Vars.getOptArrayBrackets();
 		// Is it const?
 		
-		report_info("Variable \""+ Vars.getVarName() + "\" declared on line " + Vars.getLine() + " of type " + currentDeclTypeStruct, Vars);
+		report_info("Variable \""+ Vars.getVarName() + "\" declared on line " + Vars.getLine(), Vars);
 		Obj varNode = Tab.insert(Obj.Var, Vars.getVarName(), currentDeclTypeStruct);
 	}
 
@@ -702,7 +702,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		// Is it const? VarDecl.getOptConst();
 		// Get list here and insert all at this point? VarDecl.getVarList();
 		currentDeclTypeStruct = VarType.getType().struct;
-		report_info("Type Changed! " + currentDeclTypeStruct.getKind(),null);
+		report_info("Type Changed! " + KindToName(currentDeclTypeStruct.getKind()),null);
 	}
 
 	@Override
