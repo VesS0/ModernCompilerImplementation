@@ -9,7 +9,7 @@ import rs.etf.pp1.symboltable.concepts.Struct;
 public class SemanticAnalyzer extends VisitorAdaptor {
 	boolean errorDetected = false;
 	Obj currentMethod = null;
-	Struct currentVarDeclTypeStruct = null;
+	Struct currentDeclTypeStruct = null;
 	boolean returnFound = false;
 	int nVars;
 	
@@ -383,8 +383,8 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		// Is it array? Vars.getOptArrayBrackets();
 		// Is it const?
 		
-		report_info("Variable \""+ Vars.getVarName() + "\" declared on line " + Vars.getLine(), Vars);
-		Obj varNode = Tab.insert(Obj.Var, Vars.getVarName(), currentVarDeclTypeStruct);
+		report_info("Variable \""+ Vars.getVarName() + "\" declared on line " + Vars.getLine() + " of type " + currentDeclTypeStruct, Vars);
+		Obj varNode = Tab.insert(Obj.Var, Vars.getVarName(), currentDeclTypeStruct);
 	}
 
 	@Override
@@ -401,9 +401,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 	@Override
 	public void visit(VarDecl VarDecl) {
-		// Is it const? VarDecl.getOptConst();
-		// Get list here and insert all at this point? VarDecl.getVarList();
-		currentVarDeclTypeStruct = VarDecl.getType().struct;
+		super.visit(VarDecl);
 	}
 
 	@Override
@@ -593,8 +591,8 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 	@Override
 	public void visit(AssignmentStmt AssignmentStmt) {
-		// For some reason if two expressions are of smae type, it stil lreturns false for assignable
-		if (//AssignmentStmt.getExprOrError().struct.getKind() != AssignmentStmt.getDesignator().obj.getType().getKind() &&
+		// For some reason if two expressions are of same type (Bool), it still returns false for assignable
+		if (AssignmentStmt.getExprOrError().struct.getKind() != AssignmentStmt.getDesignator().obj.getType().getKind() &&
 				!AssignmentStmt.getExprOrError().struct.assignableTo(AssignmentStmt.getDesignator().obj.getType()))
 		{
 			report_error("Semantic Error on line " + AssignmentStmt.getLine() +" : incompatible types in assignment ("+
@@ -697,6 +695,14 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		}
 		
 		NotVoidType.struct = typeNode.getType();
+	}
+
+	@Override
+	public void visit(VarType VarType) {
+		// Is it const? VarDecl.getOptConst();
+		// Get list here and insert all at this point? VarDecl.getVarList();
+		currentDeclTypeStruct = VarType.getType().struct;
+		report_info("Type Changed! " + currentDeclTypeStruct.getKind(),null);
 	}
 
 	@Override

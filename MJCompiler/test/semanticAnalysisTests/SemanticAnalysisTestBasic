@@ -69,10 +69,10 @@ program MJProgram
 		return c + 2 - (retConstNum());
 	}
 	
-	char arrayTesting()
+	char arrayTesting() // it depends on order. He thinks that if first row are chars
 	int a[],b[],c,d[];
-	char k[],g[],h,j[];
-	bool z[],x,c[],v[];
+	char k[],g[],h,j[]; // he thinks these are int hmm..
+	bool z[],x,c[],v[]; // he thinks these are char
 	{
 		c = 3;
 		b = new int[c];

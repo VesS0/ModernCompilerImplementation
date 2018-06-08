@@ -70,7 +70,7 @@ nonterminal rs.etf.pp1.symboltable.concepts.Struct Type, Term, Expr, Factor, Opt
 nonterminal rs.etf.pp1.symboltable.concepts.Struct Const;
 
 nonterminal Statement, DesignatorStatement;
-nonterminal VarDecl/*, OptBrackExpr*/;
+nonterminal VarDecl/*, OptBrackExpr*/, VarType;
 nonterminal Addop, Mulop, OptPostfixOperation, OptConst; 
 
 /* July 2017/2018 Addition for level A */
@@ -136,7 +136,9 @@ Mulop ::= (MulopMul) MUL | (MulopDiv) DIV | (MulopMod) MOD ;
 
 OptVarDeclList ::= (VarDeclList) VarDecl OptVarDeclList | (NoVarDecl) /* epsilon */ ;
 
-VarDecl ::= (VarDecl) OptConst:isConst Type:varType VarList:list ;
+VarDecl ::= (VarDecl) VarType VarList:list ;
+
+VarType ::= (VarType) OptConst:isConst Type:varType;
 
 OptConst ::= (ConstType) CONST | (NotConstType) /* epsilon */ ;
 
