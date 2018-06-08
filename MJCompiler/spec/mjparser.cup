@@ -65,17 +65,17 @@ terminal char CHAR;
 terminal Integer NUMBER;
 terminal String IDENT;
 
-nonterminal Obj Program, ProgramName, Designator;
-nonterminal Struct Type, Term, Expr, Factor, OptVarDeclList, TermAddopList, FactorMulopList, FuncCall, OptArray, OptArrayBrackets, OptCommaNumber, ExprOrError, OptCommaNumber;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj Program, ProgramName, Designator;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct Type, Term, Expr, Factor, OptVarDeclList, TermAddopList, FactorMulopList, FuncCall, OptArray, OptArrayBrackets, OptCommaNumber, ExprOrError;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct Const;
 
 nonterminal Statement, DesignatorStatement;
-nonterminal VarDecl, OptBrackExpr;
+nonterminal VarDecl/*, OptBrackExpr*/;
 nonterminal Addop, Mulop, OptPostfixOperation, OptConst; 
-nonterminal Const;
 
 /* July 2017/2018 Addition for level A */
-nonterminal Obj MethodDecl, MethodTypeName;
-nonterminal OptMethodDeclList, FormalParam, FormalParamList, FormalParamDecl, OptFormalParamList, OptStatementList;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj MethodDecl, MethodTypeName;
+nonterminal OptMethodDeclList/*, FormalParam*/, FormalParamList, FormalParamDecl, OptFormalParamList, OptStatementList;
 nonterminal OptArgumentParamList, ArgumentParamList;
 nonterminal VarList, SemiCommaVarList;
 /* End A  */
@@ -149,7 +149,7 @@ SemiCommaVarList ::= (Semi) SEMI | (CommaVarDecl) COMMA VarList:list ;
 
 OptArrayBrackets ::= (ArrayType) LBRACK RBRACK | (SimpleType) /* epsilon */ ;
 
-Type ::= (Type) IDENT:typeName ;
+Type ::= (NotVoidType) IDENT:typeName | (VoidType) VOID;
 
 /* July 2017/2018 Addition for level A */
 

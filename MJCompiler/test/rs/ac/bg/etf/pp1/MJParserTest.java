@@ -13,6 +13,8 @@ import rs.ac.bg.etf.pp1.ast.SyntaxNode;
 import rs.ac.bg.etf.pp1.util.Log4JUtils;
 import rs.etf.pp1.mj.runtime.Code;
 import rs.etf.pp1.symboltable.Tab;
+import rs.etf.pp1.symboltable.concepts.Obj;
+import rs.etf.pp1.symboltable.concepts.Struct;
 
 public class MJParserTest {
 
@@ -20,6 +22,10 @@ public class MJParserTest {
 		DOMConfigurator.configure(Log4JUtils.instance().findLoggerConfigFile());
 		Log4JUtils.instance().prepareLogFile(Logger.getRootLogger());
 	}
+	
+	// public static final int STATIC = 6;
+	public static final int Bool = 5;
+	public static final Struct boolType = new Struct(Struct.Bool);
 	
 	public static void main(String[] args) throws Exception {
 		Logger log = Logger.getLogger(Compiler.class);
@@ -59,6 +65,7 @@ public class MJParserTest {
 	        
 	        
 			Tab.init(); // Universe scope
+			Tab.currentScope.addToLocals(new Obj(Obj.Type, "bool", boolType));
 			
 			SemanticAnalyzer semanticCheck = new SemanticAnalyzer();
 			prog.traverseBottomUp(semanticCheck);
