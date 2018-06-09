@@ -80,7 +80,7 @@ program MJProgram
 		return;
 	}
 	
-	// void SameNameMethodDifferentSignature(){}
+	void SameNameMethodDifferentSignature(){}
 	// void SameNameMethodDifferentSignature(int a, int b){}
 	// int  SameNameMethodDifferentSignature() {return 1;}
 }

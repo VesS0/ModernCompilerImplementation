@@ -149,6 +149,15 @@ program MJProgram
 	{
 		notDeclaredVariable = 2;
 	}
+	int NoReturnFunctionError()
+	{
+	
+	}
+	
+	int ReturnWithNoTypeError()
+	{
+		return;
+	}
 	
 	void SameNameMethod() {}
 	void SameNameMethod() {}
