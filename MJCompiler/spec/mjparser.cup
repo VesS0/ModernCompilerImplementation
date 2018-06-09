@@ -33,13 +33,6 @@ parser code {:
             msg.append (" na liniji ").append(((Symbol)info).left);
         log.error(msg.toString());
     }
-    
-    public void report_info(String message, Object info) {
-    	StringBuilder msg = new StringBuilder(message); 
-    	if (info instanceof Symbol)
-            msg.append (" na liniji ").append(((Symbol)info).left);
-        log.info(msg.toString());
-    }
 :}
 
 scan with {:
@@ -94,7 +87,7 @@ Statement ::= 	(DesignatorStmt) DesignatorStatement SEMI |
 OptCommaNumber ::= (CommaNumber) COMMA NUMBER:num | (NoCommaNumber) /* epsilon */ ;
 
 DesignatorStatement ::= (AssignmentStmt) Designator:designator ASSIGN ExprOrError:expr |
-						(PostfixStmt) Designator:designator OptPostfixOperation |
+						(PostfixStmt) Designator:designator OptPostfixOperation:op |
 						(StmtFuncCall)  FuncCall
 						;
 
@@ -118,7 +111,9 @@ FactorMulopList::= (FactorMulops) Factor:fact Mulop:op FactorMulopList:res | (Si
 Factor ::=  (ConstVar) Const:val |
 			(ParenExpr) LPAREN Expr:expr RPAREN |
 			(NewType) NEW Type:creationType OptArray:arrayLength |
-			(DefinedVariable) Designator:designator OptPostfixOperation:op /* |(FuncCall) Designator LPAREN OptArgumentParamList RPAREN */ ;
+			(DefVarWithOptPostfixOp) Designator:designator OptPostfixOperation:op 
+			/* |(FuncCall) Designator LPAREN OptArgumentParamList RPAREN */ 
+			;
 
 Const ::= 	(ConstNum) NUMBER:numm | 
 			(ConstChar) CHAR:charr |

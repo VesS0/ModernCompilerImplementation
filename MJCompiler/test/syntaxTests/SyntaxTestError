@@ -50,4 +50,11 @@ program MJProgram
 		return 3;
 		return 2;
 	}
+	
+	int ErrorInParameterDeclAndAssignment()
+	int a,b;
+	int c,+;
+	{
+		a = +;
+	}
 }

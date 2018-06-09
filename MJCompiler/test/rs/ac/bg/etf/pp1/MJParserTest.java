@@ -77,7 +77,7 @@ public class MJParserTest {
 		        
 		        if (p.isSyntaxErrorDetected)
 		        {
-		        	log.info(" ******************************** /nSyntax Error Detected - further arsing stopped on file: "+ sourceFilePath[currentParsingFileIndex]);
+		        	log.info(" ******************************** /nSyntax Error Detected - further parsing stopped on file: "+ sourceFilePath[currentParsingFileIndex]);
 		        	continue;
 		        } else
 		        {

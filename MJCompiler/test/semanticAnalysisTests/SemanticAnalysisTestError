@@ -154,11 +154,18 @@ program MJProgram
 	
 	}
 	
-	int ReturnWithNoTypeError()
+	int ReturnWithNoTypeError(int a, int b, int c)
 	{
 		return;
 	}
 	
 	void SameNameMethod() {}
 	void SameNameMethod() {}
+	
+	char CharPostIncrement()
+	char a;
+	{
+		a--; // Statement
+		return a--; // Expression
+	}
 }

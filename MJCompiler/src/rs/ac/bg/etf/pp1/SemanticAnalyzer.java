@@ -11,6 +11,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	Obj currentMethod = null;
 	Struct currentDeclTypeStruct = null;
 	boolean returnFound = false;
+	boolean postfixOperationPresent = false;
 	int nVars;
 	
 	Logger log = Logger.getLogger(getClass());
@@ -35,22 +36,38 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	public boolean isErrorDetected() {
 		return errorDetected;
 	}
-	
-	final static int None = 0, Int = 1, Char = 2, Array = 3, Class = 4, Bool = 5;
-	
-	private static String KindToName(int kind)
+		
+	private static String StructKindToName(int kind)
 	{
 		switch (kind)
 		{
-			case None: return "None";
-			case Int: return "Int";
-			case Char: return "Char";
-			case Array: return "Array";
-			case Class: return "Class";
-			case Bool: return "Bool";
+			case Struct.None: return 	"Struct_None";
+			case Struct.Int: return 	"Struct_Int";
+			case Struct.Char: return 	"Struct_Char";
+			case Struct.Array: return 	"Struct_Array";
+			case Struct.Class: return 	"Struct_Class";
+			case Struct.Bool: return 	"Struct_Bool";
 		}
-		assert(false) : "We should always have some of existing Kinds sent in KindToName function";
+		assert(false) : "We should always have some of existing Kinds sent in StructKindToName function";
 		return "NoSuchKind";
+	}
+	
+	private static String ObjTypeToName(int type)
+	{
+		switch (type)
+		{
+			case Obj.Con: return 		"Obj_Con";
+			case Obj.Elem: return 		"Obj_Elem";
+			case Obj.Fld: return 		"Obj_Fld";
+			case Obj.Meth: return 		"Obj_Meth";
+			case Obj.NO_VALUE: return 	"Obj_NOVALUE";
+			case Obj.Prog: return 		"Obj_Prog";
+			case Obj.Type: return 		"Obj_Type";
+			case Obj.Var: return 		"Obj_Var";
+		}
+		
+		assert(false) : "We should always have some of existing Types sent in ObjTypeToName function";
+		return "NoSuchType";
 	}
 	
 	@Override
@@ -304,7 +321,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		
         if(Tab.currentScope.findSymbol(MethodTypeName.getMethodName()) != null)
         {
-              report_error("Semantic Error on line "+MethodTypeName.getLine() + " method named \"" + MethodTypeName.getMethodName() + "\" already exists", null);
+              report_error("Semantic Error method named \"" + MethodTypeName.getMethodName() + "\" already exists", null);
               currentMethod = MethodTypeName.obj = null;
               return;
         }
@@ -480,8 +497,20 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 
 	@Override
-	public void visit(DefinedVariable DefinedVariable) {
-		DefinedVariable.struct = DefinedVariable.getDesignator().obj.getType();
+	public void visit(DefVarWithOptPostfixOp DefVarWithOptPostfixOp) {
+		DefVarWithOptPostfixOp.struct = DefVarWithOptPostfixOp.getDesignator().obj.getType();
+		
+		if (postfixOperationPresent)
+		{
+			if ( (DefVarWithOptPostfixOp.getDesignator().obj.getKind() != Obj.Var &&
+					DefVarWithOptPostfixOp.getDesignator().obj.getKind() != Obj.Elem)
+					|| DefVarWithOptPostfixOp.getDesignator().obj.getType() != Tab.intType)
+			{
+				report_error("Semantic Error on line " + DefVarWithOptPostfixOp.getLine() + " : Postfix operation cannot be used on object of kind " +
+						ObjTypeToName(DefVarWithOptPostfixOp.getDesignator().obj.getKind()) + " and type "+ StructKindToName(DefVarWithOptPostfixOp.getDesignator().obj.getType().getKind()) , null);
+			}
+			postfixOperationPresent = false;
+		}
 	}
 
 	@Override
@@ -517,7 +546,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		
 		FactorMulops.struct = Tab.noType;
 		report_error("Semantic Error on line "+ FactorMulops.getLine() +
-				" : incompatible types in multiplication expression ( " + KindToName(factor.getKind()) + " and mul " + KindToName(factorMulList.getKind()) + " )"
+				" : incompatible types in multiplication expression ( " + StructKindToName(factor.getKind()) + " and mul " + StructKindToName(factorMulList.getKind()) + " )"
 				, FactorMulops);
 	}
 
@@ -544,7 +573,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		
 		TermAddops.struct = Tab.noType;
 		report_error("Semantic Error on line "+ TermAddops.getLine() +
-				" : incompatible types in addition expression ( " +KindToName(term.getKind()) + " and sum " + KindToName(termSumList.getKind()) + " )", TermAddops);
+				" : incompatible types in addition expression ( " +StructKindToName(term.getKind()) + " and sum " + StructKindToName(termSumList.getKind()) + " )", TermAddops);
 	}
 
 	@Override
@@ -553,7 +582,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		if (Obj.Meth != function.getKind())
 		{
 			report_error("Semantic Error on line " + FuncCall.getLine() +
-					" : \"" + function.getName() + "\" is not a function! (It is of kind "+ KindToName(function.getKind()) + ")", FuncCall);
+					" : \"" + function.getName() + "\" is not a function! (It is of kind "+ StructKindToName(function.getKind()) + ")", FuncCall);
 			FuncCall.struct = Tab.noType;
 			return;
 		}
@@ -574,26 +603,39 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 	@Override
 	public void visit(NoPosfixOperation NoPosfixOperation) {
+		postfixOperationPresent = false;
 		// TODO Auto-generated method stub
 		super.visit(NoPosfixOperation);
 	}
 
 	@Override
 	public void visit(IncOperation IncOperation) {
+		postfixOperationPresent = true;
 		// TODO Auto-generated method stub
 		super.visit(IncOperation);
 	}
 
 	@Override
 	public void visit(DecOperation DecOperation) {
+		postfixOperationPresent = true;
 		// TODO Auto-generated method stub
 		super.visit(DecOperation);
 	}
 
 	@Override
 	public void visit(PostfixStmt PostfixStmt) {
-		// TODO Auto-generated method stub
-		super.visit(PostfixStmt);
+		if (postfixOperationPresent)
+		{
+			if ( (PostfixStmt.getDesignator().obj.getKind() != Obj.Var &&
+					PostfixStmt.getDesignator().obj.getKind() != Obj.Elem)
+					|| PostfixStmt.getDesignator().obj.getType() != Tab.intType)
+			{
+				report_error("Semantic Error on line " + PostfixStmt.getLine() + " : Postfix operation cannot be used on object of kind " +
+						ObjTypeToName(PostfixStmt.getDesignator().obj.getKind()) + " and type "+ StructKindToName(PostfixStmt.getDesignator().obj.getType().getKind()) , null);
+			}
+			postfixOperationPresent = false;
+		}
+		
 	}
 
 	@Override
@@ -603,7 +645,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 				!AssignmentStmt.getExprOrError().struct.assignableTo(AssignmentStmt.getDesignator().obj.getType()))
 		{
 			report_error("Semantic Error on line " + AssignmentStmt.getLine() +" : incompatible types in assignment ("+
-					KindToName(AssignmentStmt.getExprOrError().struct.getKind()) + " is not assignable to " + KindToName(AssignmentStmt.getDesignator().obj.getType().getKind()) + " )", AssignmentStmt);
+					StructKindToName(AssignmentStmt.getExprOrError().struct.getKind()) + " is not assignable to " + StructKindToName(AssignmentStmt.getDesignator().obj.getType().getKind()) + " )", AssignmentStmt);
 		}
 	}
 
@@ -623,7 +665,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		if (currentMethod.getType().getKind() != ReturnExpr.getExpr().struct.getKind() &&
 				!currentMethod.getType().compatibleWith(ReturnExpr.getExpr().struct) ) {
 			report_error("Semantic Error on line " + ReturnExpr.getLine() + " : " + " Type of expression in return statement is incompatible with return value type of method " + currentMethod.getName() +
-						"( Return expression of type " + KindToName(ReturnExpr.getExpr().struct.getKind()) + ", current method needs type "+ KindToName(currentMethod.getType().getKind()) + ")", ReturnExpr);
+						"( Return expression of type " + StructKindToName(ReturnExpr.getExpr().struct.getKind()) + ", current method needs type "+ StructKindToName(currentMethod.getType().getKind()) + ")", ReturnExpr);
 		}
 		
 	}
@@ -715,7 +757,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		// Is it const? VarDecl.getOptConst();
 		// Get list here and insert all at this point? VarDecl.getVarList();
 		currentDeclTypeStruct = VarType.getType().struct;
-		report_info("Type Changed! " + KindToName(currentDeclTypeStruct.getKind()),null);
+		report_info("Type Changed! " + StructKindToName(currentDeclTypeStruct.getKind()),null);
 	}
 
 	@Override

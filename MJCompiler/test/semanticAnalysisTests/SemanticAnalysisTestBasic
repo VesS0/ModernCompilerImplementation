@@ -83,4 +83,23 @@ program MJProgram
 	void SameNameMethodDifferentSignature(){}
 	// void SameNameMethodDifferentSignature(int a, int b){}
 	// int  SameNameMethodDifferentSignature() {return 1;}
+	
+	int FunctionCalled(int a, int b, char c, bool d, int e, char f, bool g)
+	{
+		return a + b*e;
+	}
+	
+	int FunctionCaller()
+	int a,b,e;
+	bool d;
+	char c;
+	char f;
+	bool g;
+	{
+		a= 3;
+		d = true;
+		c = 'k';
+		
+		return FunctionCalled(a, 2, c, d, 2*a, 'c', false);
+	}
 }
