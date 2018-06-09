@@ -298,7 +298,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 	@Override
 	public void visit(FormalParamDecl FormalParamDecl) {
-		if (FormalParamDecl.getOptArray().struct.getKind() == Struct.Array)
+		if (FormalParamDecl.getOptArrayBrackets().bool)
 		{
 			Tab.insert(Obj.Var, FormalParamDecl.getParamName(), new Struct(Struct.Array, FormalParamDecl.getType().struct));
 		} else
@@ -309,6 +309,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 	@Override
 	public void visit(SingleFormalParamDecl SingleFormalParamDecl) {
+		// SingleFormalParamDecl.struct = SingleFormalParamDecl.getFormalParamDecl().struct;
 		// TODO Auto-generated method stub
 		super.visit(SingleFormalParamDecl);
 	}

@@ -69,7 +69,8 @@ nonterminal Boolean OptConst, OptArrayBrackets;
 
 /* July 2017/2018 Addition for level A */
 nonterminal rs.etf.pp1.symboltable.concepts.Obj MethodDecl, MethodTypeName;
-nonterminal OptMethodDeclList/*, FormalParam*/, FormalParamList, FormalParamDecl, OptFormalParamList, OptStatementList;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct FormalParamList, FormalParamDecl;
+nonterminal OptMethodDeclList/*, FormalParam*/, OptFormalParamList, OptStatementList;
 nonterminal OptArgumentParamList, ArgumentParamList;
 nonterminal VarList, SemiCommaVarList;
 /* End A  */
@@ -161,7 +162,7 @@ OptFormalParamList ::= (FormalParamListOpt) FormalParamList:formalParams | (NoFo
 
 FormalParamList ::= (FormalParamDeclList) FormalParamDecl:param COMMA FormalParamList:formalParams | (SingleFormalParamDecl) FormalParamDecl:param ;
 
-FormalParamDecl ::= (FormalParamDecl) OptConst:isConst Type:paramType IDENT:paramName OptArray:isArray ;
+FormalParamDecl ::= (FormalParamDecl) OptConst:isConst Type:paramType IDENT:paramName OptArrayBrackets:isArray ;
 
 OptStatementList ::= (StatementList) Statement OptStatementList | (NoStatement) /* epsilon */ ;
 
