@@ -84,90 +84,6 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 
 	@Override
-	public void visit(ExprOrError ExprOrError) {
-		// TODO Auto-generated method stub
-		super.visit(ExprOrError);
-	}
-
-	@Override
-	public void visit(OptFormalParamList OptFormalParamList) {
-		// TODO Auto-generated method stub
-		super.visit(OptFormalParamList);
-	}
-
-	@Override
-	public void visit(Mulop Mulop) {
-		// TODO Auto-generated method stub
-		super.visit(Mulop);
-	}
-
-	@Override
-	public void visit(OptConst OptConst) {
-		// TODO Auto-generated method stub
-		super.visit(OptConst);
-	}
-
-	@Override
-	public void visit(OptArrayBrackets OptArrayBrackets) {
-		// TODO Auto-generated method stub
-		super.visit(OptArrayBrackets);
-	}
-
-	@Override
-	public void visit(OptArray OptArray) {
-		// TODO Auto-generated method stub
-		super.visit(OptArray);
-	}
-
-	@Override
-	public void visit(OptArgumentParamList OptArgumentParamList) {
-		// TODO Auto-generated method stub
-		super.visit(OptArgumentParamList);
-	}
-
-	@Override
-	public void visit(SemiCommaVarList SemiCommaVarList) {
-		// TODO Auto-generated method stub
-		super.visit(SemiCommaVarList);
-	}
-
-	@Override
-	public void visit(Addop Addop) {
-		// TODO Auto-generated method stub
-		super.visit(Addop);
-	}
-
-	@Override
-	public void visit(OptVarDeclList OptVarDeclList) {
-		// TODO Auto-generated method stub
-		super.visit(OptVarDeclList);
-	}
-
-	@Override
-	public void visit(OptStatementList OptStatementList) {
-		// TODO Auto-generated method stub
-		super.visit(OptStatementList);
-	}
-
-	@Override
-	public void visit(Factor Factor) {
-		// TODO Auto-generated method stub
-		super.visit(Factor);
-	}
-
-	@Override
-	public void visit(VarList VarList) {
-		// TODO Auto-generated method stub
-		super.visit(VarList);
-	}
-
-	@Override
-	public void visit(TermAddopList TermAddopList) {
-		// TODO Auto-generated method stub
-		super.visit(TermAddopList);
-	}
-
-	@Override
 	public void visit(Designator Designator) {
 		Obj obj = Tab.find(Designator.getDesignatorName());
 
@@ -199,103 +115,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		
 		Designator.obj = obj;
 	}
-
-	@Override
-	public void visit(ArgumentParamList ArgumentParamList) {
-		// TODO Auto-generated method stub
-		super.visit(ArgumentParamList);
-	}
-
-	@Override
-	public void visit(OptCommaNumber OptCommaNumber) {
-		// TODO Auto-generated method stub
-		super.visit(OptCommaNumber);
-	}
-
-	@Override
-	public void visit(FormalParamList FormalParamList) {
-		// TODO Auto-generated method stub
-		super.visit(FormalParamList);
-	}
-
-	@Override
-	public void visit(Expr Expr) {
-		// TODO Auto-generated method stub
-		super.visit(Expr);
-	}
-
-	@Override
-	public void visit(DesignatorStatement DesignatorStatement) {
-		// TODO Auto-generated method stub
-		super.visit(DesignatorStatement);
-	}
-
-	@Override
-	public void visit(Const Const) {
-		// TODO Auto-generated method stub
-		super.visit(Const);
-	}
-
-	@Override
-	public void visit(FactorMulopList FactorMulopList) {
-		// TODO Auto-generated method stub
-		super.visit(FactorMulopList);
-	}
-
-	@Override
-	public void visit(OptMethodDeclList OptMethodDeclList) {
-		// TODO Auto-generated method stub
-		super.visit(OptMethodDeclList);
-	}
-
-	@Override
-	public void visit(Statement Statement) {
-		// TODO Auto-generated method stub
-		super.visit(Statement);
-	}
-
-	@Override
-	public void visit(OptPostfixOperation OptPostfixOperation) {
-		// TODO Auto-generated method stub
-		super.visit(OptPostfixOperation);
-	}
-
-	@Override
-	public void visit(ArgumentParam ArgumentParam) {
-		// TODO Auto-generated method stub
-		super.visit(ArgumentParam);
-	}
-
-	@Override
-	public void visit(MultipleArgumentParams MultipleArgumentParams) {
-		// TODO Auto-generated method stub
-		super.visit(MultipleArgumentParams);
-	}
-
-	@Override
-	public void visit(NoArgumentParams NoArgumentParams) {
-		// TODO Auto-generated method stub
-		super.visit(NoArgumentParams);
-	}
-
-	@Override
-	public void visit(ArgumentParams ArgumentParams) {
-		// TODO Auto-generated method stub
-		super.visit(ArgumentParams);
-	}
-
-	@Override
-	public void visit(NoStatement NoStatement) {
-		// TODO Auto-generated method stub
-		super.visit(NoStatement);
-	}
-
-	@Override
-	public void visit(StatementList StatementList) {
-		// TODO Auto-generated method stub
-		super.visit(StatementList);
-	}
-
+	
 	@Override
 	public void visit(FormalParamDecl FormalParamDecl) {
 		if (FormalParamDecl.getOptArrayBrackets().bool)
@@ -305,31 +125,6 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		{
 			Tab.insert(Obj.Var, FormalParamDecl.getParamName(), FormalParamDecl.getType().struct);
 		}
-	}
-
-	@Override
-	public void visit(SingleFormalParamDecl SingleFormalParamDecl) {
-		// SingleFormalParamDecl.struct = SingleFormalParamDecl.getFormalParamDecl().struct;
-		// TODO Auto-generated method stub
-		super.visit(SingleFormalParamDecl);
-	}
-
-	@Override
-	public void visit(FormalParamDeclList FormalParamDeclList) {
-		// TODO Auto-generated method stub
-		super.visit(FormalParamDeclList);
-	}
-
-	@Override
-	public void visit(NoFormalParam NoFormalParam) {
-		// TODO Auto-generated method stub
-		super.visit(NoFormalParam);
-	}
-
-	@Override
-	public void visit(FormalParamListOpt FormalParamListOpt) {
-		// TODO Auto-generated method stub
-		super.visit(FormalParamListOpt);
 	}
 
 	@Override
@@ -376,23 +171,6 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 
 	@Override
-	public void visit(NoMethodDecl NoMethodDecl) {
-		// TODO Auto-generated method stub
-		super.visit(NoMethodDecl);
-	}
-
-	@Override
-	public void visit(MethodDeclList MethodDeclList) {
-		// TODO Auto-generated method stub
-		super.visit(MethodDeclList);
-	}
-
-	@Override
-	public void visit(Type Type) {
-		super.visit(Type);
-	}
-
-	@Override
 	public void visit(SimpleType SimpleType) {
 		SimpleType.bool = false;
 	}
@@ -401,25 +179,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	public void visit(ArrayType ArrayType) {
 		ArrayType.bool = true;
 	}
-
-	@Override
-	public void visit(CommaVarDecl CommaVarDecl) {
-		// TODO Auto-generated method stub
-		super.visit(CommaVarDecl);
-	}
-
-	@Override
-	public void visit(Semi Semi) {
-		// TODO Auto-generated method stub
-		super.visit(Semi);
-	}
-
-	@Override
-	public void visit(ParamDefinitionError ParamDefinitionError) {
-		// TODO Auto-generated method stub
-		super.visit(ParamDefinitionError);
-	}
-
+	
 	@Override
 	public void visit(Vars Vars) {
 		// Is it array? Vars.getOptArrayBrackets();
@@ -437,65 +197,6 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			Obj varNode = Tab.insert(Obj.Var, Vars.getVarName(), currentDeclTypeStruct);
 		}
 		// Obj varNode = Tab.insert(Obj.Var, Vars.getVarName(), currentDeclTypeStruct);
-	}
-
-	@Override
-	public void visit(NotConstType NotConstType) {
-		// TODO Auto-generated method stub
-		super.visit(NotConstType);
-	}
-
-	@Override
-	public void visit(ConstType ConstType) {
-		// TODO Auto-generated method stub
-		super.visit(ConstType);
-	}
-
-	@Override
-	public void visit(VarDecl VarDecl) {
-		super.visit(VarDecl);
-	}
-
-	@Override
-	public void visit(NoVarDecl NoVarDecl) {
-		// TODO Auto-generated method stub
-		super.visit(NoVarDecl);
-	}
-
-	@Override
-	public void visit(VarDeclList VarDeclList) {
-		// TODO Auto-generated method stub
-		super.visit(VarDeclList);
-	}
-
-	@Override
-	public void visit(MulopMod MulopMod) {
-		// TODO Auto-generated method stub
-		super.visit(MulopMod);
-	}
-
-	@Override
-	public void visit(MulopDiv MulopDiv) {
-		// TODO Auto-generated method stub
-		super.visit(MulopDiv);
-	}
-
-	@Override
-	public void visit(MulopMul MulopMul) {
-		// TODO Auto-generated method stub
-		super.visit(MulopMul);
-	}
-
-	@Override
-	public void visit(AddopSub AddopSub) {
-		// TODO Auto-generated method stub
-		super.visit(AddopSub);
-	}
-
-	@Override
-	public void visit(AddopAdd AddopAdd) {
-		// TODO Auto-generated method stub
-		super.visit(AddopAdd);
 	}
 
 	@Override
@@ -643,27 +344,6 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 
 	@Override
-	public void visit(NoPosfixOperation NoPosfixOperation) {
-		postfixOperationPresent = false;
-		// TODO Auto-generated method stub
-		super.visit(NoPosfixOperation);
-	}
-
-	@Override
-	public void visit(IncOperation IncOperation) {
-		postfixOperationPresent = true;
-		// TODO Auto-generated method stub
-		super.visit(IncOperation);
-	}
-
-	@Override
-	public void visit(DecOperation DecOperation) {
-		postfixOperationPresent = true;
-		// TODO Auto-generated method stub
-		super.visit(DecOperation);
-	}
-
-	@Override
 	public void visit(PostfixStmt PostfixStmt) {
 		if (postfixOperationPresent)
 		{
@@ -731,12 +411,6 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 
 	@Override
-	public void visit(ReturnVoid ReturnVoid) {
-		// TODO Auto-generated method stub
-		super.visit(ReturnVoid);
-	}
-
-	@Override
 	public void visit(PrintStmt PrintStmt) {
 		if (Tab.noType == PrintStmt.getOptCommaNumber().struct)
 		{
@@ -754,19 +428,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		// TODO Auto-generated method stub
 		super.visit(PrintStmt);
 	}
-
-	@Override
-	public void visit(ReadStmt ReadStmt) {
-		// TODO Auto-generated method stub
-		super.visit(ReadStmt);
-	}
-
-	@Override
-	public void visit(DesignatorStmt DesignatorStmt) {
-		// TODO Auto-generated method stub
-		super.visit(DesignatorStmt);
-	}
-
+	
 	@Override
 	public void visit(ExprFuncCall ExprFuncCall) {
 		ExprFuncCall.struct = ExprFuncCall.getFuncCall().struct;
@@ -781,12 +443,6 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	@Override
 	public void visit(Expression Expression) {
 		Expression.struct = Expression.getExpr().struct;
-	}
-
-	@Override
-	public void visit(StmtFuncCall StmtFuncCall) {
-		// TODO Auto-generated method stub
-		super.visit(StmtFuncCall);
 	}
 
 	@Override
@@ -819,11 +475,4 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		currentDeclTypeStruct = VarType.getType().struct;
 		report_info("Type Changed! " + StructKindToName(currentDeclTypeStruct.getKind()),null);
 	}
-
-	@Override
-	public void visit() {
-		// TODO Auto-generated method stub
-		super.visit();
-	}
-
 }
