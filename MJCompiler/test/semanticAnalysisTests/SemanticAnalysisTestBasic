@@ -1,33 +1,26 @@
 program MJProgram
 	int global, globalComma;
 	int globalArray[], glovalInt, globalArray2[];
-{
-	
+{	
 	int retConstNum()
 	int a,b;
 	{
 		return 1;
 	}
 	
-	bool retConstBool(int i, bool p, char c)
+	bool retBool(int i, bool p, char c)
 	{
 		return false;
-	}
-	
-	 void retVoid()
-	 int a,b;
-	 {
-	 	return;
-	 }
-	
-	const int retConstChar()
-	{
-		return 3; // 'a' -> error recovery
 	}
 	
 	const int[] retNew()
 	{
 		return new int; // is this ok ?
+	}
+	
+	char returnChar()
+	{
+		return 'c';
 	}
 	
 	int retArrayElement(int t, const int g)
@@ -42,10 +35,9 @@ program MJProgram
 	{
 		g = new int[4];
 		g[1] = 1;
-		g[2] = t;//'c'; // error recovery
-		g[3] = 3;// all good, ti doesa not! :D a; / THIS SHOULD NOT WORK !!/ //false; recovery
-
-		// return c + 2; not working, failing right after +
+		g[2] = 3;
+		g[3] = 2; 
+		
 		t = 1;
 		read(c);
 		t;
@@ -58,21 +50,14 @@ program MJProgram
 		print(retConstNum());
 		
 		c = (retConstNum()) + 3; // Function calls per specification should only work when they are alone surrounded 
-		// by left and right parenthessis.
-		// Example: c = retConstNum() + 3; is not working neither it is expected
-		// Not expected to work:
-		// retConstNum()[2];
-		// retConstNum()--;
-		// retConstNum() = 2;
-		// 2[3]
 		retArrayElement(2, c);
 		return c + 2 - (retConstNum());
 	}
 	
-	char arrayTesting() // it depends on order. He thinks that if first row are chars
+	char arrayTesting()
 	int a[],b[],c,d[];
-	char k[],g[],h,j[]; // he thinks these are int hmm..
-	bool z[],x,c[],v[]; // he thinks these are char
+	char k[],g[],h,j[];
+	bool z[],x,c[],v[]; 
 	{
 		c = 3;
 		b = new int[c];
@@ -86,14 +71,16 @@ program MJProgram
 		return g[2];
 	}
 	
-	int ErrorRecoveryParameter()
-	{
-		// Recvery t = t + 2 - 4;
-		// recovery t = -3;
-		return 0;
-	}
-	
 	void NoReturn()
 	{
 	}
+	
+	void YesReturn()
+	{
+		return;
+	}
+	
+	// void SameNameMethodDifferentSignature(){}
+	// void SameNameMethodDifferentSignature(int a, int b){}
+	// int  SameNameMethodDifferentSignature() {return 1;}
 }

@@ -1,0 +1,53 @@
+program MJProgram
+	int staticallyAlocatedArray[3]; // Not expected to work, error recovey
+	int i, 3; // Not expected to work, error recovey
+	int e, 5, p; // Not expected to work, error recovey
+{
+	
+	int k () int c;
+	int t; 
+	int g[];
+	{
+		g = new int[4];
+		g[1] = 1;
+		g[2] = 'c';
+		g[3] = false;
+
+		t = 1;
+		read(c);
+		t;
+		t++;
+		c = (1 + 4*3) - 2%2 + t++/2 + t--;
+		retConstNum();
+
+		print(t--, 1);
+		print(g[3]+3);
+		print(retConstNum());
+		
+		c = (retConstNum()) + 3; // Function calls per specification should only work when they are alone surrounded 
+		
+		c = retConstNum() + 3; // is not working neither it is expected
+		retConstNum()[2];
+		retConstNum()--;
+		retConstNum() = 2;
+		2[3]
+		retArrayElement(2,c);
+		return c + 2 - (retConstNum());
+	}
+	
+	int ErrorRecoveryParameter()
+	int recoverOnComma,+ , t; 
+	int +recoverOnSemi;
+	int recoverSemiUnexpectedAssign = 0; //Recovery
+	{
+		t = t + 2 - 4;
+		t = -3;
+		t = 2+; // Unexpected expression after assign operator recovery
+	}
+	
+	int twoReturns()
+	{
+		return 3;
+		return 2;
+	}
+}

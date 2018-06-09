@@ -1,9 +1,6 @@
 program MJProgram
 	int global, globalComma;
 	int globalArray[], glovalInt, globalArray2[];
-	int staticallyAlocatedArray[3]; // Not expected to work, error recovey
-	int i, 3; // Not expected to work, error recovey
-	int e, 5, p; // Not expected to work, error recovey
 {
 	
 	int retConstNum()
@@ -33,7 +30,7 @@ program MJProgram
 		return a[t];
 	}
 	
-	int k () int c;// int c,t; not working, not expected to work
+	int k () int c;
 	int t; 
 	int g[];
 	{
@@ -42,7 +39,6 @@ program MJProgram
 		g[2] = 'c';
 		g[3] = false;
 
-		// return c + 2; not working, failing right after +
 		t = 1;
 		read(c);
 		t;
@@ -55,24 +51,14 @@ program MJProgram
 		print(retConstNum());
 		
 		c = (retConstNum()) + 3; // Function calls per specification should only work when they are alone surrounded 
-		// by left and right parenthessis.
-		// Example: c = retConstNum() + 3; is not working neither it is expected
-		// Not expected to work:
-		// retConstNum()[2];
-		// retConstNum()--;
-		// retConstNum() = 2;
-		// 2[3]
+
 		retArrayElement(2,c);
 		return c + 2 - (retConstNum());
 	}
 	
 	int ErrorRecoveryParameter()
-	int recoverOnComma,+ , t; 
-	int +recoverOnSemi;
-	int recoverSemiUnexpectedAssign = 0; //Recovery
 	{
 		t = t + 2 - 4;
 		t = -3;
-		t = 2+; // Unexpected expression after assign operator recovery
 	}
 }

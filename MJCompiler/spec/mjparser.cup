@@ -9,7 +9,7 @@ import java.lang.Boolean;
 import rs.ac.bg.etf.pp1.ast.*;
 
 parser code {:
-	boolean errorDetected = false;
+	boolean isSyntaxErrorDetected = false;
 	Logger log = Logger.getLogger(getClass());
 
     // following redefined methods are used for redefinition of error messages 
@@ -27,7 +27,7 @@ parser code {:
     }
 
     public void report_error(String message, Object info) {
-    	errorDetected = true;
+    	isSyntaxErrorDetected = true;
     	StringBuilder msg = new StringBuilder(message); 
     	if (info instanceof Symbol)
             msg.append (" na liniji ").append(((Symbol)info).left);

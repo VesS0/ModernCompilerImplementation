@@ -68,7 +68,8 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 	@Override
 	public void visit(ExprOrError ExprOrError) {
-		// ExprOrError.struct = ExprOrError.getExpr();
+		// TODO Auto-generated method stub
+		super.visit(ExprOrError);
 	}
 
 	@Override
@@ -304,6 +305,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
         if(Tab.currentScope.findSymbol(MethodTypeName.getMethodName()) != null)
         {
               report_error("Semantic Error on line "+MethodTypeName.getLine() + " method named \"" + MethodTypeName.getMethodName() + "\" already exists", null);
+              currentMethod = MethodTypeName.obj = null;
               return;
         }
         
@@ -316,6 +318,11 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 	@Override
 	public void visit(MethodDecl MethodDecl) {
+		if (currentMethod == null)
+		{
+			Tab.closeScope();
+			return;
+		}
 		if (!returnFound && currentMethod.getType() != Tab.noType) {
 			report_error("Semantic Error on line " + MethodDecl.getLine() + ": function \"" + currentMethod.getName() + "\" doesn't have return expression!", MethodDecl);
 			return;
@@ -510,7 +517,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		
 		FactorMulops.struct = Tab.noType;
 		report_error("Semantic Error on line "+ FactorMulops.getLine() +
-				" : incompatible types in multiplication expression ( " +factor + " and mul " + factorMulList + " )"
+				" : incompatible types in multiplication expression ( " + KindToName(factor.getKind()) + " and mul " + KindToName(factorMulList.getKind()) + " )"
 				, FactorMulops);
 	}
 
@@ -537,7 +544,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		
 		TermAddops.struct = Tab.noType;
 		report_error("Semantic Error on line "+ TermAddops.getLine() +
-				" : incompatible types in addition expression ( " +term + " and sum " + termSumList + " )", TermAddops);
+				" : incompatible types in addition expression ( " +KindToName(term.getKind()) + " and sum " + KindToName(termSumList.getKind()) + " )", TermAddops);
 	}
 
 	@Override
@@ -546,7 +553,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		if (Obj.Meth != function.getKind())
 		{
 			report_error("Semantic Error on line " + FuncCall.getLine() +
-					" : \"" + function.getName() + "\" is not a function! ( It is of kind "+ KindToName(function.getKind()), FuncCall);
+					" : \"" + function.getName() + "\" is not a function! (It is of kind "+ KindToName(function.getKind()) + ")", FuncCall);
 			FuncCall.struct = Tab.noType;
 			return;
 		}
@@ -602,18 +609,11 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 	@Override
 	public void visit(NoCommaNumber NoCommaNumber) {
-		// TODO Auto-generated method stub
-		super.visit(NoCommaNumber);
+		NoCommaNumber.struct = Tab.noType;
 	}
 
 	@Override
 	public void visit(CommaNumber CommaNumber) {
-		if (CommaNumber.getNum() <= 0)
-		{
-			CommaNumber.struct = Tab.noType;
-			return;
-		}
-		
 		CommaNumber.struct = Tab.intType;
 	}
 
@@ -636,6 +636,19 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 	@Override
 	public void visit(PrintStmt PrintStmt) {
+		if (Tab.noType == PrintStmt.getOptCommaNumber().struct)
+		{
+			// there is no " , number " in this statement;
+		} 
+		/* Following code should be unneeded since in CommaNumber we are recognizing
+		 * NUMBER which is of type INT (Lexical Analysis should fail here!)
+		else if (Tab.intType != PrintStmt.getOptCommaNumber().struct)
+		{
+			report_error("Semantic Error on line " + PrintStmt.getLine() + 
+					" : After expression in print, only supported type is int (Type you have provided is " +
+					KindToName(PrintStmt.getOptCommaNumber().struct.getKind()) + ")", null);
+		}*/ 
+		
 		// TODO Auto-generated method stub
 		super.visit(PrintStmt);
 	}
