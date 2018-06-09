@@ -37,7 +37,8 @@ public class MJParserTest {
 			log.error("Not enough arguments supplied! Usage: MJParser <source-file> <obj-file> \nUsing test files instead");
 			sourceFilePath = new String[] {
 					"test/syntaxTests/SyntaxTestBasic", "test/syntaxTests/SyntaxTestError" ,
-					"test/semanticAnalysisTests/SemanticAnalysisTestBasic", "test/semanticAnalysisTests/SemanticAnalysisTestError"
+					"test/semanticAnalysisTests/SemanticAnalysisTestBasic", "test/semanticAnalysisTests/SemanticAnalysisTestError",
+					"test/semanticAnalysisTests/SemanticAnalysisArrayBasic", "test/semanticAnalysisTests/SemanticAnalysisArrayError"
 			};
 			
 			SyntaxOnlyFiles = 2;
@@ -78,6 +79,9 @@ public class MJParserTest {
 		        if (p.isSyntaxErrorDetected)
 		        {
 		        	log.info(" ******************************** /nSyntax Error Detected - further parsing stopped on file: "+ sourceFilePath[currentParsingFileIndex]);
+		        	if (currentParsingFileIndex%2 ==0){
+		        		throw new Exception("TEST ASSUMPTION FAILED");
+		        	}
 		        	continue;
 		        } else
 		        {
@@ -102,6 +106,9 @@ public class MJParserTest {
 				
 				if(semanticAnalyzer.isErrorDetected()) {
 			        log.info(" ******************************** /nSemantic Error Detected - further parsing stopped on file: "+ sourceFilePath[currentParsingFileIndex]);
+		        	if (currentParsingFileIndex%2 ==0){
+		        		throw new Exception("TEST ASSUMPTION FAILED");
+		        	}
 			        continue;
 				} else {
 			        log.info(" ******************************** /nSemantic Analysis successfully finished on file: "+ sourceFilePath[currentParsingFileIndex]);

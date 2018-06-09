@@ -59,12 +59,13 @@ terminal Integer NUMBER;
 terminal String IDENT;
 
 nonterminal rs.etf.pp1.symboltable.concepts.Obj Program, ProgramName, Designator;
-nonterminal rs.etf.pp1.symboltable.concepts.Struct Type, Term, Expr, Factor, OptVarDeclList, TermAddopList, FactorMulopList, FuncCall, OptArray, OptArrayBrackets, OptCommaNumber, ExprOrError;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct Type, Term, Expr, Factor, OptVarDeclList, TermAddopList, FactorMulopList, FuncCall, OptArray, OptCommaNumber, ExprOrError;
 nonterminal rs.etf.pp1.symboltable.concepts.Struct Const;
 
 nonterminal Statement, DesignatorStatement;
 nonterminal VarDecl/*, OptBrackExpr*/, VarType;
-nonterminal Addop, Mulop, OptPostfixOperation, OptConst; 
+nonterminal Addop, Mulop, OptPostfixOperation;
+nonterminal Boolean OptConst, OptArrayBrackets; 
 
 /* July 2017/2018 Addition for level A */
 nonterminal rs.etf.pp1.symboltable.concepts.Obj MethodDecl, MethodTypeName;
@@ -121,7 +122,7 @@ Const ::= 	(ConstNum) NUMBER:numm |
 
  /* OptBrackExpr ::= (BrackExpr) LBRACK Expr:val RBRACK | (NoBrackExpr)  epsilon ; */
 
-Designator ::= (Designator) IDENT:designatorName OptArray:arrayIndex ;
+Designator ::= (Designator) IDENT:designatorName OptArray:indexedElement ;
 
 OptArray ::= (ArrayIndexer) LBRACK Expr:val RBRACK | (NoArrayIndexer) /* epsilon */ ;
 
@@ -160,7 +161,7 @@ OptFormalParamList ::= (FormalParamListOpt) FormalParamList:formalParams | (NoFo
 
 FormalParamList ::= (FormalParamDeclList) FormalParamDecl:param COMMA FormalParamList:formalParams | (SingleFormalParamDecl) FormalParamDecl:param ;
 
-FormalParamDecl ::= (FormalParamDecl) OptConst:isConst Type:paramType IDENT:paramName ;
+FormalParamDecl ::= (FormalParamDecl) OptConst:isConst Type:paramType IDENT:paramName OptArray:isArray ;
 
 OptStatementList ::= (StatementList) Statement OptStatementList | (NoStatement) /* epsilon */ ;
 

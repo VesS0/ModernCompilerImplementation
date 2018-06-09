@@ -15,7 +15,7 @@ program MJProgram
 	
 	const int[] retNew()
 	{
-		return new int; // is this ok ?
+		return new int[3];
 	}
 	
 	char returnChar()

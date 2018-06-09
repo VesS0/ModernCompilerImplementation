@@ -168,4 +168,14 @@ program MJProgram
 		a--; // Statement
 		return a--; // Expression
 	}
+	
+	char retChar()
+	{
+		return 'c';
+	}
+	
+	int FunctionReturningCharFCall()
+	{
+		return retChar();
+	}
 }

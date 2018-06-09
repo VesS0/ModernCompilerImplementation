@@ -180,14 +180,23 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			Designator.obj = Tab.noObj;
 			return;
 		} 
-		/*else if (Struct.Array == obj.getType().getKind() && !Designator.getOptArray().struct.getType().getKind())
+		
+		if (Designator.getOptArray().struct.getKind() == Struct.Array)
 		{
-			report_error(
-					"Semantic Error on line " + Designator.getLine() +
-					" : Name " + Designator.getDesignatorName() +
-					" is an array ", Designator);
+			if (obj.getType().getKind() != Struct.Array)
+			{
+				report_error(
+						"Semantic Error on line " + Designator.getLine() +
+						" : Name " + Designator.getDesignatorName() +
+						" is not an array ", Designator);
+				Designator.obj = Tab.noObj;
+				return;
+			}
+			
+			Designator.obj = new Obj(obj.getKind(), obj.getName(), obj.getType().getElemType());
 			return;
-		}*/
+		}
+		
 		Designator.obj = obj;
 	}
 
@@ -289,7 +298,13 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 	@Override
 	public void visit(FormalParamDecl FormalParamDecl) {
-		Tab.insert(Obj.Var, FormalParamDecl.getParamName(), FormalParamDecl.getType().struct);
+		if (FormalParamDecl.getOptArray().struct.getKind() == Struct.Array)
+		{
+			Tab.insert(Obj.Var, FormalParamDecl.getParamName(), new Struct(Struct.Array, FormalParamDecl.getType().struct));
+		} else
+		{
+			Tab.insert(Obj.Var, FormalParamDecl.getParamName(), FormalParamDecl.getType().struct);
+		}
 	}
 
 	@Override
@@ -325,8 +340,12 @@ public class SemanticAnalyzer extends VisitorAdaptor {
               currentMethod = MethodTypeName.obj = null;
               return;
         }
-        
-		currentMethod = Tab.insert(Obj.Meth, MethodTypeName.getMethodName(), MethodTypeName.getType().struct);
+        if (MethodTypeName.getOptArrayBrackets().bool)
+        {
+    		currentMethod = Tab.insert(Obj.Meth, MethodTypeName.getMethodName(), new Struct(Struct.Array, MethodTypeName.getType().struct));
+        } else {
+    		currentMethod = Tab.insert(Obj.Meth, MethodTypeName.getMethodName(), MethodTypeName.getType().struct);
+        }
 
 		MethodTypeName.obj  = currentMethod;
 		Tab.openScope();
@@ -374,14 +393,12 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 	@Override
 	public void visit(SimpleType SimpleType) {
-		// TODO Auto-generated method stub
-		super.visit(SimpleType);
+		SimpleType.bool = false;
 	}
 
 	@Override
 	public void visit(ArrayType ArrayType) {
-		// TODO Auto-generated method stub
-		super.visit(ArrayType);
+		ArrayType.bool = true;
 	}
 
 	@Override
@@ -406,9 +423,19 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	public void visit(Vars Vars) {
 		// Is it array? Vars.getOptArrayBrackets();
 		// Is it const?
-		
-		report_info("Variable \""+ Vars.getVarName() + "\" declared on line " + Vars.getLine(), Vars);
-		Obj varNode = Tab.insert(Obj.Var, Vars.getVarName(), currentDeclTypeStruct);
+		if(Vars.getOptArrayBrackets().bool)
+		{
+			report_info("Array \""+ Vars.getVarName() + "\" declared on line " + Vars.getLine() +
+					" of type " + StructKindToName(currentDeclTypeStruct.getKind()), Vars);
+			// currentDeclTypeStruct = new Struct(Struct.Array, currentDeclTypeStruct); 
+			Obj varNode = Tab.insert(Obj.Var, Vars.getVarName(), new Struct(Struct.Array, currentDeclTypeStruct));
+		} else
+		{
+			report_info("Variable \""+ Vars.getVarName() + "\" declared on line " + Vars.getLine() +
+					" of type " + StructKindToName(currentDeclTypeStruct.getKind()), Vars);
+			Obj varNode = Tab.insert(Obj.Var, Vars.getVarName(), currentDeclTypeStruct);
+		}
+		// Obj varNode = Tab.insert(Obj.Var, Vars.getVarName(), currentDeclTypeStruct);
 	}
 
 	@Override
@@ -472,13 +499,20 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 	@Override
 	public void visit(NoArrayIndexer NoArrayIndexer) {
-		// TODO Auto-generated method stub
-		super.visit(NoArrayIndexer);
+		NoArrayIndexer.struct = new Struct(Struct.None);
 	}
 
 	@Override
 	public void visit(ArrayIndexer ArrayIndexer) {
-		ArrayIndexer.struct = ArrayIndexer.getExpr().struct;
+		if (ArrayIndexer.getExpr().struct.getKind() != Struct.Int)
+		{
+			report_error("Semantic Error on line " + ArrayIndexer.getLine() + " : arrays can only be indexed with integers, and you are trying to index with type "
+					+ StructKindToName(ArrayIndexer.getExpr().struct.getKind()), null);
+			ArrayIndexer.struct = Tab.noType;
+			return;
+		}
+		
+		ArrayIndexer.struct = new Struct(Struct.Array);;
 	}
 
 	@Override
@@ -515,8 +549,14 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 	@Override
 	public void visit(NewType NewType) {
-		NewType.struct = NewType.getType().struct;
-		// is array type? NewType.getOptArray();
+		if (NewType.getOptArray().struct.getKind() != Struct.Array)
+		{
+			report_error("Semantic Error on line " + NewType.getLine() + " : operator NEW can only be used with array types (Type you have provided is "
+					+ StructKindToName(NewType.getOptArray().struct.getKind()) +")", null);
+			NewType.struct = Tab.noType;
+			return;
+		}
+		NewType.struct = new Struct(Struct.Array, NewType.getType().struct);
 	}
 
 	@Override
@@ -640,12 +680,20 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 	@Override
 	public void visit(AssignmentStmt AssignmentStmt) {
+		Struct LeftFromAssignType = AssignmentStmt.getDesignator().obj.getType();
+		Struct RightFromAssignType = AssignmentStmt.getExprOrError().struct;
+		
+		if (AssignmentStmt.getDesignator().getOptArray().struct.getKind() == Struct.Array)
+		{
+			// LeftFromAssignType = LeftFromAssignType.getElemType();
+		}
+		
 		// For some reason if two expressions are of same type (Bool), it still returns false for assignable
-		if (AssignmentStmt.getExprOrError().struct.getKind() != AssignmentStmt.getDesignator().obj.getType().getKind() &&
-				!AssignmentStmt.getExprOrError().struct.assignableTo(AssignmentStmt.getDesignator().obj.getType()))
+		if ( RightFromAssignType.getKind() != LeftFromAssignType.getKind() && !RightFromAssignType.assignableTo(LeftFromAssignType))
 		{
 			report_error("Semantic Error on line " + AssignmentStmt.getLine() +" : incompatible types in assignment ("+
-					StructKindToName(AssignmentStmt.getExprOrError().struct.getKind()) + " is not assignable to " + StructKindToName(AssignmentStmt.getDesignator().obj.getType().getKind()) + " )", AssignmentStmt);
+					StructKindToName(RightFromAssignType.getKind()) + " is not assignable to "+
+					StructKindToName(LeftFromAssignType.getKind()) + ")", AssignmentStmt);
 		}
 	}
 
@@ -662,12 +710,23 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	@Override
 	public void visit(ReturnExpr ReturnExpr) {
 		returnFound = true;
-		if (currentMethod.getType().getKind() != ReturnExpr.getExpr().struct.getKind() &&
-				!currentMethod.getType().compatibleWith(ReturnExpr.getExpr().struct) ) {
-			report_error("Semantic Error on line " + ReturnExpr.getLine() + " : " + " Type of expression in return statement is incompatible with return value type of method " + currentMethod.getName() +
-						"( Return expression of type " + StructKindToName(ReturnExpr.getExpr().struct.getKind()) + ", current method needs type "+ StructKindToName(currentMethod.getType().getKind()) + ")", ReturnExpr);
+		Struct DefinedReturnType = currentMethod.getType();
+		Struct ActualReturningType = ReturnExpr.getExpr().struct;
+		
+		if (ActualReturningType.getKind() == Struct.Array)
+		{
+			// ActualReturningType = ActualReturningType.getElemType();
 		}
 		
+		// First check is needed because of Bool type.
+		if (DefinedReturnType.getKind() != ActualReturningType.getKind() && !DefinedReturnType.compatibleWith(ActualReturningType) ) {
+			
+			report_error("Semantic Error on line " + ReturnExpr.getLine() +
+					" : Type of expression in return statement is incompatible with return value type of method "
+					+ currentMethod.getName() +" (Return expression of type " + StructKindToName(ReturnExpr.getExpr().struct.getKind()) +
+					", current method needs type "+ StructKindToName(currentMethod.getType().getKind()) + ")", ReturnExpr);
+			return;
+		}
 	}
 
 	@Override

@@ -3,27 +3,10 @@ program MJProgram
 	int globalArray[], glovalInt, globalArray2[];
 	char chrArr[];
 {	
-	int badReturnIntIntArr(int t, const int g)
-	const int a[], b;
-	{
-		return a; // should not work, int != int[]
-	}
-	
-	char badReturnCharCharArr(int t, const int g)
-	{
-		return chrArr; // should not work, char != char[]
-	}
-	
 	char goodReturnCharCharFromArr(int t, const int g)
 	char chrs[];
 	{
 		return chrs[3];
-	}
-	
-	bool badReturnBoolBoolArr(bool ar)
-	bool bar[];
-	{
-		return bar; // bool != bool[]
 	}
 	
 	char arrayTesting()
@@ -41,40 +24,37 @@ program MJProgram
 		z[2] = true; z[0] = false;
 		
 		b[0] = b[1] + b[2];
-		b[1] = z[2] - j[1];
+		// b[1] = z[2] - j[1];
 		
 		return g[2];
 	}
 	
-	void NoReturn()
+	int[] ThisShouldWorkAsWell()
+	int k[];
 	{
-	}
-	
-	void YesReturn()
-	{
-		return;
+		return k;
 	}
 	
 	void SameNameMethodDifferentSignature(){}
 	// void SameNameMethodDifferentSignature(int a, int b){}
 	// int  SameNameMethodDifferentSignature() {return 1;}
 	
-	int FunctionCalled(int a, int b, char c, bool d, int e, char f, bool g)
+	int FunctionCalled(int a, bool b, char c, bool d, int e, char f, bool g, char arr[])
 	{
 		return a + b*e;
 	}
 	
 	int FunctionCaller()
 	int a,b,e;
-	bool d;
+	bool d[], k;
 	char c;
-	char f;
+	char f, arr[];
 	bool g;
 	{
 		a= 3;
-		d = true;
+		d[2] = true;
 		c = 'k';
 		
-		return FunctionCalled(a, 2, c, d, 2*a, 'c', false);
+		return FunctionCalled(a, k, c, d[2], 2*a, 'c', false, new char[3]);
 	}
 }
