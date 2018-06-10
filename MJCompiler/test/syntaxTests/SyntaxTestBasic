@@ -60,5 +60,6 @@ program MJProgram
 	{
 		t = t + 2 - 4;
 		t = -3;
+		print(t, 3);
 	}
 }

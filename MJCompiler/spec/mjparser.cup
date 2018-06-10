@@ -86,7 +86,7 @@ Statement ::= 	(DesignatorStmt) DesignatorStatement SEMI |
 				(ReturnExpr) RETURN Expr:returnType SEMI
 				;
 
-OptCommaNumber ::= (CommaNumber) COMMA NUMBER:num | (NoCommaNumber) /* epsilon */ ;
+OptCommaNumber ::= (CommaNumber) COMMA Expr:num | (NoCommaNumber) /* epsilon */ ;
 
 DesignatorStatement ::= (AssignmentStmt) Designator:designator ASSIGN ExprOrError:expr |
 						(PostfixStmt) Designator:designator OptPostfixOperation:op |

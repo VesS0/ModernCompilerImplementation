@@ -385,6 +385,13 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 	@Override
 	public void visit(CommaNumber CommaNumber) {
+		if (CommaNumber.getExpr().struct.getKind() != Struct.Int)
+		{
+			report_error("Semantic Error on line " + CommaNumber.getLine() +" : second parameter in print needs to be of type int ("+
+					"you have used expression which is returning type"+ StructKindToName(CommaNumber.getExpr().struct.getKind()) +")", null);
+			CommaNumber.struct = Tab.noType;
+			return;
+		}
 		CommaNumber.struct = Tab.intType;
 	}
 
@@ -408,25 +415,6 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 					", current method needs type "+ StructKindToName(currentMethod.getType().getKind()) + ")", ReturnExpr);
 			return;
 		}
-	}
-
-	@Override
-	public void visit(PrintStmt PrintStmt) {
-		if (Tab.noType == PrintStmt.getOptCommaNumber().struct)
-		{
-			// there is no " , number " in this statement;
-		} 
-		/* Following code should be unneeded since in CommaNumber we are recognizing
-		 * NUMBER which is of type INT (Lexical Analysis should fail here!)
-		else if (Tab.intType != PrintStmt.getOptCommaNumber().struct)
-		{
-			report_error("Semantic Error on line " + PrintStmt.getLine() + 
-					" : After expression in print, only supported type is int (Type you have provided is " +
-					KindToName(PrintStmt.getOptCommaNumber().struct.getKind()) + ")", null);
-		}*/ 
-		
-		// TODO Auto-generated method stub
-		super.visit(PrintStmt);
 	}
 	
 	@Override

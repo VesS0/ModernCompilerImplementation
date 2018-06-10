@@ -59,12 +59,13 @@ program MJProgram
 	int a,b,e;
 	bool d[], k[];
 	char c;
-	char f;
+	char f, arrr[];
 	bool g;
 	{
 		a= 3;
 		d = true;
 		c = 'k';
+		print(c, arrr[2]);
 		
 		return FunctionCalled(a, k, c, d[2], 2*a, 'c', false, d);
 	}

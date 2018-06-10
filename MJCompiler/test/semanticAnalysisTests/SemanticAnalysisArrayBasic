@@ -45,7 +45,7 @@ program MJProgram
 	}
 	
 	int FunctionCaller()
-	int a,b,e;
+	int a,b,e, arInt[];
 	bool d[], k;
 	char c;
 	char f, arr[];
@@ -54,6 +54,8 @@ program MJProgram
 		a= 3;
 		d[2] = true;
 		c = 'k';
+		print(c, 1);
+		print(c, arInt[2]);
 		
 		return FunctionCalled(a, k, c, d[2], 2*a, 'c', false, new char[3], arr);
 	}

@@ -11,6 +11,7 @@ program MJProgram
 	
 	bool retConstBool(int i, bool p, char c)
 	{
+		print(i, 'c');
 		return false;
 	}
 	
