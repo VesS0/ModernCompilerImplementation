@@ -59,4 +59,6 @@ program MJProgram
 		
 		return FunctionCalled(a, k, c, d[2], 2*a, 'c', false, new char[3], arr);
 	}
+	
+	void main(){ return;}
 }

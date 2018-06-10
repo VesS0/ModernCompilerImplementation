@@ -14,6 +14,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	Obj currentMethod = null;
 	Struct currentDeclTypeStruct = null;
 	boolean returnFound = false;
+	boolean mainFound = false;
 	boolean postfixOperationPresent = false;
 	int nVars;
 	
@@ -78,6 +79,11 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		nVars = Tab.currentScope.getnVars();
 		Tab.chainLocalSymbols(Program.getProgramName().obj);
 		Tab.closeScope();
+		
+		if (!mainFound)
+		{
+			report_error("You have not defined \"void main\" function", null);
+		}
 	}
 
 	@Override
@@ -141,13 +147,23 @@ public class SemanticAnalyzer extends VisitorAdaptor {
               currentMethod = MethodTypeName.obj = null;
               return;
         }
-        
         Struct MethodReturnType = MethodTypeName.getType().struct;
         if (MethodTypeName.getOptArrayBrackets().bool)
         {
         	MethodReturnType = new Struct(Struct.Array, MethodTypeName.getType().struct);
         }
         
+        if (MethodTypeName.getMethodName().equals("main"))
+        {
+        	mainFound = true;
+        	if (MethodReturnType != Tab.noType)
+        	{
+        		report_error("Main method needs to be of type \"void\" and you have provided type " +
+        	StructKindToName(MethodReturnType.getKind()), null);
+        		mainFound = false;
+        	}
+        }
+
         currentMethod = Tab.insert(Obj.Meth, MethodTypeName.getMethodName(), MethodReturnType);
 		MethodTypeName.obj  = currentMethod;
 		

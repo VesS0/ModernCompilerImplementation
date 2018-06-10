@@ -1,0 +1,18 @@
+program MJProgram
+	int global, globalComma;
+	int globalArray[], glovalInt, globalArray2[];
+{	
+	int mmain()
+	int local;
+	{
+		global = 1; local = 2;
+		
+		return local+global;
+	}
+	
+	void main()
+	int resMain;
+	{
+		resMain = mmain();
+	}
+}
