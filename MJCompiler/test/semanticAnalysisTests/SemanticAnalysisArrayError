@@ -67,6 +67,8 @@ program MJProgram
 		c = 'k';
 		print(c, arrr[2]);
 		
+		c = f[2];
+		
 		return FunctionCalled(a, k, c, d[2], 2*a, 'c', false, d);
 	}
 }

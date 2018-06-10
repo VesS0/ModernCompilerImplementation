@@ -103,7 +103,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			{
 				report_error(
 						"Semantic Error on line " + Designator.getLine() +
-						" : Name " + Designator.getDesignatorName() +
+						" : Variable " + Designator.getDesignatorName() +
 						" is not an array ", Designator);
 				Designator.obj = Tab.noObj;
 				return;
@@ -232,6 +232,27 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		ConstNum.struct = Tab.intType;
 	}
 
+	@Override
+	public void visit(DecOperation DecOperation)
+	{
+		postfixOperationPresent = true;
+		super.visit(DecOperation);
+	}
+	
+	@Override
+	public void visit(IncOperation IncOperation)
+	{
+		postfixOperationPresent = true;
+		super.visit(IncOperation);
+	}
+	
+	@Override
+	public void visit(NoPosfixOperation NoPosfixOperation)
+	{
+		postfixOperationPresent = false;
+		super.visit(NoPosfixOperation);
+	}
+	
 	@Override
 	public void visit(DefVarWithOptPostfixOp DefVarWithOptPostfixOp) {
 		DefVarWithOptPostfixOp.struct = DefVarWithOptPostfixOp.getDesignator().obj.getType();
@@ -420,12 +441,6 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	@Override
 	public void visit(ExprFuncCall ExprFuncCall) {
 		ExprFuncCall.struct = ExprFuncCall.getFuncCall().struct;
-	}
-
-	@Override
-	public void visit(Err Err) {
-		// TODO Auto-generated method stub
-		super.visit(Err);
 	}
 
 	@Override

@@ -97,9 +97,10 @@ program MJProgram
 	bool g;
 	{
 		a= 3;
+		a--;
 		d = true;
 		c = 'k';
 		
-		return FunctionCalled(a, 2, c, d, 2*a, 'c', false);
+		return FunctionCalled(a++, 2, c, d, 2*a, 'c', false);
 	}
 }
