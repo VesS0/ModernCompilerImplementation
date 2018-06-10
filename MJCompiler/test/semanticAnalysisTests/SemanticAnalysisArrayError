@@ -71,4 +71,17 @@ program MJProgram
 		
 		return FunctionCalled(a, k, c, d[2], 2*a, 'c', false, d);
 	}
+	
+	bool areYouCheckingTypeOfArrayPassedIn(int ar, bool arBool[])
+	{
+		return arBool[2];
+	}
+	
+	bool ofcIAmCheckingThis()
+	int arrr[];
+	int ar;
+	{
+		areYouCheckingTypeOfArrayPassedIn(ar, arrr);
+		return true;
+	}
 }

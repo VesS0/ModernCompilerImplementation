@@ -57,7 +57,7 @@ program MJProgram
 	char arrayTesting()
 	int a[],b[],c,d[];
 	char k[],g[],h,j[];
-	bool z[],x,c[],v[]; 
+	bool z[],x,h[],v[]; 
 	{
 		c = 3;
 		b = new int[c];
@@ -84,9 +84,42 @@ program MJProgram
 	// void SameNameMethodDifferentSignature(int a, int b){}
 	// int  SameNameMethodDifferentSignature() {return 1;}
 	
-	int FunctionCalled(int a, int b, char c, bool d, int e, char f, bool g)
+	int s1()
+	int a,b,c;
+	{return 0;}
+	int s2()
+	{return 0;}
+	int s3(int a)
+	{ return a;}
+	int s4(char b, int a)
+	char k;
+	{return a; }
+	
+	int s5(char chh)
+	int a;
+	{ return a;}
+	
+	int s6(bool b)
+	char k;
+	{return 33+22; }
+	
+	int callFunc()
+	int a;
+	bool vl;
 	{
-		return a + b*e;
+		a = s1();
+		a = (s2()) + (s3(1));
+		a = s5('k') + s6(true);
+		return a + s4('c', 2) * s1();
+	}
+	
+	// int callFunc()
+	// bool vl;
+	// { return s1() + s2() + s3(1) + s4('c', 2) + s5('k'); }
+	
+	int FunctionCalled(int aaa, int bbb, char ccc, bool ddd, int eee, char fff, bool ggg, bool arrrr[], bool kkk)
+	{
+		return aaa + bbb*eee;
 	}
 	
 	int FunctionCaller()
@@ -94,13 +127,13 @@ program MJProgram
 	bool d;
 	char c;
 	char f;
-	bool g;
+	bool g, kkk[];
 	{
 		a= 3;
 		a--;
 		d = true;
 		c = 'k';
 		
-		return FunctionCalled(a++, 2, c, d, 2*a, 'c', false);
+		return FunctionCalled(a++, 2, c, d, 2*a, 'c', false, kkk, kkk[2]);
 	}
 }

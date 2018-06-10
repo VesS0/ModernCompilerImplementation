@@ -1,10 +1,13 @@
 package rs.ac.bg.etf.pp1;
 
+import java.util.ArrayList;
+
 import org.apache.log4j.Logger;
 import rs.ac.bg.etf.pp1.ast.*;
 import rs.etf.pp1.symboltable.Tab;
 import rs.etf.pp1.symboltable.concepts.Obj;
 import rs.etf.pp1.symboltable.concepts.Struct;
+import rs.etf.pp1.symboltable.structure.SymbolDataStructure;
 
 public class SemanticAnalyzer extends VisitorAdaptor {
 	boolean errorDetected = false;
@@ -117,7 +120,16 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		{
 			TypeOfFormalParam = new Struct(Struct.Array, FormalParamDecl.getType().struct);
 		}
+		if (Tab.noObj != Tab.find(FormalParamDecl.getParamName()))
+		{
+			report_error("Formal parameter with name " + FormalParamDecl.getParamName() +" already exists!", null);
+			FormalParamDecl.struct = Tab.noType;
+			return;
+		}
 		Tab.insert(Obj.Var, FormalParamDecl.getParamName(), TypeOfFormalParam);
+		FormalParamDecl.struct = TypeOfFormalParam;
+		
+		report_info("FormalParamDecl inserted of name " + FormalParamDecl.getParamName() + " and type "+ StructKindToName(FormalParamDecl.getType().struct.getKind()), null);
 	}
 
 	@Override
@@ -158,13 +170,44 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		assert(MethodDecl.getMethodTypeName().obj == currentMethod)
 			: "currentMethod should be same as object in MethodTypeName";
 		
+		MethodDecl.getMethodTypeName().obj.setLevel(MethodDecl.getOptFormalParamList().list.size());
+		
 		Tab.chainLocalSymbols(MethodDecl.getMethodTypeName().obj);
 		Tab.closeScope();
+				
+		// Object[] formalParams = MethodDecl.getMethodTypeName().obj.getLocalSymbols().toArray();
 		
 		returnFound = false;
 		currentMethod = null;
 	}
 
+	@Override
+	public void visit(FormalParamListOpt FormalParamListOpt)
+	{
+		FormalParamListOpt.list = FormalParamListOpt.getFormalParamList().list;
+	}
+	
+	@Override
+	public void visit(NoFormalParam NoFormalParam)
+	{
+		NoFormalParam.list = new java.util.ArrayList<Struct>();
+	}
+	
+	@Override
+	public void visit(FormalParamDeclList FormalParamDeclList)
+	{
+		FormalParamDeclList.getFormalParamList().list.add(FormalParamDeclList.getFormalParamDecl().struct);
+		FormalParamDeclList.list = FormalParamDeclList.getFormalParamList().list;
+		report_info("Formal param \"" + StructKindToName(FormalParamDeclList.getFormalParamDecl().struct.getKind()) + "\" defined on line "+ FormalParamDeclList.getLine(), null);
+	}
+	
+	public void visit(SingleFormalParamDecl SingleFormalParamDecl)
+	{
+		SingleFormalParamDecl.list = new java.util.ArrayList();
+		SingleFormalParamDecl.list.add(SingleFormalParamDecl.getFormalParamDecl().struct);
+		report_info("Formal param \"" + StructKindToName(SingleFormalParamDecl.getFormalParamDecl().struct.getKind()) + "\" on line "+ SingleFormalParamDecl.getLine(), null);
+	}
+	
 	@Override
 	public void visit(SimpleType SimpleType) {
 		SimpleType.bool = false;
@@ -298,6 +341,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	@Override
 	public void visit(FuncCall FuncCall) {
 		Obj function = FuncCall.getDesignator().obj;
+		int numOfParams = FuncCall.getOptArgumentParamList().list.size();
 		if (Obj.Meth != function.getKind())
 		{
 			report_error("Semantic Error on line " + FuncCall.getLine() +
@@ -306,10 +350,81 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			return;
 		}
 		
+		if ( numOfParams!= function.getLevel())
+		{
+			String insuficient = " insufficient number of ";
+			if (numOfParams > function.getLevel())
+				insuficient = " too many ";
+			report_error("Semantic Error on line " + FuncCall.getLine() + " : \"" + function.getName() + 
+					"\" is called with" + insuficient +" parameters! (It should have " + function.getLevel() +
+					" and you have provided " + FuncCall.getOptArgumentParamList().list.size() + " parameters)", FuncCall);
+			FuncCall.struct = Tab.noType;
+			return;
+		}
+		
+		--numOfParams;
+		int currentParameterIndex = 0;
+		Object[] formalParams = function.getLocalSymbols().toArray();
+		
+		
+		report_info(" function level " + function.getLevel() + " function local symbols " + formalParams.length, null);
+		/*
+		for (Struct argumentProvided : (ArrayList<Struct>)FuncCall.getOptArgumentParamList().list)
+		{
+			report_info("Arg provided " + StructKindToName(argumentProvided.getKind()) + " Formal Arg " +
+						StructKindToName(((Obj)formalParams[numOfParams- currentParameterIndex]).getType().getKind()), null);
+			++currentParameterIndex;
+		}
+		currentParameterIndex = 0;
+		*/
+		for (Struct argumentProvided : (ArrayList<Struct>)FuncCall.getOptArgumentParamList().list)
+		{
+			Obj formalParam = (Obj)formalParams[numOfParams - currentParameterIndex];
+			++currentParameterIndex;
+			
+			if (!IsSecondTypeCompatibleWithFirst(formalParam.getType(), argumentProvided))
+			{
+				report_error("Semantic Error on line " + FuncCall.getLine() +" : \"" + function.getName() + 
+						"\" was called with parameter "+ currentParameterIndex + " of type "+ StructKindToName(argumentProvided.getKind()) +
+						", but " +StructKindToName(formalParam.getType().getKind()) + " was expected" , FuncCall);
+				FuncCall.struct = Tab.noType;
+				return;
+			}
+		}
+		
 		report_info("Function " + function.getName() + " call was found on line " + FuncCall.getLine(), FuncCall);
 		FuncCall.struct = function.getType();
 	}
 
+	@Override
+	public void visit(ArgumentParams ArgumentParams)
+	{
+		ArgumentParams.list = ArgumentParams.getArgumentParamList().list;
+	}
+	
+	@Override
+	public void visit(NoArgumentParams NoArgumentParams)
+	{
+		NoArgumentParams.list = new java.util.ArrayList();
+	}
+	
+	@Override
+	public void visit(MultipleArgumentParams MultipleArgumentParams)
+	{
+		MultipleArgumentParams.getArgumentParamList().list.add(MultipleArgumentParams.getExpr().struct);
+		MultipleArgumentParams.list = MultipleArgumentParams.getArgumentParamList().list;
+		report_info("Argument \"" + StructKindToName(MultipleArgumentParams.getExpr().struct.getKind()) + "\" on line "+ MultipleArgumentParams.getLine(), null);
+	}
+	
+	@Override
+	public void visit(ArgumentParam ArgumentParam)
+	{
+		ArgumentParam.list = new java.util.ArrayList();
+		ArgumentParam.list.add(ArgumentParam.getExpr().struct);
+		report_info("Argument \"" + StructKindToName(ArgumentParam.getExpr().struct.getKind()) + "\" on line "+ ArgumentParam.getLine(), null);
+
+	}
+	
 	@Override
 	public void visit(TermAddopListExpr TermAddopListExpr) {
 		TermAddopListExpr.struct = TermAddopListExpr.getTermAddopList().struct;
@@ -379,7 +494,17 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	public static boolean IsSecondTypeCompatibleWithFirst(Struct first, Struct second)
 	{
-		return  second.getKind() == first.getKind() /* needed for Bool */ || second.assignableTo(first);
+		if (second.assignableTo(first))
+			return true;
+		
+		if (second.getKind() == first.getKind()) {
+			if (first.getKind() != Struct.Array)
+				return true;
+			
+			return IsSecondTypeCompatibleWithFirst(first.getElemType(), second.getElemType());
+		}
+		
+		return false;
 	}
 	
 	@Override

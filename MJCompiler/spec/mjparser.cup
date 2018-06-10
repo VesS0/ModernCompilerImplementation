@@ -69,9 +69,9 @@ nonterminal Boolean OptConst, OptArrayBrackets;
 
 /* July 2017/2018 Addition for level A */
 nonterminal rs.etf.pp1.symboltable.concepts.Obj MethodDecl, MethodTypeName;
-nonterminal rs.etf.pp1.symboltable.concepts.Struct FormalParamList, FormalParamDecl;
-nonterminal OptMethodDeclList/*, FormalParam*/, OptFormalParamList, OptStatementList;
-nonterminal OptArgumentParamList, ArgumentParamList;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct FormalParamDecl;
+nonterminal OptMethodDeclList/*, FormalParam*/, OptStatementList;
+nonterminal java.util.List OptArgumentParamList, ArgumentParamList, OptFormalParamList, FormalParamList;
 nonterminal VarList, SemiCommaVarList;
 /* End A  */
 
@@ -100,9 +100,7 @@ ExprOrError ::= (Expression) Expr:expr | (Err) error:err {: parser.log.debug("Er
 OptPostfixOperation ::= (DecOperation) DEC  | (IncOperation) INC | (NoPosfixOperation) /* epsilon */ ;
 
 Expr ::= (TermAddopListExprSub) SUB TermAddopList:res |
-		 (TermAddopListExpr) TermAddopList:res |
-		 (ExprFuncCall) FuncCall
-		 ;
+		 (TermAddopListExpr) TermAddopList:res ;
 
 TermAddopList ::= (TermAddops) Term Addop:op TermAddopList:res |  (SingleTerm) Term:res ;
 
@@ -113,8 +111,8 @@ FactorMulopList::= (FactorMulops) Factor:fact Mulop:op FactorMulopList:res | (Si
 Factor ::=  (ConstVar) Const:val |
 			(ParenExpr) LPAREN Expr:expr RPAREN |
 			(NewType) NEW Type:creationType OptArray:arrayLength |
-			(DefVarWithOptPostfixOp) Designator:designator OptPostfixOperation:op 
-			/* |(FuncCall) Designator LPAREN OptArgumentParamList RPAREN */ 
+			(DefVarWithOptPostfixOp) Designator:designator OptPostfixOperation:op |
+			(ExprFuncCall) FuncCall
 			;
 
 Const ::= 	(ConstNum) NUMBER:numm | 
