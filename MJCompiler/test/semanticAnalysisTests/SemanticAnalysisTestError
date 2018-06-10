@@ -195,7 +195,7 @@ program MJProgram
 		return 'c';
 	}
 	
-	int FunctionReturningCharFCall()
+	int FunctionReturningCharFCall(int a, int b, char a)
 	{
 		return retChar();
 	}
