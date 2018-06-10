@@ -12,7 +12,7 @@ program MJProgram
 	char arrayTesting()
 	int a[],b[],c,d[];
 	char k[],g[],h,j[];
-	bool z[],x,c[],v[]; 
+	bool z[],x,o[],v[]; 
 	{
 		c = 3;
 		b = new int[c];

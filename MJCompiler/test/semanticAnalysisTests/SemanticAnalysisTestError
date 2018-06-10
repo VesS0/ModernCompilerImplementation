@@ -195,9 +195,17 @@ program MJProgram
 		return 'c';
 	}
 	
-	int FunctionReturningCharFCall(int a, int b, char a)
+	int FunctionReturningCharFCall(int a, int b)
+	int global;
 	{
 		return retChar();
+	}
+	
+	void FunctionMultipleSameDefinedFormalParams(int a, int global, int a)
+	int same;
+	int same;
+	{
+		return;
 	}
 	
 	int main(){ return 1;}

@@ -57,7 +57,7 @@ program MJProgram
 	char arrayTesting()
 	int a[],b[],c,d[];
 	char k[],g[],h,j[];
-	bool z[],x,h[],v[]; 
+	bool z[],x,xx[],v[]; 
 	{
 		c = 3;
 		b = new int[c];

@@ -19,9 +19,7 @@ import rs.etf.pp1.symboltable.concepts.Obj;
 public class CodeGenerator extends VisitorAdaptor {
 	
 	private int varCount;
-	
 	private int paramCnt;
-	
 	private int mainPc;
 	
 	public int getMainPc() {

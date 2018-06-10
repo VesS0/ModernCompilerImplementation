@@ -82,7 +82,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		
 		if (!mainFound)
 		{
-			report_error("You have not defined \"void main\" function", null);
+			report_error("Semantic Error on line " + Program.getLine()+ " : You have not defined \"void main\" function", null);
 		}
 	}
 
@@ -126,12 +126,14 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		{
 			TypeOfFormalParam = new Struct(Struct.Array, FormalParamDecl.getType().struct);
 		}
-		if (Tab.noObj != Tab.find(FormalParamDecl.getParamName()))
+		
+		if (Tab.currentScope().findSymbol(FormalParamDecl.getParamName()) != null)
 		{
-			report_error("Formal parameter with name " + FormalParamDecl.getParamName() +" already exists!", null);
+			report_error("Semantic Error on line " + FormalParamDecl.getLine() + ": Formal parameter with name " + FormalParamDecl.getParamName() +" already defined in current scope!", null);
 			FormalParamDecl.struct = Tab.noType;
 			return;
 		}
+		
 		Tab.insert(Obj.Var, FormalParamDecl.getParamName(), TypeOfFormalParam);
 		FormalParamDecl.struct = TypeOfFormalParam;
 		
@@ -140,8 +142,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 	@Override
 	public void visit(MethodTypeName MethodTypeName) {
-		
-        if(Tab.currentScope.findSymbol(MethodTypeName.getMethodName()) != null)
+        if(Tab.currentScope.findSymbol(MethodTypeName.getMethodName())!= null)
         {
               report_error("Semantic Error method named \"" + MethodTypeName.getMethodName() + "\" already exists", null);
               currentMethod = MethodTypeName.obj = null;
@@ -158,7 +159,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
         	mainFound = true;
         	if (MethodReturnType != Tab.noType)
         	{
-        		report_error("Main method needs to be of type \"void\" and you have provided type " +
+        		report_error("Semantic Error on line " + MethodTypeName.getLine() + " : Main method needs to be of type \"void\" and you have provided type " +
         	StructKindToName(MethodReturnType.getKind()), null);
         		mainFound = false;
         	}
@@ -249,6 +250,11 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 					" of type " + StructKindToName(currentDeclTypeStruct.getKind()), Vars);
 		}
 		
+		if (Tab.currentScope().findSymbol(Vars.getVarName()) != null)
+		{
+			report_error("Semantic Error on line " + Vars.getLine() + " : Variable " + Vars.getVarName() + " is already defined in current scope", null);
+			return;
+		}
 		Obj varNode = Tab.insert(Obj.Var, Vars.getVarName(), VariableType);
 	}
 
@@ -383,7 +389,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		Object[] formalParams = function.getLocalSymbols().toArray();
 		
 		
-		report_info(" function level " + function.getLevel() + " function local symbols " + formalParams.length, null);
+		report_info("Function level " + function.getLevel() + " function local symbols " + formalParams.length, null);
 		/*
 		for (Struct argumentProvided : (ArrayList<Struct>)FuncCall.getOptArgumentParamList().list)
 		{

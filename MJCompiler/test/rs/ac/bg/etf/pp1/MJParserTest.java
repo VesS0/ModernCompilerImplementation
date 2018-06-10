@@ -38,14 +38,20 @@ public class MJParserTest {
 			sourceFilePath = new String[] {
 					"test/syntaxTests/SyntaxTestBasic", "test/syntaxTests/SyntaxTestError" ,
 					"test/semanticAnalysisTests/SemanticAnalysisTestBasic", "test/semanticAnalysisTests/SemanticAnalysisTestError",
-					"test/semanticAnalysisTests/SemanticAnalysisArrayBasic", "test/semanticAnalysisTests/SemanticAnalysisArrayError"
+					"test/semanticAnalysisTests/SemanticAnalysisArrayBasic", "test/semanticAnalysisTests/SemanticAnalysisArrayError",
+					"test/codeGenerationTests/CodeGenerationTestBasic"
 			};
 			
 			SyntaxOnlyFiles = 2;
 			SemanticOnlyFiles = 2 + SyntaxOnlyFiles;
 			
 			numberOfFilesToParse = sourceFilePath.length;
-			objectFilePath = new String[numberOfFilesToParse];
+			objectFilePath = new String[] {
+					"test/syntaxTests/SyntaxTestBasic.obj", "test/syntaxTests/SyntaxTestError.obj" ,
+					"test/semanticAnalysisTests/SemanticAnalysisTestBasic.obj", "test/semanticAnalysisTests/SemanticAnalysisTestError.obj",
+					"test/semanticAnalysisTests/SemanticAnalysisArrayBasic.obj", "test/semanticAnalysisTests/SemanticAnalysisArrayError.obj",
+					"test/codeGenerationTests/CodeGenerationTestBasic.obj"
+			};
 			
 
 			// objectFilePath[0] = "test/SemanticAnalysisTestBasic.obj";
@@ -67,7 +73,7 @@ public class MJParserTest {
 				return;
 			}
 				
-			log.info(" ******************************** /nCompiling source file: " + sourceCode.getAbsolutePath());
+			log.info(" ******************************** \nCompiling source file: " + sourceCode.getAbsolutePath());
 			
 			try (BufferedReader br = new BufferedReader(new FileReader(sourceCode))) {
 				Yylex lexer = new Yylex(br);
@@ -78,14 +84,14 @@ public class MJParserTest {
 		        
 		        if (p.isSyntaxErrorDetected)
 		        {
-		        	log.info(" ******************************** /nSyntax Error Detected - further parsing stopped on file: "+ sourceFilePath[currentParsingFileIndex]);
+		        	log.info(" ******************************** \nSyntax Error Detected - further parsing stopped on file: "+ sourceFilePath[currentParsingFileIndex]);
 		        	if (currentParsingFileIndex%2 ==0){
 		        		throw new Exception("TEST ASSUMPTION FAILED");
 		        	}
 		        	continue;
 		        } else
 		        {
-		        	log.info(" ******************************** /nSyntax Analysis successfully finished on file: "+ sourceFilePath[currentParsingFileIndex]);
+		        	log.info(" ******************************** \nSyntax Analysis successfully finished on file: "+ sourceFilePath[currentParsingFileIndex]);
 		        }
 		        
 		        log.info("Prog = " + prog.toString());
@@ -103,23 +109,21 @@ public class MJParserTest {
 				prog.traverseBottomUp(semanticAnalyzer);
 				
 				Tab.dump();
-				
 				if(semanticAnalyzer.isErrorDetected()) {
-			        log.info(" ******************************** /nSemantic Error Detected - further parsing stopped on file: "+ sourceFilePath[currentParsingFileIndex]);
+			        log.info(" ******************************** \nSemantic Error Detected - further parsing stopped on file: "+ sourceFilePath[currentParsingFileIndex]);
 		        	if (currentParsingFileIndex%2 ==0){
 		        		throw new Exception("TEST ASSUMPTION FAILED");
 		        	}
 			        continue;
 				} else {
-			        log.info(" ******************************** /nSemantic Analysis successfully finished on file: "+ sourceFilePath[currentParsingFileIndex]);
+			        log.info(" ******************************** \nSemantic Analysis successfully finished on file: "+ sourceFilePath[currentParsingFileIndex]);
 				}
 				
 		        if (currentParsingFileIndex < SemanticOnlyFiles)
 		        {
 		        	continue;
 		        }
-		        
-				/*
+		        /*
 		        File objFile = new File(objectFilePath[currentParsingFileIndex]);
 		        log.info("Generating bytecode file: " + objFile.getAbsolutePath());
 		        if (objFile.exists())
@@ -131,8 +135,7 @@ public class MJParserTest {
 		        Code.dataSize = semanticAnalyzer.nVars;
 		        Code.mainPc = codeGenerator.getMainPc();
 		        Code.write(new FileOutputStream(objFile));
-		        log.info("Parsing successfully finished");
-		        */
+		        log.info("Parsing successfully finished");*/
 			}
 		}
 	}
