@@ -19,17 +19,11 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	public void report_error(String message, SyntaxNode info) {
 		errorDetected = true;
 		StringBuilder msg = new StringBuilder(message);
-		int line = (info == null) ? 0: info.getLine();
-		// if (line != 0)
-			//msg.append (" na liniji ").append(line);
 		log.error(msg.toString());
 	}
 
 	public void report_info(String message, SyntaxNode info) {
 		StringBuilder msg = new StringBuilder(message); 
-		int line = (info == null) ? 0: info.getLine();
-		//if (line != 0)
-			// msg.append (" na liniji ").append(line);
 		log.info(msg.toString());
 	}
 	
@@ -118,13 +112,12 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	@Override
 	public void visit(FormalParamDecl FormalParamDecl) {
+		Struct TypeOfFormalParam = FormalParamDecl.getType().struct;
 		if (FormalParamDecl.getOptArrayBrackets().bool)
 		{
-			Tab.insert(Obj.Var, FormalParamDecl.getParamName(), new Struct(Struct.Array, FormalParamDecl.getType().struct));
-		} else
-		{
-			Tab.insert(Obj.Var, FormalParamDecl.getParamName(), FormalParamDecl.getType().struct);
+			TypeOfFormalParam = new Struct(Struct.Array, FormalParamDecl.getType().struct);
 		}
+		Tab.insert(Obj.Var, FormalParamDecl.getParamName(), TypeOfFormalParam);
 	}
 
 	@Override
@@ -136,14 +129,16 @@ public class SemanticAnalyzer extends VisitorAdaptor {
               currentMethod = MethodTypeName.obj = null;
               return;
         }
+        
+        Struct MethodReturnType = MethodTypeName.getType().struct;
         if (MethodTypeName.getOptArrayBrackets().bool)
         {
-    		currentMethod = Tab.insert(Obj.Meth, MethodTypeName.getMethodName(), new Struct(Struct.Array, MethodTypeName.getType().struct));
-        } else {
-    		currentMethod = Tab.insert(Obj.Meth, MethodTypeName.getMethodName(), MethodTypeName.getType().struct);
+        	MethodReturnType = new Struct(Struct.Array, MethodTypeName.getType().struct);
         }
-
+        
+        currentMethod = Tab.insert(Obj.Meth, MethodTypeName.getMethodName(), MethodReturnType);
 		MethodTypeName.obj  = currentMethod;
+		
 		Tab.openScope();
 		report_info("Processing function " + MethodTypeName.getMethodName(), MethodTypeName);
 	}
@@ -182,21 +177,20 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	@Override
 	public void visit(Vars Vars) {
-		// Is it array? Vars.getOptArrayBrackets();
 		// Is it const?
+		Struct VariableType = currentDeclTypeStruct;
 		if(Vars.getOptArrayBrackets().bool)
 		{
 			report_info("Array \""+ Vars.getVarName() + "\" declared on line " + Vars.getLine() +
 					" of type " + StructKindToName(currentDeclTypeStruct.getKind()), Vars);
-			// currentDeclTypeStruct = new Struct(Struct.Array, currentDeclTypeStruct); 
-			Obj varNode = Tab.insert(Obj.Var, Vars.getVarName(), new Struct(Struct.Array, currentDeclTypeStruct));
+			VariableType = new Struct(Struct.Array, currentDeclTypeStruct);
 		} else
 		{
 			report_info("Variable \""+ Vars.getVarName() + "\" declared on line " + Vars.getLine() +
 					" of type " + StructKindToName(currentDeclTypeStruct.getKind()), Vars);
-			Obj varNode = Tab.insert(Obj.Var, Vars.getVarName(), currentDeclTypeStruct);
 		}
-		// Obj varNode = Tab.insert(Obj.Var, Vars.getVarName(), currentDeclTypeStruct);
+		
+		Obj varNode = Tab.insert(Obj.Var, Vars.getVarName(), VariableType);
 	}
 
 	@Override
@@ -230,44 +224,6 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	@Override
 	public void visit(ConstNum ConstNum) {
 		ConstNum.struct = Tab.intType;
-	}
-
-	@Override
-	public void visit(DecOperation DecOperation)
-	{
-		postfixOperationPresent = true;
-		super.visit(DecOperation);
-	}
-	
-	@Override
-	public void visit(IncOperation IncOperation)
-	{
-		postfixOperationPresent = true;
-		super.visit(IncOperation);
-	}
-	
-	@Override
-	public void visit(NoPosfixOperation NoPosfixOperation)
-	{
-		postfixOperationPresent = false;
-		super.visit(NoPosfixOperation);
-	}
-	
-	@Override
-	public void visit(DefVarWithOptPostfixOp DefVarWithOptPostfixOp) {
-		DefVarWithOptPostfixOp.struct = DefVarWithOptPostfixOp.getDesignator().obj.getType();
-		
-		if (postfixOperationPresent)
-		{
-			if ( (DefVarWithOptPostfixOp.getDesignator().obj.getKind() != Obj.Var &&
-					DefVarWithOptPostfixOp.getDesignator().obj.getKind() != Obj.Elem)
-					|| DefVarWithOptPostfixOp.getDesignator().obj.getType() != Tab.intType)
-			{
-				report_error("Semantic Error on line " + DefVarWithOptPostfixOp.getLine() + " : Postfix operation cannot be used on object of kind " +
-						ObjTypeToName(DefVarWithOptPostfixOp.getDesignator().obj.getKind()) + " and type "+ StructKindToName(DefVarWithOptPostfixOp.getDesignator().obj.getType().getKind()) , null);
-			}
-			postfixOperationPresent = false;
-		}
 	}
 
 	@Override
@@ -309,8 +265,8 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		
 		FactorMulops.struct = Tab.noType;
 		report_error("Semantic Error on line "+ FactorMulops.getLine() +
-				" : incompatible types in multiplication expression ( " + StructKindToName(factor.getKind()) + " and mul " + StructKindToName(factorMulList.getKind()) + " )"
-				, FactorMulops);
+				" : incompatible types in multiplication expression ( " + StructKindToName(factor.getKind())
+				+ " and mul " + StructKindToName(factorMulList.getKind()) + " )", FactorMulops);
 	}
 
 	@Override
@@ -363,42 +319,96 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	public void visit(TermAddopListExprSub TermAddopListExprSub) {
 		TermAddopListExprSub.struct = TermAddopListExprSub.getTermAddopList().struct;
 	}
-
+	
+	@Override
+	public void visit(DecOperation DecOperation)
+	{
+		postfixOperationPresent = true;
+		super.visit(DecOperation);
+	}
+	
+	@Override
+	public void visit(IncOperation IncOperation)
+	{
+		postfixOperationPresent = true;
+		super.visit(IncOperation);
+	}
+	
+	@Override
+	public void visit(NoPosfixOperation NoPosfixOperation)
+	{
+		postfixOperationPresent = false;
+		super.visit(NoPosfixOperation);
+	}
+	
 	@Override
 	public void visit(PostfixStmt PostfixStmt) {
 		if (postfixOperationPresent)
 		{
-			if ( (PostfixStmt.getDesignator().obj.getKind() != Obj.Var &&
-					PostfixStmt.getDesignator().obj.getKind() != Obj.Elem)
-					|| PostfixStmt.getDesignator().obj.getType() != Tab.intType)
+			if (!IsObjectOfTypeInt(PostfixStmt.getDesignator().obj))
 			{
 				report_error("Semantic Error on line " + PostfixStmt.getLine() + " : Postfix operation cannot be used on object of kind " +
 						ObjTypeToName(PostfixStmt.getDesignator().obj.getKind()) + " and type "+ StructKindToName(PostfixStmt.getDesignator().obj.getType().getKind()) , null);
 			}
 			postfixOperationPresent = false;
 		}
-		
 	}
-
+	
+	@Override
+	public void visit(DefVarWithOptPostfixOp DefVarWithOptPostfixOp) {
+		DefVarWithOptPostfixOp.struct = DefVarWithOptPostfixOp.getDesignator().obj.getType();
+		
+		if (postfixOperationPresent)
+		{
+			if (!IsObjectOfTypeInt(DefVarWithOptPostfixOp.getDesignator().obj))
+			{
+				report_error("Semantic Error on line " + DefVarWithOptPostfixOp.getLine() + " : Postfix operation cannot be used on object of kind " +
+						ObjTypeToName(DefVarWithOptPostfixOp.getDesignator().obj.getKind()) + " and type "+ StructKindToName(DefVarWithOptPostfixOp.getDesignator().obj.getType().getKind()) , null);
+			}
+			postfixOperationPresent = false;
+		}
+	}
+	
+	public static boolean IsObjectOfTypeInt(Obj obj)
+	{
+		if ((obj.getKind() == Obj.Var || obj.getKind() == Obj.Elem) && obj.getType() == Tab.intType)
+			return true;
+		
+		return false;
+	}
+	
+	public static boolean IsSecondTypeCompatibleWithFirst(Struct first, Struct second)
+	{
+		return  second.getKind() == first.getKind() /* needed for Bool */ || second.assignableTo(first);
+	}
+	
 	@Override
 	public void visit(AssignmentStmt AssignmentStmt) {
 		Struct LeftFromAssignType = AssignmentStmt.getDesignator().obj.getType();
 		Struct RightFromAssignType = AssignmentStmt.getExprOrError().struct;
 		
-		if (AssignmentStmt.getDesignator().getOptArray().struct.getKind() == Struct.Array)
-		{
-			// LeftFromAssignType = LeftFromAssignType.getElemType();
-		}
-		
-		// For some reason if two expressions are of same type (Bool), it still returns false for assignable
-		if ( RightFromAssignType.getKind() != LeftFromAssignType.getKind() && !RightFromAssignType.assignableTo(LeftFromAssignType))
+		if (!IsSecondTypeCompatibleWithFirst(LeftFromAssignType, RightFromAssignType))
 		{
 			report_error("Semantic Error on line " + AssignmentStmt.getLine() +" : incompatible types in assignment ("+
 					StructKindToName(RightFromAssignType.getKind()) + " is not assignable to "+
 					StructKindToName(LeftFromAssignType.getKind()) + ")", AssignmentStmt);
 		}
 	}
-
+	
+	@Override
+	public void visit(ReturnExpr ReturnExpr) {
+		returnFound = true;
+		Struct DefinedReturnType = currentMethod.getType();
+		Struct ActualReturningType = ReturnExpr.getExpr().struct;
+		
+		if (!IsSecondTypeCompatibleWithFirst(DefinedReturnType, ActualReturningType)) {
+			report_error("Semantic Error on line " + ReturnExpr.getLine() +
+					" : Type of expression in return statement is incompatible with return value type of method "
+					+ currentMethod.getName() +" (Return expression of type " + StructKindToName(ReturnExpr.getExpr().struct.getKind()) +
+					", current method needs type "+ StructKindToName(currentMethod.getType().getKind()) + ")", ReturnExpr);
+			return;
+		}
+	}
 	@Override
 	public void visit(NoCommaNumber NoCommaNumber) {
 		NoCommaNumber.struct = Tab.noType;
@@ -414,28 +424,6 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			return;
 		}
 		CommaNumber.struct = Tab.intType;
-	}
-
-	@Override
-	public void visit(ReturnExpr ReturnExpr) {
-		returnFound = true;
-		Struct DefinedReturnType = currentMethod.getType();
-		Struct ActualReturningType = ReturnExpr.getExpr().struct;
-		
-		if (ActualReturningType.getKind() == Struct.Array)
-		{
-			// ActualReturningType = ActualReturningType.getElemType();
-		}
-		
-		// First check is needed because of Bool type.
-		if (DefinedReturnType.getKind() != ActualReturningType.getKind() && !DefinedReturnType.compatibleWith(ActualReturningType) ) {
-			
-			report_error("Semantic Error on line " + ReturnExpr.getLine() +
-					" : Type of expression in return statement is incompatible with return value type of method "
-					+ currentMethod.getName() +" (Return expression of type " + StructKindToName(ReturnExpr.getExpr().struct.getKind()) +
-					", current method needs type "+ StructKindToName(currentMethod.getType().getKind()) + ")", ReturnExpr);
-			return;
-		}
 	}
 	
 	@Override
