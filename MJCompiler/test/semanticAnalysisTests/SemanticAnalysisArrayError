@@ -84,4 +84,15 @@ program MJProgram
 		areYouCheckingTypeOfArrayPassedIn(ar, arrr);
 		return true;
 	}
+	
+	void twoSameArrParam(int arPar[], int arPar[])
+	{
+		return;
+	}
+		
+	void testingArrays(int arr[])
+	int arr[], arr[], k;
+	{
+		
+	}
 }

@@ -4,6 +4,7 @@ program MJProgram
 {	
 	int retConstNum()
 	int a,b;
+	int global;
 	{
 		return 1;
 	}

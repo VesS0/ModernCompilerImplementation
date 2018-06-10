@@ -129,7 +129,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		
 		if (Tab.currentScope().findSymbol(FormalParamDecl.getParamName()) != null)
 		{
-			report_error("Semantic Error on line " + FormalParamDecl.getLine() + ": Formal parameter with name " + FormalParamDecl.getParamName() +" already defined in current scope!", null);
+			report_error("Semantic Error on line " + FormalParamDecl.getLine() + ": Formal parameter with name \"" + FormalParamDecl.getParamName() +"\" already defined in current scope!", null);
 			FormalParamDecl.struct = Tab.noType;
 			return;
 		}
@@ -252,7 +252,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		
 		if (Tab.currentScope().findSymbol(Vars.getVarName()) != null)
 		{
-			report_error("Semantic Error on line " + Vars.getLine() + " : Variable " + Vars.getVarName() + " is already defined in current scope", null);
+			report_error("Semantic Error on line " + Vars.getLine() + " : Variable \"" + Vars.getVarName() + "\" is already defined in current scope", null);
 			return;
 		}
 		Obj varNode = Tab.insert(Obj.Var, Vars.getVarName(), VariableType);
@@ -561,6 +561,16 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		NoCommaNumber.struct = Tab.noType;
 	}
 
+	@Override
+	public void visit(PrintStmt PrintStmt)
+	{
+		if (PrintStmt.getExpr().struct != Tab.intType && PrintStmt.getExpr().struct != Tab.charType)
+		{
+			report_error("Semantic Error on line " + PrintStmt.getLine() + ", print statement can only be userd on int or char" +
+					" you have provided expression of type " + StructKindToName(PrintStmt.getExpr().struct.getKind()), null);
+		}
+	}
+	
 	@Override
 	public void visit(CommaNumber CommaNumber) {
 		if (CommaNumber.getExpr().struct.getKind() != Struct.Int)

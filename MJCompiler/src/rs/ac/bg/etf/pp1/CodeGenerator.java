@@ -2,19 +2,11 @@ package rs.ac.bg.etf.pp1;
 
 import rs.ac.bg.etf.pp1.CounterVisitor.FormParamCounter;
 import rs.ac.bg.etf.pp1.CounterVisitor.VarCounter;
-import rs.ac.bg.etf.pp1.ast.Const;
-import rs.ac.bg.etf.pp1.ast.Designator;
-import rs.ac.bg.etf.pp1.ast.FormalParamDecl;
-import rs.ac.bg.etf.pp1.ast.FuncCall;
-import rs.ac.bg.etf.pp1.ast.MethodDecl;
-import rs.ac.bg.etf.pp1.ast.MethodTypeName;
-import rs.ac.bg.etf.pp1.ast.PrintStmt;
-import rs.ac.bg.etf.pp1.ast.ReturnExpr;
-import rs.ac.bg.etf.pp1.ast.SyntaxNode;
-import rs.ac.bg.etf.pp1.ast.VarDecl;
-import rs.ac.bg.etf.pp1.ast.VisitorAdaptor;
+import rs.ac.bg.etf.pp1.ast.*;
 import rs.etf.pp1.mj.runtime.Code;
+import rs.etf.pp1.symboltable.Tab;
 import rs.etf.pp1.symboltable.concepts.Obj;
+import rs.etf.pp1.symboltable.concepts.Struct;
 
 public class CodeGenerator extends VisitorAdaptor {
 	
@@ -26,9 +18,10 @@ public class CodeGenerator extends VisitorAdaptor {
 		return mainPc;
 	}
 	
+	
 	@Override
 	public void visit(MethodTypeName MethodTypeName) {
-		if ("main".equalsIgnoreCase(MethodTypeName.getMethName())) {
+		if ("main".equalsIgnoreCase(MethodTypeName.getMethodName())) {
 			mainPc = Code.pc;
 		}
 		MethodTypeName.obj.setAdr(Code.pc);
@@ -67,7 +60,7 @@ public class CodeGenerator extends VisitorAdaptor {
 		Code.put(Code.exit);
 		Code.put(Code.return_);
 	}
-	
+	/*
 	@Override
 	public void visit(ReturnNoExpr ReturnNoExpr) {
 		Code.put(Code.exit);
@@ -99,15 +92,45 @@ public class CodeGenerator extends VisitorAdaptor {
 		Code.put(Code.call);
 		Code.put2(offset);
 	}
-	
+	*/
 	@Override
 	public void visit(PrintStmt PrintStmt) {
-		Code.put(Code.const_5);
+		if(PrintStmt.getExpr().struct == Tab.intType)
+		{
+			Code.put(Code.const_5);
+		} else if (PrintStmt.getExpr().struct == Tab.charType)
+		{
+			Code.put(Code.const_1);
+		}
 		Code.put(Code.print);
 	}
 	
 	@Override
+	public void visit(ConstNum ConstNum)
+	{
+		Obj constNum = Tab.insert(Obj.Con, "", Tab.intType);
+		constNum.setAdr(ConstNum.getNumm());
+		Code.load(constNum);
+	}
+	
+	@Override
+	public void visit(ConstChar ConstChar)
+	{
+		Obj constChar = Tab.insert(Obj.Con, "", Tab.charType);
+		constChar.setAdr(constChar.getAdr());
+		Code.load(constChar);
+	}
+	
+	@Override
+	public void visit(ConstBool ConstBool)
+	{
+		Obj constBool = Tab.insert(Obj.Con, "", new Struct(Struct.Bool));
+		constBool.setAdr(constBool.getAdr());
+		Code.load(constBool);
+	}
+	/*
+	@Override
 	public void visit(AddExpr AddExpr) {
 		Code.put(Code.add);
-	}
+	}*/
 }

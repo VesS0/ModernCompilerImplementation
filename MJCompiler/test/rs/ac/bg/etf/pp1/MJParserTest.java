@@ -43,7 +43,7 @@ public class MJParserTest {
 			};
 			
 			SyntaxOnlyFiles = 2;
-			SemanticOnlyFiles = 2 + SyntaxOnlyFiles;
+			SemanticOnlyFiles = 4 + SyntaxOnlyFiles;
 			
 			numberOfFilesToParse = sourceFilePath.length;
 			objectFilePath = new String[] {
@@ -123,7 +123,7 @@ public class MJParserTest {
 		        {
 		        	continue;
 		        }
-		        /*
+
 		        File objFile = new File(objectFilePath[currentParsingFileIndex]);
 		        log.info("Generating bytecode file: " + objFile.getAbsolutePath());
 		        if (objFile.exists())
@@ -135,7 +135,7 @@ public class MJParserTest {
 		        Code.dataSize = semanticAnalyzer.nVars;
 		        Code.mainPc = codeGenerator.getMainPc();
 		        Code.write(new FileOutputStream(objFile));
-		        log.info("Parsing successfully finished");*/
+		        log.info("Parsing successfully finished");
 			}
 		}
 	}
