@@ -63,7 +63,7 @@ public class CodeGenerator extends VisitorAdaptor {
 	{
 		if (Var.getOptValueAssign().struct != Tab.noType)
 		{
-				Code.store(Var.obj);
+			Code.store(Var.obj);
 		}
 	}
 	
@@ -171,16 +171,43 @@ public class CodeGenerator extends VisitorAdaptor {
 	@Override
 	public void visit(Designator Designator)
 	{
-		if (Designator.obj.getKind() == Obj.Elem)
+		SyntaxNode parent = Designator.getParent();
+		if (AssignmentStmt.class != parent.getClass() &&
+				FuncCall.class != parent.getClass() &&
+				ReadStmt.class != parent.getClass())
 		{
-			Code.put(Designator.obj.getAdr());
+			Code.load(Designator.obj);
 		}
+		/*
+		// In semantic pass we save in Designator.obj element of array if
+		// it is being indexed.
+		if (Designator.obj.getKind() == Obj.Elem && 
+				Designator.getOptArray().struct != Tab.noType)
+		{
+			// Now we will need address of this array and index in order
+			// to read or write to it. At this point index is already on stack
+			// so we are putting also address of an array and swapping their
+			// places, as expected from astore instruction. We will get value
+			// from expression later
+			Obj array = Tab.find(Designator.getDesignatorName());
+			if (array == null || array.getType().getKind() != Struct.Array)
+			{
+				report_error("Code Generation Error: Unexpected indexing of non array, this "+
+							"should have been caught in Semantic Segmentation - some assumptions are broken now",null);
+			}
+			Code.put2(array.getAdr());
+			
+			// Reversing order of parameters on stack (Adr, Index instead of Index, Adr)
+			// Code.put(Code.dup2);
+			// Code.put(Code.pop);
+		}
+		*/
 	}
 	
 	@Override
 	public void visit(DecOperation DecOperation)
 	{
-		Code.load(DecOperation.getDesignator().obj);
+		// Designator has already been loaded once
 		Code.load(DecOperation.getDesignator().obj);
 		Code.put(Code.const_m1);
 		Code.put(Code.add);
@@ -199,7 +226,7 @@ public class CodeGenerator extends VisitorAdaptor {
 	@Override
 	public void visit(IncOperation IncOperation)
 	{
-		Code.load(IncOperation.getDesignator().obj);
+		// Designator has already been loaded once
 		Code.load(IncOperation.getDesignator().obj);
 		Code.put(Code.const_1);
 		Code.put(Code.add);
@@ -213,12 +240,6 @@ public class CodeGenerator extends VisitorAdaptor {
 			// index of element, and value of expression
 			Code.put(Code.astore);
 		}
-	}
-	
-	@Override
-	public void visit(NoPosfixOperation NoPosfixOperation)
-	{
-		Code.load(NoPosfixOperation.getDesignator().obj);
 	}
 	
 	@Override

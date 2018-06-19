@@ -41,10 +41,42 @@ program MJProgram
 		return x-c*2; //35 - 24 (err 9) 
 	}
 	
+	int functionCallWithParams(int one,int k, int global, char c,bool tru)
+	{
+		print(one);
+		print(k);
+		print(global);
+		print(c);
+		return k + one % 2;
+	}
+	
+	void TestingArrays() int arr[],a; bool arBool[]; char arChar[];
+	{
+		arr = new int[3];
+		a = 5;
+		arr[2] = 1;
+
+		
+		// arr[1] = 3;
+		// arr[0] = a;
+		
+		arBool = new bool[3];
+		// arBool[0] = true; arBool[1] = false;
+		
+		arChar = new char[1];
+		
+		print(arr[0]);
+		print(arr[2]);
+		//arChar[0] = 'd';
+	}
+	
 	void main() int k = 2, t;
 	{
 		read(t);
 		print(t);
+		functionCallWithParams(1, k, x, 'c', true);
+		//TestingArrays();
+
 		print(incrementDecrementTestSuccessful()); // expected 9
 	
 		y = printTest();

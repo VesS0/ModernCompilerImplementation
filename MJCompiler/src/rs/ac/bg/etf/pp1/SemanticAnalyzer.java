@@ -53,14 +53,14 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	{
 		switch (type)
 		{
-			case Obj.Con: return 		"Obj_Con";
-			case Obj.Elem: return 		"Obj_Elem";
-			case Obj.Fld: return 		"Obj_Fld";
-			case Obj.Meth: return 		"Obj_Meth";
 			case Obj.NO_VALUE: return 	"Obj_NOVALUE";
-			case Obj.Prog: return 		"Obj_Prog";
-			case Obj.Type: return 		"Obj_Type";
+			case Obj.Con: return 		"Obj_Con";
 			case Obj.Var: return 		"Obj_Var";
+			case Obj.Type: return 		"Obj_Type";
+			case Obj.Meth: return 		"Obj_Meth";
+			case Obj.Fld: return 		"Obj_Fld";
+			case Obj.Elem: return 		"Obj_Elem";
+			case Obj.Prog: return 		"Obj_Prog";
 		}
 		
 		assert(false) : "We should always have some of existing Types sent in ObjTypeToName function";
@@ -111,7 +111,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 				return;
 			}
 			
-			Designator.obj = new Obj(obj.getKind(), obj.getName(), obj.getType().getElemType());
+			Designator.obj = new Obj(Obj.Elem, obj.getName(), obj.getType().getElemType(),/* Hack */ obj.getAdr(), obj.getLevel());
 			return;
 		}
 		
@@ -254,7 +254,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		{
 			report_info("Array \""+ Var.getVarName() + "\" declared on line " + Var.getLine() +
 					" of type " + StructKindToName(currentDeclTypeStruct.getKind()), Var);
-			VariableType = new Struct(Struct.Array, new Struct(currentDeclTypeStruct.getKind()));
+			VariableType = new Struct(Struct.Array, currentDeclTypeStruct);
 		} else
 		{
 			report_info("Variable \""+ Var.getVarName() + "\" declared on line " + Var.getLine() +
@@ -346,7 +346,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	public void visit(FactorMulops FactorMulops) {
 		Struct factor = FactorMulops.getFactor().struct;
 		Struct factorMulList = FactorMulops.getFactorMulopList().struct;
-		if ((factor.equals(factorMulList) || factor.getKind() == factorMulList.getKind()) && factor == Tab.intType)
+		if (factor.equals(factorMulList) && factor == Tab.intType)
 		{
 			FactorMulops.struct = factor;
 			return;
@@ -373,7 +373,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		Struct term = TermAddops.getTerm().struct;
 		Struct termSumList = TermAddops.getTermAddopList().struct;
 		
-		if ((term.equals(termSumList) || term.getKind() == termSumList.getKind())&& term.getKind() == Tab.intType.getKind())
+		if (term.equals(termSumList) && term == Tab.intType)
 		{
 			TermAddops.struct = term;
 			return;
@@ -572,7 +572,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	@Override
 	public void visit(PrintStmt PrintStmt)
 	{
-		if (PrintStmt.getExpr().struct.getKind() != Tab.intType.getKind() && PrintStmt.getExpr().struct.getKind() != Tab.charType.getKind())
+		if (PrintStmt.getExpr().struct != Tab.intType && PrintStmt.getExpr().struct != Tab.charType)
 		{
 			report_error("Semantic Error on line " + PrintStmt.getLine() + ", print statement can only be userd on int or char" +
 					" you have provided expression of type " + StructKindToName(PrintStmt.getExpr().struct.getKind()), null);
@@ -636,7 +636,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		}
 		
 		try {
-			throw new Exception("\n\n\n\n\n\n\n******Not expected to get here****** \n\n\n\n\n\n\n\n");
+			throw new Exception("\n\n\n\n\n\n\n******Not expected to get here \n\n\n\n\n\n\n\n");
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -660,7 +660,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			return;
 		}
 		
-		NotVoidType.struct = GetTypeBasedOnName(typeNode.getName());
+		NotVoidType.struct = typeNode.getType();
 	}
 
 	@Override
