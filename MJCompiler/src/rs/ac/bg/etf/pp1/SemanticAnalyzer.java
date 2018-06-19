@@ -280,6 +280,8 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		Var.obj = Tab.insert(Obj.Var, Var.getVarName(), VariableType);
 	}
 
+	
+	
 	@Override
 	public void visit(NoArrayIndexer NoArrayIndexer) {
 		NoArrayIndexer.struct = new Struct(Struct.None);
@@ -574,6 +576,16 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		{
 			report_error("Semantic Error on line " + PrintStmt.getLine() + ", print statement can only be userd on int or char" +
 					" you have provided expression of type " + StructKindToName(PrintStmt.getExpr().struct.getKind()), null);
+		}
+	}
+	
+	@Override
+	public void visit(ReadStmt ReadStmt)
+	{
+		if (ReadStmt.getDesignator().obj.getType() != Tab.intType && ReadStmt.getDesignator().obj.getType() != Tab.charType)
+		{
+			report_error("Semantic Error on line " + ReadStmt.getLine() + ", read statement can only be userd on int or char" +
+					" you have provided expression of type " + StructKindToName(ReadStmt.getDesignator().obj.getType().getKind()), null);
 		}
 	}
 	

@@ -121,7 +121,6 @@ public class CodeGenerator extends VisitorAdaptor {
 			Code.put(Code.const_1);
 			Code.put(Code.bprint);
 		}
-		
 	}
 	
 	@Override
