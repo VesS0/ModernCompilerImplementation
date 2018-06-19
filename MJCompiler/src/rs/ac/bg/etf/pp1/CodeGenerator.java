@@ -138,7 +138,7 @@ public class CodeGenerator extends VisitorAdaptor {
 	@Override
 	public void visit(DecOperation DecOperation)
 	{
-		Code.load(IncOperation.getDesignator().obj);
+		Code.load(DecOperation.getDesignator().obj);
 		Code.load(DecOperation.getDesignator().obj);
 		Code.put(Code.const_m1);
 		Code.put(Code.add);

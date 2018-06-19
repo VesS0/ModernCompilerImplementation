@@ -17,9 +17,9 @@ program MJProgram
 		dec--; inc++;
 		inc++; inc--;
 		
-		dec = dec-- + inc++ + inc++; // 8
-		inc = dec-- - inc++; // 7 -
-		return inc + dec; // 3
+		dec = dec-- + inc++ + inc++; // expected 8
+		inc = dec-- - inc++; // expected 2
+		return inc + dec; // expected 9
 	}
 	
 	int printTest() int c,k; 
@@ -43,7 +43,7 @@ program MJProgram
 	
 	void main() int k = 2, t;
 	{
-		print(incrementDecrementTestSuccessful());
+		print(incrementDecrementTestSuccessful()); // expected 9
 	
 		// y = printTest();
 		// print(y); // 11 // err 9
