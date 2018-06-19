@@ -86,14 +86,20 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 
 	@Override
+	public void visit(DesigName DesigName)
+	{
+		DesigName.obj = Tab.find(DesigName.getDesignatorName());
+	}
+	
+	@Override
 	public void visit(Designator Designator) {
-		Obj obj = Tab.find(Designator.getDesignatorName());
+		Obj obj = Tab.find(Designator.getDesigName().getDesignatorName());
 
 		if (Tab.noObj == obj)
 		{
 			report_error(
 					"Semantic Error on line " + Designator.getLine() +
-					" : Name \"" + Designator.getDesignatorName() +
+					" : Name \"" + Designator.getDesigName().getDesignatorName() +
 					"\" is not declared! ", Designator);
 			Designator.obj = Tab.noObj;
 			return;
@@ -105,13 +111,13 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			{
 				report_error(
 						"Semantic Error on line " + Designator.getLine() +
-						" : Variable " + Designator.getDesignatorName() +
+						" : Variable " + Designator.getDesigName().getDesignatorName() +
 						" is not an array ", Designator);
 				Designator.obj = Tab.noObj;
 				return;
 			}
 			
-			Designator.obj = new Obj(Obj.Elem, obj.getName(), obj.getType().getElemType(),/* Hack */ obj.getAdr(), obj.getLevel());
+			Designator.obj = new Obj(Obj.Elem, obj.getName()+"_Elem", obj.getType().getElemType()); //,/* Hack */ obj.getAdr(), obj.getLevel());
 			return;
 		}
 		
@@ -279,8 +285,6 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		
 		Var.obj = Tab.insert(Obj.Var, Var.getVarName(), VariableType);
 	}
-
-	
 	
 	@Override
 	public void visit(NoArrayIndexer NoArrayIndexer) {
@@ -608,7 +612,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		if (ExprFuncCall.struct == Tab.noType)
 		{
 			report_error("Semantic Error on line " + ExprFuncCall.getLine() +
-					" : function \"" + ExprFuncCall.getFuncCall().getDesignator().getDesignatorName() +
+					" : function \"" + ExprFuncCall.getFuncCall().getDesignator().getDesigName().getDesignatorName() +
 					"\" is of type void and cannot be used in expresion", null);
 		}
 	}

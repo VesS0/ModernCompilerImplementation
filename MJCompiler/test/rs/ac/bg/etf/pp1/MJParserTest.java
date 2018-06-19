@@ -94,8 +94,8 @@ public class MJParserTest {
 		        	log.info(" ******************************** \nSyntax Analysis successfully finished on file: "+ sourceFilePath[currentParsingFileIndex]);
 		        }
 		        
-		        log.info("Prog = " + prog.toString());
-		        log.info("Symb = " + s.toString());
+		        // log.info("Prog = " + prog.toString());
+		        // log.info("Symb = " + s.toString());
 		        
 		        if (currentParsingFileIndex < SyntaxOnlyFiles)
 		        {
@@ -109,6 +109,7 @@ public class MJParserTest {
 				prog.traverseBottomUp(semanticAnalyzer);
 				
 				Tab.dump();
+				System.out.println(prog.toString());
 				if(semanticAnalyzer.isErrorDetected()) {
 			        log.info(" ******************************** \nSemantic Error Detected - further parsing stopped on file: "+ sourceFilePath[currentParsingFileIndex]);
 		        	if (currentParsingFileIndex%2 ==0 || currentParsingFileIndex>=7){

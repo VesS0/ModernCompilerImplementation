@@ -39,6 +39,13 @@ public class CodeGenerator extends VisitorAdaptor {
 	}
 	
 	@Override
+	public void visit(Program Program)
+	{
+		// Debug Only:
+		OptVarDeclList ovdl = Program.getOptVarDeclList();
+	}
+	
+	@Override
 	public void visit(MethodTypeName MethodTypeName) {
 		if ("main".equalsIgnoreCase(MethodTypeName.getMethodName())) {
 			mainPc = Code.pc;
@@ -150,15 +157,16 @@ public class CodeGenerator extends VisitorAdaptor {
 	@Override
 	public void visit(AssignmentStmt AssignmentStmt)
 	{
-		if (AssignmentStmt.getDesignator().obj.getKind() != Obj.Elem)
+		//if (AssignmentStmt.getDesignator().obj.getKind() != Obj.Elem)
 		{
 			Code.store(AssignmentStmt.getDesignator().obj);
-		} else
+		}/* 
+		else
 		{			
 			// At this point on stack are already address of object
 			// index of element, and value of expression
 			Code.put(Code.astore);
-		}
+		}*/
 	}
 	
 	@Override
@@ -169,10 +177,29 @@ public class CodeGenerator extends VisitorAdaptor {
 	}
 	
 	@Override
+	public void visit(DesigName DesigName)
+	{
+		Designator desigParent = (Designator)DesigName.getParent();
+		SyntaxNode parent = DesigName.getParent().getParent();
+		if ((AssignmentStmt.class != parent.getClass() || 
+				(desigParent.obj.getKind() == Obj.Elem && 
+				desigParent.getOptArray().struct != Tab.noType)) &&
+				
+				FuncCall.class != parent.getClass() &&
+				ReadStmt.class != parent.getClass())
+		{
+			Code.load(DesigName.obj);
+		}
+	}
+	
+	/*
+	@Override
 	public void visit(Designator Designator)
 	{
 		SyntaxNode parent = Designator.getParent();
-		if (AssignmentStmt.class != parent.getClass() &&
+		if ( (AssignmentStmt.class != parent.getClass() || 
+				(Designator.obj.getKind() == Obj.Elem && 
+				Designator.getOptArray().struct != Tab.noType)) &&
 				FuncCall.class != parent.getClass() &&
 				ReadStmt.class != parent.getClass())
 		{
@@ -201,8 +228,9 @@ public class CodeGenerator extends VisitorAdaptor {
 			// Code.put(Code.dup2);
 			// Code.put(Code.pop);
 		}
-		*/
+		
 	}
+	*/
 	
 	@Override
 	public void visit(DecOperation DecOperation)
@@ -212,15 +240,15 @@ public class CodeGenerator extends VisitorAdaptor {
 		Code.put(Code.const_m1);
 		Code.put(Code.add);
 		
-		if (DecOperation.getDesignator().obj.getKind() != Obj.Elem)
+		//if (DecOperation.getDesignator().obj.getKind() != Obj.Elem)
 		{
 			Code.store(DecOperation.getDesignator().obj);
-		} else
+		} /*else
 		{			
 			// At this point on stack are already address of object
 			// index of element, and value of expression
 			Code.put(Code.astore);
-		}
+		}*/
 	}
 	
 	@Override
@@ -231,15 +259,15 @@ public class CodeGenerator extends VisitorAdaptor {
 		Code.put(Code.const_1);
 		Code.put(Code.add);
 		
-		if (IncOperation.getDesignator().obj.getKind() != Obj.Elem)
+		//if (IncOperation.getDesignator().obj.getKind() != Obj.Elem)
 		{
 			Code.store(IncOperation.getDesignator().obj);
-		} else
+		}/* else
 		{			
 			// At this point on stack are already address of object
 			// index of element, and value of expression
 			Code.put(Code.astore);
-		}
+		}*/
 	}
 	
 	@Override
@@ -265,6 +293,9 @@ public class CodeGenerator extends VisitorAdaptor {
 			return Code.rem;
 		}
 		report_error("Generating code error, specified mulop operation not found",null);
+		
+		Code.put(Code.trap);
+		Code.put(1);
 		return 0;
 	}
 	
@@ -278,6 +309,9 @@ public class CodeGenerator extends VisitorAdaptor {
 			return Code.sub;
 		}
 		report_error("Generating code error, specified addop operation not found",null);
+		
+		Code.put(Code.trap);
+		Code.put(1);
 		return 0;
 	}
 	
@@ -330,30 +364,4 @@ public class CodeGenerator extends VisitorAdaptor {
 		constBool.setAdr(ConstBool.getBooll()?1:0);
 		Code.load(constBool);
 	}
-	
-	/*
-	@Override
-	public void visit(ReturnNoExpr ReturnNoExpr) {
-		Code.put(Code.exit);
-		Code.put(Code.return_);
-	}
-	
-	@Override
-	public void visit(Assignment Assignment) {
-		Code.store(Assignment.getDesignator().obj);
-	}
-	
-	@Override
-	public void visit(Const Const) {
-		Code.load(new Obj(Obj.Con, "$", Const.struct, Const.getN1(), 0));
-	}
-	
-	@Override
-	public void visit(Designator Designator) {
-		SyntaxNode parent = Designator.getParent();
-		if (Assignment.class != parent.getClass() && FuncCall.class != parent.getClass()) {
-			Code.load(Designator.obj);
-		}
-	}
-	*/
 }

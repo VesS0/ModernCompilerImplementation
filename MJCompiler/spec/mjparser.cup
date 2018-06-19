@@ -58,7 +58,7 @@ terminal char CHAR;
 terminal Integer NUMBER;
 terminal String IDENT;
 
-nonterminal rs.etf.pp1.symboltable.concepts.Obj Program, ProgramName, Designator, Addop, Mulop, Var, DesigWithOptPostfixOperation;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj Program, ProgramName, Designator, DesigName, Addop, Mulop, Var, DesigWithOptPostfixOperation;
 nonterminal rs.etf.pp1.symboltable.concepts.Struct Type, Term, Expr, Factor, OptVarDeclList, TermAddopList, FactorMulopList, FuncCall, OptArray, OptCommaNumber, ExprOrError;
 nonterminal rs.etf.pp1.symboltable.concepts.Struct Const, OptValueAssign;
 
@@ -123,7 +123,9 @@ Const ::= 	(ConstNum) NUMBER:numm |
 
  /* OptBrackExpr ::= (BrackExpr) LBRACK Expr:val RBRACK | (NoBrackExpr)  epsilon ; */
 
-Designator ::= (Designator) IDENT:designatorName OptArray:indexedElement ;
+Designator ::= (Designator) DesigName:designatorName OptArray:indexedElement ;
+
+DesigName ::= (DesigName) IDENT:designatorName;
 
 OptArray ::= (ArrayIndexer) LBRACK Expr:val RBRACK | (NoArrayIndexer) /* epsilon */ ;
 
