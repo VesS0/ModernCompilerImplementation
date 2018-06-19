@@ -12,7 +12,7 @@ import rs.etf.pp1.symboltable.structure.SymbolDataStructure;
 public class SemanticAnalyzer extends VisitorAdaptor {
 	boolean errorDetected = false;
 	Obj currentMethod = null;
-	Struct currentDeclTypeStruct = null;
+	Type currentDeclTypeStruct = null;
 	boolean returnFound = false;
 	boolean mainFound = false;
 	int nVars;
@@ -249,16 +249,16 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	@Override
 	public void visit(Var Var)
 	{
-		Struct VariableType = currentDeclTypeStruct;
+		Struct VariableType = new Struct(currentDeclTypeStruct.struct.getKind());
 		if(Var.getOptArrayBrackets().bool)
 		{
 			report_info("Array \""+ Var.getVarName() + "\" declared on line " + Var.getLine() +
-					" of type " + StructKindToName(currentDeclTypeStruct.getKind()), Var);
-			VariableType = new Struct(Struct.Array, currentDeclTypeStruct);
+					" of type " + StructKindToName(currentDeclTypeStruct.struct.getKind()), Var);
+			VariableType = new Struct(Struct.Array, new Struct(currentDeclTypeStruct.struct.getKind()));
 		} else
 		{
 			report_info("Variable \""+ Var.getVarName() + "\" declared on line " + Var.getLine() +
-					" of type " + StructKindToName(currentDeclTypeStruct.getKind()), Var);
+					" of type " + StructKindToName(currentDeclTypeStruct.struct.getKind()), Var);
 		}
 		
 		if (Var.getOptValueAssign().struct != Tab.noType)
@@ -284,7 +284,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	@Override
 	public void visit(NoArrayIndexer NoArrayIndexer) {
-		NoArrayIndexer.struct = new Struct(Struct.None);
+		NoArrayIndexer.struct = Tab.noType;
 	}
 
 	@Override
@@ -623,12 +623,34 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		VoidType.struct = Tab.noType;
 	}
 
+	public static Struct GetTypeBasedOnName(String name)
+	{
+		switch (name)
+		{
+		case "int":
+			return Tab.intType;
+		case "char":
+			return Tab.charType;
+		case "bool":
+			return new Struct(Struct.Bool);
+		}
+		
+		try {
+			throw new Exception("\n\n\n\n\n\n\n******Not expected to get here******\n\n\n\n\n\n\n\n");
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		return Tab.noType;
+	}
+	
 	@Override
 	public void visit(NotVoidType NotVoidType) {
 		NotVoidType.struct = Tab.noType;
 		Obj typeNode = Tab.find(NotVoidType.getTypeName());
 		
-		if (typeNode == Tab.noObj) {
+		if (typeNode == null || typeNode == Tab.noObj) {
 			report_error("Semnatic Error on line "+ NotVoidType.getLine() + " : Type \"" + NotVoidType.getTypeName() + "\" not found in symbol table ", NotVoidType);
 			return;
 		}
@@ -638,14 +660,14 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			return;
 		}
 		
-		NotVoidType.struct = typeNode.getType();
+		NotVoidType.struct = GetTypeBasedOnName(typeNode.getName());
 	}
 
 	@Override
 	public void visit(VarType VarType) {
 		// Is it const? VarDecl.getOptConst();
 		// Get list here and insert all at this point? VarDecl.getVarList();
-		currentDeclTypeStruct = VarType.getType().struct;
-		report_info("Type Changed! " + StructKindToName(currentDeclTypeStruct.getKind()),null);
+		currentDeclTypeStruct = VarType.getType();
+		report_info("Type Changed! " + StructKindToName(currentDeclTypeStruct.struct.getKind()),null);
 	}
 }

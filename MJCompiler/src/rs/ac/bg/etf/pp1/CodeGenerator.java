@@ -78,6 +78,17 @@ public class CodeGenerator extends VisitorAdaptor {
 	}
 	
 	@Override
+	public void visit(NewType NewType)
+	{
+		// if our type is array
+		if (NewType.getOptArray().struct != Tab.noType)
+		{
+			Code.put(Code.newarray); 
+            Code.put(NewType.getType().struct == Tab.charType ? 0  : 1);  
+		}
+	}
+	
+	@Override
 	public void visit(StmtFuncCall StmtFuncCall)
 	{
 		if (StmtFuncCall.getFuncCall().getDesignator().obj.getType() != Tab.noType)
@@ -139,7 +150,15 @@ public class CodeGenerator extends VisitorAdaptor {
 	@Override
 	public void visit(AssignmentStmt AssignmentStmt)
 	{
-		Code.store(AssignmentStmt.getDesignator().obj);
+		if (AssignmentStmt.getDesignator().obj.getKind() != Obj.Elem)
+		{
+			Code.store(AssignmentStmt.getDesignator().obj);
+		} else
+		{			
+			// At this point on stack are already address of object
+			// index of element, and value of expression
+			Code.put(Code.astore);
+		}
 	}
 	
 	@Override
@@ -150,13 +169,31 @@ public class CodeGenerator extends VisitorAdaptor {
 	}
 	
 	@Override
+	public void visit(Designator Designator)
+	{
+		if (Designator.obj.getKind() == Obj.Elem)
+		{
+			Code.put(Designator.obj.getAdr());
+		}
+	}
+	
+	@Override
 	public void visit(DecOperation DecOperation)
 	{
 		Code.load(DecOperation.getDesignator().obj);
 		Code.load(DecOperation.getDesignator().obj);
 		Code.put(Code.const_m1);
 		Code.put(Code.add);
-		Code.store(DecOperation.getDesignator().obj);
+		
+		if (DecOperation.getDesignator().obj.getKind() != Obj.Elem)
+		{
+			Code.store(DecOperation.getDesignator().obj);
+		} else
+		{			
+			// At this point on stack are already address of object
+			// index of element, and value of expression
+			Code.put(Code.astore);
+		}
 	}
 	
 	@Override
@@ -166,7 +203,16 @@ public class CodeGenerator extends VisitorAdaptor {
 		Code.load(IncOperation.getDesignator().obj);
 		Code.put(Code.const_1);
 		Code.put(Code.add);
-		Code.store(IncOperation.getDesignator().obj);
+		
+		if (IncOperation.getDesignator().obj.getKind() != Obj.Elem)
+		{
+			Code.store(IncOperation.getDesignator().obj);
+		} else
+		{			
+			// At this point on stack are already address of object
+			// index of element, and value of expression
+			Code.put(Code.astore);
+		}
 	}
 	
 	@Override
