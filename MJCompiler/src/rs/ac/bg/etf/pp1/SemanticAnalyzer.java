@@ -506,6 +506,12 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		}
 	}
 	
+	@Override
+	public void visit(NoPosfixOperation NoPosfixOperation)
+	{
+		NoPosfixOperation.obj = NoPosfixOperation.getDesignator().obj;
+	}
+	
 	public static boolean IsObjectOfTypeInt(Obj obj)
 	{
 		if ((obj.getKind() == Obj.Var || obj.getKind() == Obj.Elem) && obj.getType() == Tab.intType)

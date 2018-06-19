@@ -144,7 +144,7 @@ public class CodeGenerator extends VisitorAdaptor {
 	@Override
 	public void visit(DecOperation DecOperation)
 	{
-		Code.load(DecOperation.getDesignator().obj);
+		// one is already loaded
 		Code.load(DecOperation.getDesignator().obj);
 		Code.put(Code.const_m1);
 		Code.put(Code.inc);
@@ -154,17 +154,11 @@ public class CodeGenerator extends VisitorAdaptor {
 	@Override
 	public void visit(IncOperation IncOperation)
 	{
-		Code.load(IncOperation.getDesignator().obj);
+		// one is already loaded
 		Code.load(IncOperation.getDesignator().obj);
 		Code.put(Code.const_1);
 		Code.put(Code.inc);
 		Code.store(IncOperation.getDesignator().obj);
-	}
-	
-	@Override
-	public void visit(NoPosfixOperation NoPosfixOperation)
-	{
-		Code.load(NoPosfixOperation.getDesignator().obj);
 	}
 	
 	@Override
