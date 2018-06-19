@@ -15,7 +15,6 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	Struct currentDeclTypeStruct = null;
 	boolean returnFound = false;
 	boolean mainFound = false;
-	boolean postfixOperationPresent = false;
 	int nVars;
 	
 	Logger log = Logger.getLogger(getClass());
@@ -236,26 +235,49 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 	
 	@Override
-	public void visit(Vars Vars) {
-		// Is it const?
+	public void visit(AssignExpression AssignExpression)
+	{
+		AssignExpression.struct = AssignExpression.getConst().struct;
+	}
+	
+	@Override
+	public void visit(NoAssignExpr NoAssignExpr)
+	{
+		NoAssignExpr.struct = Tab.noType;
+	}
+	
+	@Override
+	public void visit(Var Var)
+	{
 		Struct VariableType = currentDeclTypeStruct;
-		if(Vars.getOptArrayBrackets().bool)
+		if(Var.getOptArrayBrackets().bool)
 		{
-			report_info("Array \""+ Vars.getVarName() + "\" declared on line " + Vars.getLine() +
-					" of type " + StructKindToName(currentDeclTypeStruct.getKind()), Vars);
+			report_info("Array \""+ Var.getVarName() + "\" declared on line " + Var.getLine() +
+					" of type " + StructKindToName(currentDeclTypeStruct.getKind()), Var);
 			VariableType = new Struct(Struct.Array, currentDeclTypeStruct);
 		} else
 		{
-			report_info("Variable \""+ Vars.getVarName() + "\" declared on line " + Vars.getLine() +
-					" of type " + StructKindToName(currentDeclTypeStruct.getKind()), Vars);
+			report_info("Variable \""+ Var.getVarName() + "\" declared on line " + Var.getLine() +
+					" of type " + StructKindToName(currentDeclTypeStruct.getKind()), Var);
 		}
 		
-		if (Tab.currentScope().findSymbol(Vars.getVarName()) != null)
+		if (Var.getOptValueAssign().struct != Tab.noType)
 		{
-			report_error("Semantic Error on line " + Vars.getLine() + " : Variable \"" + Vars.getVarName() + "\" is already defined in current scope", null);
+			if (!IsSecondTypeCompatibleWithFirst(VariableType, Var.getOptValueAssign().struct))
+			{
+				report_error("Semantic Error on line " + Var.getLine() + " : Variable \"" + Var.getVarName() + "\" of type " +
+						StructKindToName(VariableType.getKind())+" has assigned value of type " +
+						StructKindToName(Var.getOptValueAssign().struct.getKind()), null);
+			}
+		}
+		
+		if (Tab.currentScope().findSymbol(Var.getVarName()) != null)
+		{
+			report_error("Semantic Error on line " + Var.getLine() + " : Variable \"" + Var.getVarName() + "\" is already defined in current scope", null);
 			return;
 		}
-		Obj varNode = Tab.insert(Obj.Var, Vars.getVarName(), VariableType);
+		
+		Var.obj = Tab.insert(Obj.Var, Var.getVarName(), VariableType);
 	}
 
 	@Override
@@ -458,51 +480,29 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 	
 	@Override
+	public void visit(DefVarWithOptPostfixOp DefVarWithOptPostfixOp) {
+		DefVarWithOptPostfixOp.struct = DefVarWithOptPostfixOp.getDesigWithOptPostfixOperation().obj.getType();
+	}
+	
+	@Override
 	public void visit(DecOperation DecOperation)
 	{
-		postfixOperationPresent = true;
-		super.visit(DecOperation);
+		DecOperation.obj = DecOperation.getDesignator().obj;
+		if (!IsObjectOfTypeInt(DecOperation.getDesignator().obj))
+		{
+			report_error("Semantic Error on line " + DecOperation.getLine() + " : Postfix operation cannot be used on object of kind " +
+					ObjTypeToName(DecOperation.getDesignator().obj.getKind()) + " and type "+ StructKindToName(DecOperation.getDesignator().obj.getType().getKind()) , null);
+		}
 	}
 	
 	@Override
 	public void visit(IncOperation IncOperation)
 	{
-		postfixOperationPresent = true;
-		super.visit(IncOperation);
-	}
-	
-	@Override
-	public void visit(NoPosfixOperation NoPosfixOperation)
-	{
-		postfixOperationPresent = false;
-		super.visit(NoPosfixOperation);
-	}
-	
-	@Override
-	public void visit(PostfixStmt PostfixStmt) {
-		if (postfixOperationPresent)
+		IncOperation.obj = IncOperation.getDesignator().obj;
+		if (!IsObjectOfTypeInt(IncOperation.getDesignator().obj))
 		{
-			if (!IsObjectOfTypeInt(PostfixStmt.getDesignator().obj))
-			{
-				report_error("Semantic Error on line " + PostfixStmt.getLine() + " : Postfix operation cannot be used on object of kind " +
-						ObjTypeToName(PostfixStmt.getDesignator().obj.getKind()) + " and type "+ StructKindToName(PostfixStmt.getDesignator().obj.getType().getKind()) , null);
-			}
-			postfixOperationPresent = false;
-		}
-	}
-	
-	@Override
-	public void visit(DefVarWithOptPostfixOp DefVarWithOptPostfixOp) {
-		DefVarWithOptPostfixOp.struct = DefVarWithOptPostfixOp.getDesignator().obj.getType();
-		
-		if (postfixOperationPresent)
-		{
-			if (!IsObjectOfTypeInt(DefVarWithOptPostfixOp.getDesignator().obj))
-			{
-				report_error("Semantic Error on line " + DefVarWithOptPostfixOp.getLine() + " : Postfix operation cannot be used on object of kind " +
-						ObjTypeToName(DefVarWithOptPostfixOp.getDesignator().obj.getKind()) + " and type "+ StructKindToName(DefVarWithOptPostfixOp.getDesignator().obj.getType().getKind()) , null);
-			}
-			postfixOperationPresent = false;
+			report_error("Semantic Error on line " + IncOperation.getLine() + " : Postfix operation cannot be used on object of kind " +
+					ObjTypeToName(IncOperation.getDesignator().obj.getKind()) + " and type "+ StructKindToName(IncOperation.getDesignator().obj.getType().getKind()) , null);
 		}
 	}
 	
@@ -532,7 +532,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	@Override
 	public void visit(AssignmentStmt AssignmentStmt) {
 		Struct LeftFromAssignType = AssignmentStmt.getDesignator().obj.getType();
-		Struct RightFromAssignType = AssignmentStmt.getExprOrError().struct;
+		Struct RightFromAssignType = AssignmentStmt.getAssignExpr().getExprOrError().struct;
 		
 		if (!IsSecondTypeCompatibleWithFirst(LeftFromAssignType, RightFromAssignType))
 		{
@@ -586,6 +586,13 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	@Override
 	public void visit(ExprFuncCall ExprFuncCall) {
 		ExprFuncCall.struct = ExprFuncCall.getFuncCall().struct;
+		
+		if (ExprFuncCall.struct == Tab.noType)
+		{
+			report_error("Semantic Error on line " + ExprFuncCall.getLine() +
+					" : function \"" + ExprFuncCall.getFuncCall().getDesignator().getDesignatorName() +
+					"\" is of type void and cannot be used in expresion", null);
+		}
 	}
 
 	@Override

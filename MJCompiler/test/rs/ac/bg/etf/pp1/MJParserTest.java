@@ -39,7 +39,7 @@ public class MJParserTest {
 					"test/syntaxTests/SyntaxTestBasic", "test/syntaxTests/SyntaxTestError" ,
 					"test/semanticAnalysisTests/SemanticAnalysisTestBasic", "test/semanticAnalysisTests/SemanticAnalysisTestError",
 					"test/semanticAnalysisTests/SemanticAnalysisArrayBasic", "test/semanticAnalysisTests/SemanticAnalysisArrayError",
-					"test/codeGenerationTests/CodeGenerationTestBasic"
+					"test/codeGenerationTests/CodeGenerationTestBasic", "test/officialTests/test301.mj"
 			};
 			
 			SyntaxOnlyFiles = 2;
@@ -50,7 +50,7 @@ public class MJParserTest {
 					"test/syntaxTests/SyntaxTestBasic.obj", "test/syntaxTests/SyntaxTestError.obj" ,
 					"test/semanticAnalysisTests/SemanticAnalysisTestBasic.obj", "test/semanticAnalysisTests/SemanticAnalysisTestError.obj",
 					"test/semanticAnalysisTests/SemanticAnalysisArrayBasic.obj", "test/semanticAnalysisTests/SemanticAnalysisArrayError.obj",
-					"test/codeGenerationTests/CodeGenerationTestBasic.obj"
+					"test/codeGenerationTests/CodeGenerationTestBasic.obj", "test/officialTests/test301.obj"
 			};
 			
 
@@ -85,7 +85,7 @@ public class MJParserTest {
 		        if (p.isSyntaxErrorDetected)
 		        {
 		        	log.info(" ******************************** \nSyntax Error Detected - further parsing stopped on file: "+ sourceFilePath[currentParsingFileIndex]);
-		        	if (currentParsingFileIndex%2 ==0){
+		        	if (currentParsingFileIndex%2 ==0 || currentParsingFileIndex>=7){
 		        		throw new Exception("TEST ASSUMPTION FAILED");
 		        	}
 		        	continue;
@@ -111,7 +111,7 @@ public class MJParserTest {
 				Tab.dump();
 				if(semanticAnalyzer.isErrorDetected()) {
 			        log.info(" ******************************** \nSemantic Error Detected - further parsing stopped on file: "+ sourceFilePath[currentParsingFileIndex]);
-		        	if (currentParsingFileIndex%2 ==0){
+		        	if (currentParsingFileIndex%2 ==0 || currentParsingFileIndex>=7){
 		        		throw new Exception("TEST ASSUMPTION FAILED");
 		        	}
 			        continue;
@@ -135,7 +135,12 @@ public class MJParserTest {
 		        Code.dataSize = semanticAnalyzer.nVars;
 		        Code.mainPc = codeGenerator.getMainPc();
 		        Code.write(new FileOutputStream(objFile));
-		        log.info("Parsing successfully finished");
+				if(codeGenerator.isErrorDetected()) {
+			        log.info(" ******************************** \nCode Generation Error Detected - parsing failed: "+ sourceFilePath[currentParsingFileIndex]);
+		        		throw new Exception("TEST ASSUMPTION FAILED");
+		        	} else {
+			        log.info(" ******************************** \nCode Generation successfully finished on file: "+ sourceFilePath[currentParsingFileIndex]);
+				}
 			}
 		}
 	}

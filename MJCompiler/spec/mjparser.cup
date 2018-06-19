@@ -58,13 +58,12 @@ terminal char CHAR;
 terminal Integer NUMBER;
 terminal String IDENT;
 
-nonterminal rs.etf.pp1.symboltable.concepts.Obj Program, ProgramName, Designator;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj Program, ProgramName, Designator, Addop, Mulop, Var, DesigWithOptPostfixOperation;
 nonterminal rs.etf.pp1.symboltable.concepts.Struct Type, Term, Expr, Factor, OptVarDeclList, TermAddopList, FactorMulopList, FuncCall, OptArray, OptCommaNumber, ExprOrError;
-nonterminal rs.etf.pp1.symboltable.concepts.Struct Const;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct Const, OptValueAssign;
 
-nonterminal Statement, DesignatorStatement;
+nonterminal Statement, DesignatorStatement, AssignExpr;
 nonterminal VarDecl/*, OptBrackExpr*/, VarType;
-nonterminal Addop, Mulop, OptPostfixOperation;
 nonterminal Boolean OptConst, OptArrayBrackets; 
 
 /* July 2017/2018 Addition for level A */
@@ -88,16 +87,19 @@ Statement ::= 	(DesignatorStmt) DesignatorStatement SEMI |
 
 OptCommaNumber ::= (CommaNumber) COMMA Expr:num | (NoCommaNumber) /* epsilon */ ;
 
-DesignatorStatement ::= (AssignmentStmt) Designator:designator ASSIGN ExprOrError:expr |
-						(PostfixStmt) Designator:designator OptPostfixOperation:op |
+DesignatorStatement ::= (AssignmentStmt) Designator:designator AssignExpr:expr |
+						(PostfixStmt) DesigWithOptPostfixOperation:designator |
 						(StmtFuncCall)  FuncCall
 						;
+AssignExpr ::= (AssignExpr) ASSIGN ExprOrError:expr;
+
+OptValueAssign ::= (AssignExpression) ASSIGN Const:val | (NoAssignExpr) /* epsilon */;
 
 FuncCall ::= (FuncCall) Designator:funcName LPAREN OptArgumentParamList:args RPAREN ;
 
 ExprOrError ::= (Expression) Expr:expr | (Err) error:err {: parser.log.debug("Error successfully recovered in expression after assign operator before \";\"  on line " + errleft); :} ;
 
-OptPostfixOperation ::= (DecOperation) DEC  | (IncOperation) INC | (NoPosfixOperation) /* epsilon */ ;
+DesigWithOptPostfixOperation ::= (DecOperation) Designator:designator DEC  | (IncOperation) Designator:designator  INC | (NoPosfixOperation) Designator:designator;
 
 Expr ::= (TermAddopListExprSub) SUB TermAddopList:res |
 		 (TermAddopListExpr) TermAddopList:res ;
@@ -111,7 +113,7 @@ FactorMulopList::= (FactorMulops) Factor:fact Mulop:op FactorMulopList:res | (Si
 Factor ::=  (ConstVar) Const:val |
 			(ParenExpr) LPAREN Expr:expr RPAREN |
 			(NewType) NEW Type:creationType OptArray:arrayLength |
-			(DefVarWithOptPostfixOp) Designator:designator OptPostfixOperation:op |
+			(DefVarWithOptPostfixOp) DesigWithOptPostfixOperation:designator |
 			(ExprFuncCall) FuncCall
 			;
 
@@ -137,10 +139,12 @@ VarType ::= (VarType) OptConst:isConst Type:varType;
 
 OptConst ::= (ConstType) CONST | (NotConstType) /* epsilon */ ;
 
-VarList ::= (Vars) IDENT:varName OptArrayBrackets:isArray /* here insert! */ SemiCommaVarList:list |
+VarList ::= (Vars) Var SemiCommaVarList:list |
 (ParamDefinitionError) error:err
 {: parser.log.debug("Error successfully recovered in variable definition before \",\" or \";\" on line " + errleft); :}
 SemiCommaVarList ;
+
+Var ::= (Var) IDENT:varName OptArrayBrackets:isArray OptValueAssign;
 
 SemiCommaVarList ::= (Semi) SEMI | (CommaVarDecl) COMMA VarList:list ;
 

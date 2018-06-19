@@ -1,6 +1,6 @@
 program MJProgram
 	int global, globalComma;
-	int globalArray[], glovalInt, globalArray2[];
+	int globalArray[], glovalInt, globalArray2[] = new int[3];
 	char chrArr[];
 {	
 	int badReturnIntIntArr(int t, const int g)

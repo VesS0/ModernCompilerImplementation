@@ -1,10 +1,11 @@
 program MJProgram
-	int global, globalComma;
+	int global, globalComma , uniqueGlobal;
 	int globalArray[], glovalInt, globalArray2[];
+	bool uniqueBool = 'c';
 {
 	
 	int retConstNum()
-	int a,b;
+	int a,b = 'c' ;
 	{
 		return 1;
 	}
@@ -209,4 +210,18 @@ program MJProgram
 	}
 	
 	int main(){ return 1;}
+	
+	void VoidFunction(){
+	}
+	
+	void functionOfVoidInExpression() int krkkk;
+	{
+		krkkk = 10;
+		krkkk = krkkk + 2*5 - VoidFunction();
+	}
+	
+	void wrongDefaultAssign() int a = true;
+	{
+	
+	}
 }

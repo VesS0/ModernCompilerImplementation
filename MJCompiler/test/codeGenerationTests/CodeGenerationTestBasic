@@ -1,10 +1,50 @@
 program MJProgram
+	int y, x = 2;
 {
-	void main()
+
+	void printChars() char cha = 'a', chb='b', chc='c';
 	{
-		print(1);
+		cha = 'a';
 		print('c');
-		print(1,1);
-		print('k', 2);
+		print(cha);
+		print(chb);
+		print(chc);
+	}
+	
+	int incrementDecrementTestSuccessful()
+	int dec, inc = 3; int kdec=5, kinc;
+	{
+		dec--; inc++;
+		inc++; inc--;
+		
+		// dec = dec-- + inc++ + inc++; // 8
+		// inc = dec-- - inc++; // 7 -
+		return inc + dec; // 3
+	}
+	
+	int printTest() int c,k; 
+	bool vlada = true;
+	{
+		x = 30 + 3 + x;
+		c = -1 + 2*3 + (1+1)*(1+1)+2;
+		print(incrementDecrementTestSuccessful());
+		vlada = false;
+		vlada = true;
+		
+		print(x); //35 // err 33
+		print(8%3); //2
+		printChars();
+
+		print(c); //12
+		// print('k');
+			
+		return x-c*2; //35 - 24 (err 9) 
+	}
+	
+	void main() int k = 2, t;
+	{
+		y = printTest();
+		print(y); // 11 // err 9
+		print((y + 1 + k)); // 2 // err 12
 	}	
 }

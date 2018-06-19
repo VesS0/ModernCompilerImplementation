@@ -1,15 +1,16 @@
 program MJProgram
-	int global, globalComma;
+	int global, globalComma = 3, uniqueInt;
 	int globalArray[], glovalInt, globalArray2[];
+	bool uniqueBool = true;
 {	
 	int retConstNum()
-	int a,b;
+	int a,b = 1;
 	int global;
 	{
 		return 1;
 	}
 	
-	bool retBool(int i, bool p, char c)
+	bool retBool(int i, bool p, char c) bool anotherDefault = true;
 	{
 		return false;
 	}
@@ -25,7 +26,7 @@ program MJProgram
 	}
 	
 	int retArrayElement(int t, const int g)
-	const int a[], b;
+	const int a[], b=2;
 	{
 		return a[t];
 	}
@@ -57,7 +58,7 @@ program MJProgram
 	
 	char arrayTesting()
 	int a[],b[],c,d[];
-	char k[],g[],h,j[];
+	char k[],g[],h = 'c',j[];
 	bool z[],x,xx[],v[]; 
 	{
 		c = 3;
