@@ -43,10 +43,12 @@ program MJProgram
 	
 	void main() int k = 2, t;
 	{
+		read(t);
+		print(t);
 		print(incrementDecrementTestSuccessful()); // expected 9
 	
-		// y = printTest();
-		// print(y); // 11 // err 9
-		// print((y + 1 + k)); // 2 // err 12
+		y = printTest();
+		print(y); // 11 // err 9
+		print((y + 1 + k)); // 2 // err 12
 	}	
 }

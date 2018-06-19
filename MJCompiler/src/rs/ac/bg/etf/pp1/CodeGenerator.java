@@ -115,11 +115,26 @@ public class CodeGenerator extends VisitorAdaptor {
 		if(PrintStmt.getExpr().struct == Tab.intType)
 		{
 			Code.put(Code.const_5);
+			Code.put(Code.print);
 		} else if (PrintStmt.getExpr().struct == Tab.charType)
 		{
 			Code.put(Code.const_1);
+			Code.put(Code.bprint);
 		}
-		Code.put(Code.print);
+		
+	}
+	
+	@Override
+	public void visit(ReadStmt ReadStmt)
+	{
+		if (ReadStmt.getDesignator().obj.getType() == Tab.charType)
+		{
+			Code.put(Code.bread);
+		} else
+		{
+			Code.put(Code.read);
+		}
+		Code.store(ReadStmt.getDesignator().obj);
 	}
 	
 	@Override
