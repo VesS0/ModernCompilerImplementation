@@ -136,29 +136,29 @@ public class CodeGenerator extends VisitorAdaptor {
 	}
 	
 	@Override
-	public void visit(DefVarWithOptPostfixOp DefVarWithOptPostfixOp)
-	{
-		Code.load(DefVarWithOptPostfixOp.getDesigWithOptPostfixOperation().obj);
-	}
-	
-	@Override
 	public void visit(DecOperation DecOperation)
 	{
-		// one is already loaded
+		Code.load(IncOperation.getDesignator().obj);
 		Code.load(DecOperation.getDesignator().obj);
 		Code.put(Code.const_m1);
-		Code.put(Code.inc);
+		Code.put(Code.add);
 		Code.store(DecOperation.getDesignator().obj);
 	}
 	
 	@Override
 	public void visit(IncOperation IncOperation)
 	{
-		// one is already loaded
+		Code.load(IncOperation.getDesignator().obj);
 		Code.load(IncOperation.getDesignator().obj);
 		Code.put(Code.const_1);
-		Code.put(Code.inc);
+		Code.put(Code.add);
 		Code.store(IncOperation.getDesignator().obj);
+	}
+	
+	@Override
+	public void visit(NoPosfixOperation NoPosfixOperation)
+	{
+		Code.load(NoPosfixOperation.getDesignator().obj);
 	}
 	
 	@Override
