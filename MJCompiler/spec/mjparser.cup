@@ -135,7 +135,9 @@ Mulop ::= (MulopMul) MUL | (MulopDiv) DIV | (MulopMod) MOD ;
 
 OptVarDeclList ::= (VarDeclList) VarDecl OptVarDeclList | (NoVarDecl) /* epsilon */ ;
 
-VarDecl ::= (VarDecl) VarType VarList:list ;
+VarDecl ::= (VarDeclNoErr) VarType VarList:list | (FirstParamDefinitionError) VarType error:err 
+{: parser.log.debug("Error successfully recovered in variable definition before \",\" or \";\" on line " + errleft); :}
+VarList:list ;
 
 VarType ::= (VarType) OptConst:isConst Type:varType;
 

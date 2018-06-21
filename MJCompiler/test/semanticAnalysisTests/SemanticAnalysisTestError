@@ -3,6 +3,7 @@ program MJProgram
 	int globalArray[], glovalInt, globalArray2[];
 	bool uniqueBool = 'c';
 	const int constA = 3;
+	int 3, a, b;
 {
 	
 	int retConstNum()
