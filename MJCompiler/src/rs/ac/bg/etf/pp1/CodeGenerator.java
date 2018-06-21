@@ -256,79 +256,89 @@ public class CodeGenerator extends VisitorAdaptor {
 		}*/
 		
 	}
+	static final int dup_x2 = 0x5B;
 	
 	@Override
 	public void visit(DecOperation DecOperation)
 	{
-		// Duplicate value on the stack.
-		// Note: we should not load designator object again, because in case
-		// that designator is array, we will be expecting two more arguments on stack
-		// and will be calling aload which we want to avoid
-		Code.put(Code.dup);
-		Code.put(Code.const_m1);
-		Code.put(Code.add);
-		
 		if (DecOperation.getDesignator().obj.getKind() == Obj.Elem)
 		{
 			// in case of array, we are having following situation
-			// StackBottom: Adr, Idx, Val, DecVal
-			// What we want is Val, Adr, Idx, DecVal
+			// StackBottom: Adr, Idx, Val
+			// What we want is Val, Adr, Idx
 			// Operation dup_x2 from http://ir4pp1.etf.rs/Domaci/2017-2018/mikrojava_1718_jan.pdf
-			// would be useful but I cannot find it =D
-			// So we will do it manually:
+			// would be useful but I cannot find it, so I have implemented
+			// new interpreter with this function operation :D
 			
-			// We will store current values from stack
-			int Adr, Idx, Val, DecVal;
-			DecVal = Code.buf[Code.pc-1];
-			Val = Code.buf[Code.pc-2];
-			Idx = Code.buf[Code.pc-3];
-			Adr = Code.buf[Code.pc-4];
+			Code.put(dup_x2); //  code (91)
 			
-			int Adrr, Idxx, Vall, DecVall;
-			// Pop them all
-			Adrr = Code.get2(Code.pc-1);
-			Code.put(Code.pop);
-			Idxx = Code.get2(Code.pc-1);
-			Code.put(Code.pop);
-			Vall = Code.get2(Code.pc-1);
-			Code.put(Code.pop);
-			DecVall = Code.get2(Code.pc-1);
-			Code.put(Code.pop);
-			
-			// Load them the way we want.
-			Code.loadConst(Val);
-			Code.loadConst(Adr);
-			Code.loadConst(Idx);
-			Code.loadConst(DecVal);
-			// Code.buf[Code.pc-1] = (byte) Idx;
-			// Code.buf[Code.pc-2] = (byte) Adr;
-			// Code.buf[Code.pc-3] = (byte) Val;
-			
+			// resulting StackBottom: Val, Adr, Idx, Val
+		} else
+		{
+			// Duplicate loaded value on stack
+			Code.put(Code.dup);
 		}
 		
+		Code.put(Code.const_m1);
+		Code.put(Code.add);
 		Code.store(DecOperation.getDesignator().obj);
+	}
+	
+	public static void CustomDupX2()
+	{
+		
+		// We will store current values from stack
+		int Adr, Idx, Val, DecVal;
+		DecVal = Code.buf[Code.pc-1];
+		Val = Code.buf[Code.pc-2];
+		Idx = Code.buf[Code.pc-3];
+		Adr = Code.buf[Code.pc-4];
+		
+		int Adrr, Idxx, Vall, DecVall;
+		// Pop them all
+		Adrr = Code.get2(Code.pc-1);
+		Code.put(Code.pop);
+		Idxx = Code.get2(Code.pc-1);
+		Code.put(Code.pop);
+		Vall = Code.get2(Code.pc-1);
+		Code.put(Code.pop);
+		DecVall = Code.get2(Code.pc-1);
+		Code.put(Code.pop);
+		
+		// Load them the way we want.
+		Code.loadConst(Val);
+		Code.loadConst(Adr);
+		Code.loadConst(Idx);
+		Code.loadConst(DecVal);
+		// Code.buf[Code.pc-1] = (byte) Idx;
+		// Code.buf[Code.pc-2] = (byte) Adr;
+		// Code.buf[Code.pc-3] = (byte) Val;
 	}
 	
 	@Override
 	public void visit(IncOperation IncOperation)
 	{
-		// Duplicate value on the stack.
-		// Note: we should not load designator object again, because in case
-		// that designator is array, we will be expecting two more arguments on stack
-		// and will be calling aload which we want to avoid
-		Code.put(Code.dup);
+		if (IncOperation.getDesignator().obj.getKind() == Obj.Elem)
+		{
+			// in case of array, we are having following situation
+			// StackBottom: Adr, Idx, Val
+			// What we want is Val, Adr, Idx
+			// Operation dup_x2 from http://ir4pp1.etf.rs/Domaci/2017-2018/mikrojava_1718_jan.pdf
+			// would be useful but I cannot find it, so I have implemented
+			// new interpreter with this function operation :D
+			
+			Code.put(dup_x2); //  code (91)
+			
+			// resulting StackBottom: Val, Adr, Idx, Val
+		} else
+		{
+			// Duplicate loaded value on stack
+			Code.put(Code.dup);
+		}
+		
 		Code.put(Code.const_1);
 		Code.put(Code.add);
-		
-		//if (IncOperation.getDesignator().obj.getKind() != Obj.Elem)
-		{
-			Code.store(IncOperation.getDesignator().obj);
-		}/* else
-		{			
-			// At this point on stack are already address of object
-			// index of element, and value of expression
-			Code.put(Code.astore);
-		}*/
+		Code.store(IncOperation.getDesignator().obj);
 	}
 	
 	@Override
