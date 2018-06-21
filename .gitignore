@@ -8,3 +8,4 @@
 /.recommenders/
 /RemoteSystemsTempFiles/
 /MJCompiler/spec/mjparser_astbuild.cup
+*.obj
