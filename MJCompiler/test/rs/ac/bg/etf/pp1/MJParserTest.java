@@ -9,6 +9,7 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.xml.DOMConfigurator;
 
 import java_cup.runtime.Symbol;
+import rs.ac.bg.etf.pp1.ast.Program;
 import rs.ac.bg.etf.pp1.ast.SyntaxNode;
 import rs.ac.bg.etf.pp1.util.Log4JUtils;
 import rs.etf.pp1.mj.runtime.Code;
@@ -85,7 +86,7 @@ public class MJParserTest {
 		        if (p.isSyntaxErrorDetected)
 		        {
 		        	log.info(" ******************************** \nSyntax Error Detected - further parsing stopped on file: "+ sourceFilePath[currentParsingFileIndex]);
-		        	if (currentParsingFileIndex%2 ==0 || currentParsingFileIndex>=7){
+		        	if (currentParsingFileIndex%2 ==0 || currentParsingFileIndex>=SyntaxOnlyFiles){
 		        		throw new Exception("TEST ASSUMPTION FAILED");
 		        	}
 		        	continue;
@@ -109,10 +110,10 @@ public class MJParserTest {
 				prog.traverseBottomUp(semanticAnalyzer);
 				
 				Tab.dump();
-				System.out.println(prog.toString());
+				System.out.println(((Program)prog).toString(""));
 				if(semanticAnalyzer.isErrorDetected()) {
 			        log.info(" ******************************** \nSemantic Error Detected - further parsing stopped on file: "+ sourceFilePath[currentParsingFileIndex]);
-		        	if (currentParsingFileIndex%2 ==0 || currentParsingFileIndex>=7){
+		        	if (currentParsingFileIndex%2 ==0 || currentParsingFileIndex>=SemanticOnlyFiles){
 		        		throw new Exception("TEST ASSUMPTION FAILED");
 		        	}
 			        continue;
