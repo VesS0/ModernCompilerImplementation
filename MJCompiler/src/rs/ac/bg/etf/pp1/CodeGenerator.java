@@ -13,7 +13,6 @@ import rs.etf.pp1.symboltable.concepts.Struct;
 public class CodeGenerator extends VisitorAdaptor {
 	
 	private boolean errorDetected = false;
-	private boolean isSubFound = false;
 	private int varCount;
 	private int paramCnt;
 	private int mainPc;
@@ -45,6 +44,12 @@ public class CodeGenerator extends VisitorAdaptor {
 		// Debug Only:
 		OptVarDeclList ovdl = Program.getOptVarDeclList();
 	}
+	
+	
+	 // Code should be 0x5B == 91
+	// but for cleaner printing in RunExtendendOperations
+	// I am leaving number 60, similar to dup_x1.
+	static final int dup_x1 = 59, dup_x2 = 60;
 	
 	@Override
 	public void visit(MethodTypeName MethodTypeName) {
@@ -256,10 +261,6 @@ public class CodeGenerator extends VisitorAdaptor {
 		}*/
 		
 	}
-	 // Code should be 0x5B == 91
-	// but for cleaner printing in RunExtendendOperations
-	// I am leaving number 59.
-	static final int dup_x2 = 59;
 	
 	@Override
 	public void visit(DecOperation DecOperation)
@@ -315,7 +316,29 @@ public class CodeGenerator extends VisitorAdaptor {
 	
 	@Override
 	public void visit(TermAddops TermAddops) {
+		// If parent of this TermAddops is TermAddopListExprSub, 
+		// this means that we should negate first term.
+		// Since currently on stack are SB: Term, TermAddopResult
+		// we need to inverse order of elements on stack to TermAddopResult, Term
+		// negate Term, and re inverse order again to: -Term, TermAddopResult
+		if (TermAddops.getParent().getClass() == TermAddopListExprSub.class)
+		{
+			Code.put(dup_x1); // TermAddopResult, Term, TermAddopResult
+			Code.put(Code.pop);// TermAddopResult, Term 
+			Code.put(Code.neg); // TermAddopResult, -Term
+			Code.put(dup_x1); // -Term, TermAddopResult, -Term;
+			Code.put(Code.pop);// -Term, TermAddopResult 
+		}
 		Code.put(GetAddInstruction(TermAddops.getAddop().obj));
+	}
+	
+	@Override
+	public void visit(SingleTerm SingleTerm)
+	{
+		if (SingleTerm.getParent().getClass() == TermAddopListExprSub.class)
+		{
+			Code.put(Code.neg); //Negating value of this term on stack 
+		}
 	}
 	
 	@Override
@@ -407,17 +430,4 @@ public class CodeGenerator extends VisitorAdaptor {
 		constBool.setAdr(ConstBool.getBooll()?1:0);
 		Code.load(constBool);
 	}
-	
-	@Override
-	public void visit(TermAddopListExprSub TermAddopListExprSub)
-	{
-		isSubFound = true;
-	}
-	
-	@Override
-	public void visit(TermAddopListExpr TermAddopListExpr)
-	{
-		isSubFound = false;
-	}
-	
 }

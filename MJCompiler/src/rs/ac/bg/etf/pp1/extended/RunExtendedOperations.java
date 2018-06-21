@@ -80,7 +80,8 @@ public class RunExtendedOperations extends rs.etf.pp1.mj.runtime.Run {
 		bprint      = 56,
 		trap        = 57,
 		invokevirtual = 58,
-		dup_x2 = 59;
+		dup_x1 = 59,
+		dup_x2 = 60;
 
 	static final int  // compare operators
 		eq = 0,
@@ -102,7 +103,8 @@ public class RunExtendedOperations extends rs.etf.pp1.mj.runtime.Run {
     "dup        ", "dup2       ", "jmp        ", "jeq        ", "jne        ",
     "jlt        ", "jle        ", "jgt        ", "jge        ", "call       ",
     "return     ", "enter      ", "exit       ", "read       ", "print      ",
-    "bread      ", "bprint     ", "trap       ", "invokevirtual", "dup_x2	",
+    "bread      ", "bprint     ", "trap       ", "invokevirtual", 
+    "dup_x1		", "dup_x2	   ",
 	};
 
 	//----- expression stack
@@ -402,6 +404,10 @@ public class RunExtendedOperations extends rs.etf.pp1.mj.runtime.Run {
 					case dup2:
 						val = pop(); val2 = pop();
 						push(val2); push(val); push(val2); push(val);
+						break;
+					case dup_x1:
+						val = pop(); val2 = pop();
+						push(val); push(val2); push(val);
 						break;
 					case dup_x2:
 						val = pop(); idx = pop(); adr = pop();

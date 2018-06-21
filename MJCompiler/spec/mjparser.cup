@@ -104,11 +104,11 @@ DesigWithOptPostfixOperation ::= (DecOperation) Designator:designator DEC  | (In
 Expr ::= (TermAddopListExprSub) SUB TermAddopList:res |
 		 (TermAddopListExpr) TermAddopList:res ;
 
-TermAddopList ::= (TermAddops) Term Addop:op TermAddopList:res |  (SingleTerm) Term:res ;
+TermAddopList ::= (TermAddops) TermAddopList:res Addop:op Term:te |  (SingleTerm) Term:res ;
 
 Term::= (Term) FactorMulopList:res ;
 
-FactorMulopList::= (FactorMulops) Factor:fact Mulop:op FactorMulopList:res | (SingleFactor) Factor:res ;
+FactorMulopList::= (FactorMulops) FactorMulopList:res Mulop:op Factor:fact   | (SingleFactor) Factor:res ;
 
 Factor ::=  (ConstVar) Const:val |
 			(ParenExpr) LPAREN Expr:expr RPAREN |
