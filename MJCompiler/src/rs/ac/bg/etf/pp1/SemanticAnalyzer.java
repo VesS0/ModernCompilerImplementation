@@ -353,6 +353,12 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	public void visit(SingleFactor SingleFactor) {
 		SingleFactor.struct = SingleFactor.getFactor().struct;
 	}
+	
+	@Override
+	public void visit(MinusFactor MinusFactor)
+	{
+		MinusFactor.struct = MinusFactor.getFactor().struct;
+	}
 
 	@Override
 	public void visit(FactorMulops FactorMulops) {
@@ -484,13 +490,8 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 	
 	@Override
-	public void visit(TermAddopListExpr TermAddopListExpr) {
-		TermAddopListExpr.struct = TermAddopListExpr.getTermAddopList().struct;
-	}
-
-	@Override
-	public void visit(TermAddopListExprSub TermAddopListExprSub) {
-		TermAddopListExprSub.struct = TermAddopListExprSub.getTermAddopList().struct;
+	public void visit(Expr Expr) {
+		Expr.struct = Expr.getTermAddopList().struct;
 	}
 	
 	@Override

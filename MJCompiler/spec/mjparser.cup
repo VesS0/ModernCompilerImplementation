@@ -101,14 +101,13 @@ ExprOrError ::= (Expression) Expr:expr | (Err) error:err {: parser.log.debug("Er
 
 DesigWithOptPostfixOperation ::= (DecOperation) Designator:designator DEC  | (IncOperation) Designator:designator  INC | (NoPosfixOperation) Designator:designator;
 
-Expr ::= (TermAddopListExprSub) SUB TermAddopList:res |
-		 (TermAddopListExpr) TermAddopList:res ;
+Expr ::= (Expr) TermAddopList:res ;
 
 TermAddopList ::= (TermAddops) TermAddopList:res Addop:op Term:te |  (SingleTerm) Term:res ;
 
 Term::= (Term) FactorMulopList:res ;
 
-FactorMulopList::= (FactorMulops) FactorMulopList:res Mulop:op Factor:fact   | (SingleFactor) Factor:res ;
+FactorMulopList::= (FactorMulops) FactorMulopList:res Mulop:op Factor:fact   | (SingleFactor) Factor:res | (MinusFactor) SUB Factor:res;
 
 Factor ::=  (ConstVar) Const:val |
 			(ParenExpr) LPAREN Expr:expr RPAREN |

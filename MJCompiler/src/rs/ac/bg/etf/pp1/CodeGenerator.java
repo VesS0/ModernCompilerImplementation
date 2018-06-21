@@ -13,6 +13,7 @@ import rs.etf.pp1.symboltable.concepts.Struct;
 public class CodeGenerator extends VisitorAdaptor {
 	
 	private boolean errorDetected = false;
+	private boolean isMinusPresent = false;
 	private int varCount;
 	private int paramCnt;
 	private int mainPc;
@@ -316,35 +317,19 @@ public class CodeGenerator extends VisitorAdaptor {
 	
 	@Override
 	public void visit(TermAddops TermAddops) {
-		// If parent of this TermAddops is TermAddopListExprSub, 
-		// this means that we should negate first term.
-		// Since currently on stack are SB: Term, TermAddopResult
-		// we need to inverse order of elements on stack to TermAddopResult, Term
-		// negate Term, and re inverse order again to: -Term, TermAddopResult
-		if (TermAddops.getParent().getClass() == TermAddopListExprSub.class)
-		{
-			Code.put(dup_x1); // TermAddopResult, Term, TermAddopResult
-			Code.put(Code.pop);// TermAddopResult, Term 
-			Code.put(Code.neg); // TermAddopResult, -Term
-			Code.put(dup_x1); // -Term, TermAddopResult, -Term;
-			Code.put(Code.pop);// -Term, TermAddopResult 
-		}
 		Code.put(GetAddInstruction(TermAddops.getAddop().obj));
-	}
-	
-	@Override
-	public void visit(SingleTerm SingleTerm)
-	{
-		if (SingleTerm.getParent().getClass() == TermAddopListExprSub.class)
-		{
-			Code.put(Code.neg); //Negating value of this term on stack 
-		}
 	}
 	
 	@Override
 	public void visit(FactorMulops FactorMulops)
 	{
 		Code.put(GetMulInstruction(FactorMulops.getMulop().obj));
+	}
+	
+	@Override
+	public void visit(MinusFactor MinusFactor)
+	{
+		Code.put(Code.neg);
 	}
 	
 	int GetMulInstruction(Obj MulopObj)
