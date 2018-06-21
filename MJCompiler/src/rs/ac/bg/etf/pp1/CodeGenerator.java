@@ -13,7 +13,7 @@ import rs.etf.pp1.symboltable.concepts.Struct;
 public class CodeGenerator extends VisitorAdaptor {
 	
 	private boolean errorDetected = false;
-	private boolean loadingArray = false;
+	private boolean isSubFound = false;
 	private int varCount;
 	private int paramCnt;
 	private int mainPc;
@@ -287,37 +287,6 @@ public class CodeGenerator extends VisitorAdaptor {
 		Code.store(DecOperation.getDesignator().obj);
 	}
 	
-	public static void CustomDupX2()
-	{
-		
-		// We will store current values from stack
-		int Adr, Idx, Val, DecVal;
-		DecVal = Code.buf[Code.pc-1];
-		Val = Code.buf[Code.pc-2];
-		Idx = Code.buf[Code.pc-3];
-		Adr = Code.buf[Code.pc-4];
-		
-		int Adrr, Idxx, Vall, DecVall;
-		// Pop them all
-		Adrr = Code.get2(Code.pc-1);
-		Code.put(Code.pop);
-		Idxx = Code.get2(Code.pc-1);
-		Code.put(Code.pop);
-		Vall = Code.get2(Code.pc-1);
-		Code.put(Code.pop);
-		DecVall = Code.get2(Code.pc-1);
-		Code.put(Code.pop);
-		
-		// Load them the way we want.
-		Code.loadConst(Val);
-		Code.loadConst(Adr);
-		Code.loadConst(Idx);
-		Code.loadConst(DecVal);
-		// Code.buf[Code.pc-1] = (byte) Idx;
-		// Code.buf[Code.pc-2] = (byte) Adr;
-		// Code.buf[Code.pc-3] = (byte) Val;
-	}
-	
 	@Override
 	public void visit(IncOperation IncOperation)
 	{
@@ -438,4 +407,17 @@ public class CodeGenerator extends VisitorAdaptor {
 		constBool.setAdr(ConstBool.getBooll()?1:0);
 		Code.load(constBool);
 	}
+	
+	@Override
+	public void visit(TermAddopListExprSub TermAddopListExprSub)
+	{
+		isSubFound = true;
+	}
+	
+	@Override
+	public void visit(TermAddopListExpr TermAddopListExpr)
+	{
+		isSubFound = false;
+	}
+	
 }
