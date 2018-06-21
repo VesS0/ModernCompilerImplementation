@@ -205,24 +205,21 @@ public class CodeGenerator extends VisitorAdaptor {
 				Designator.getOptArray().struct != Tab.noType)
 		{
 			// At this point both array address and index are on stack
-			// if it is not assign operation, we should read value
-			// from provided address (Array)
-			Code.load(Designator.obj);
 			
-			// If parent operation is postfix operation, we should duplicate
+			// If parent operation is Postfix operation, we should duplicate
 			// array address and index in order to know where to store resulting
 			// operation side effect
 			if (Designator.getParent().getClass() == DecOperation.class ||
 					Designator.getParent().getClass() == IncOperation.class)
 			{
-				/*
 				// before stackBottom: Adr, Idx
 				Code.put(Code.dup2);
 				// after Adr, Idx, Adr, Idx
 				// one used for reading, other one for writing
-				 */
 			}
-
+			// if it is not assign operation, we should read value
+			// from provided address (Array)
+			Code.load(Designator.obj);
 		}
 		/*
 		SyntaxNode parent = Designator.getParent();
