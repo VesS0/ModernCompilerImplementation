@@ -565,7 +565,8 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		if (AssignmentStmt.getDesignator().obj.getKind() == Obj.Con)
 		{
 			report_error("Semantic Error on line " + AssignmentStmt.getLine() +
-					" : you cannot assign to once const declared variable ",null);
+					" : you cannot assign to once const declared variable ("+
+					" Types are however compatible "+StructKindToName(LeftFromAssignType.getKind())+ ")" ,null);
 		}
 	}
 	
@@ -641,28 +642,6 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	public void visit(VoidType VoidType) {
 		VoidType.struct = Tab.noType;
 	}
-
-	public static Struct GetTypeBasedOnName(String name)
-	{
-		switch (name)
-		{
-		case "int":
-			return Tab.intType;
-		case "char":
-			return Tab.charType;
-		case "bool":
-			return new Struct(Struct.Bool);
-		}
-		
-		try {
-			throw new Exception("\n\n\n\n\n\n\n******Not expected to get here \n\n\n\n\n\n\n\n");
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		return Tab.noType;
-	}
 	
 	@Override
 	public void visit(NotVoidType NotVoidType) {
@@ -696,10 +675,9 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	
 	@Override
 	public void visit(VarType VarType) {
-		// Is it const? 
 		// Get list here and insert all at this point? VarDecl.getVarList();
 		isCurrentTypeConst = VarType.getOptConst().bool;
 		currentDeclTypeStruct = VarType.getType().struct;
-		report_info("Type Changed! " + StructKindToName(currentDeclTypeStruct.getKind()),null);
+		// report_info("Type Changed! " + StructKindToName(currentDeclTypeStruct.getKind()),null);
 	}
 }

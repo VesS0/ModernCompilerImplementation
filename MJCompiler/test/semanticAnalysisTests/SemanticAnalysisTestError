@@ -232,4 +232,22 @@ program MJProgram
 		k = 8;
 		p = 2;
 	}
+	
+	void PostfixOperationOnNonIntegerTypeError() char t;
+	{
+		t = 'a';
+		t++;
+	}
+	
+	int printStmtOnNonCharOrIntType()
+	{
+		print(true);
+		return -1;
+	}
+	
+	char readStmtOnNonIntCharType() bool wrongType;
+	{
+		read(wrongType);
+		return 'a';
+	}
 }
