@@ -33,14 +33,6 @@ public class CodeGenerator extends VisitorAdaptor {
 		return errorDetected;
 	}
 	
-	@Override
-	public void visit(Program Program)
-	{
-		// Debug Only:
-		OptVarDeclList ovdl = Program.getOptVarDeclList();
-	}
-	
-	
 	 // Code should be 0x5B == 91
 	// but for cleaner printing in RunExtendendOperations
 	// I am leaving number 60, similar to dup_x1.
