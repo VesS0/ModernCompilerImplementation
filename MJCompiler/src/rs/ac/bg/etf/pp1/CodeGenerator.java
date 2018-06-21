@@ -13,6 +13,7 @@ import rs.etf.pp1.symboltable.concepts.Struct;
 public class CodeGenerator extends VisitorAdaptor {
 	
 	private boolean errorDetected = false;
+	private boolean loadingArray = false;
 	private int varCount;
 	private int paramCnt;
 	private int mainPc;
@@ -181,21 +182,49 @@ public class CodeGenerator extends VisitorAdaptor {
 	{
 		Designator desigParent = (Designator)DesigName.getParent();
 		SyntaxNode parent = DesigName.getParent().getParent();
-		if ((AssignmentStmt.class != parent.getClass() || 
-				(desigParent.obj.getKind() == Obj.Elem && 
-				desigParent.getOptArray().struct != Tab.noType)) &&
-				
-				FuncCall.class != parent.getClass() &&
-				ReadStmt.class != parent.getClass())
+		boolean isAssignment = AssignmentStmt.class == parent.getClass();
+		boolean isElementObjectKind = desigParent.obj.getKind() == Obj.Elem;
+		boolean hasArrayAccessing = desigParent.getOptArray().struct != Tab.noType;
+		boolean isFunctionCall = FuncCall.class == parent.getClass();
+		boolean isReadStmt = ReadStmt.class == parent.getClass();
+		
+		if (!isFunctionCall && !isReadStmt &&
+			(!isAssignment || (isElementObjectKind && hasArrayAccessing)))
 		{
 			Code.load(DesigName.obj);
 		}
 	}
 	
-	/*
+	
 	@Override
 	public void visit(Designator Designator)
 	{
+		
+		if (AssignmentStmt.class != Designator.getParent().getClass() && 
+				Designator.obj.getKind() == Obj.Elem && 
+				Designator.getOptArray().struct != Tab.noType)
+		{
+			// At this point both array address and index are on stack
+			// if it is not assign operation, we should read value
+			// from provided address (Array)
+			Code.load(Designator.obj);
+			
+			// If parent operation is postfix operation, we should duplicate
+			// array address and index in order to know where to store resulting
+			// operation side effect
+			if (Designator.getParent().getClass() == DecOperation.class ||
+					Designator.getParent().getClass() == IncOperation.class)
+			{
+				/*
+				// before stackBottom: Adr, Idx
+				Code.put(Code.dup2);
+				// after Adr, Idx, Adr, Idx
+				// one used for reading, other one for writing
+				 */
+			}
+
+		}
+		/*
 		SyntaxNode parent = Designator.getParent();
 		if ( (AssignmentStmt.class != parent.getClass() || 
 				(Designator.obj.getKind() == Obj.Elem && 
@@ -204,7 +233,7 @@ public class CodeGenerator extends VisitorAdaptor {
 				ReadStmt.class != parent.getClass())
 		{
 			Code.load(Designator.obj);
-		}
+		}*/
 		/*
 		// In semantic pass we save in Designator.obj element of array if
 		// it is being indexed.
@@ -227,35 +256,70 @@ public class CodeGenerator extends VisitorAdaptor {
 			// Reversing order of parameters on stack (Adr, Index instead of Index, Adr)
 			// Code.put(Code.dup2);
 			// Code.put(Code.pop);
-		}
+		}*/
 		
 	}
-	*/
 	
 	@Override
 	public void visit(DecOperation DecOperation)
 	{
-		// Designator has already been loaded once
-		Code.load(DecOperation.getDesignator().obj);
+		// Duplicate value on the stack.
+		// Note: we should not load designator object again, because in case
+		// that designator is array, we will be expecting two more arguments on stack
+		// and will be calling aload which we want to avoid
+		Code.put(Code.dup);
 		Code.put(Code.const_m1);
 		Code.put(Code.add);
 		
-		//if (DecOperation.getDesignator().obj.getKind() != Obj.Elem)
+		if (DecOperation.getDesignator().obj.getKind() == Obj.Elem)
 		{
-			Code.store(DecOperation.getDesignator().obj);
-		} /*else
-		{			
-			// At this point on stack are already address of object
-			// index of element, and value of expression
-			Code.put(Code.astore);
-		}*/
+			// in case of array, we are having following situation
+			// StackBottom: Adr, Idx, Val, DecVal
+			// What we want is Val, Adr, Idx, DecVal
+			// Operation dup_x2 from http://ir4pp1.etf.rs/Domaci/2017-2018/mikrojava_1718_jan.pdf
+			// would be useful but I cannot find it =D
+			// So we will do it manually:
+			
+			// We will store current values from stack
+			int Adr, Idx, Val, DecVal;
+			DecVal = Code.buf[Code.pc-1];
+			Val = Code.buf[Code.pc-2];
+			Idx = Code.buf[Code.pc-3];
+			Adr = Code.buf[Code.pc-4];
+			
+			int Adrr, Idxx, Vall, DecVall;
+			// Pop them all
+			Adrr = Code.get2(Code.pc-1);
+			Code.put(Code.pop);
+			Idxx = Code.get2(Code.pc-1);
+			Code.put(Code.pop);
+			Vall = Code.get2(Code.pc-1);
+			Code.put(Code.pop);
+			DecVall = Code.get2(Code.pc-1);
+			Code.put(Code.pop);
+			
+			// Load them the way we want.
+			Code.loadConst(Val);
+			Code.loadConst(Adr);
+			Code.loadConst(Idx);
+			Code.loadConst(DecVal);
+			// Code.buf[Code.pc-1] = (byte) Idx;
+			// Code.buf[Code.pc-2] = (byte) Adr;
+			// Code.buf[Code.pc-3] = (byte) Val;
+			
+		}
+		
+		Code.store(DecOperation.getDesignator().obj);
 	}
 	
 	@Override
 	public void visit(IncOperation IncOperation)
 	{
-		// Designator has already been loaded once
-		Code.load(IncOperation.getDesignator().obj);
+		// Duplicate value on the stack.
+		// Note: we should not load designator object again, because in case
+		// that designator is array, we will be expecting two more arguments on stack
+		// and will be calling aload which we want to avoid
+		Code.put(Code.dup);
 		Code.put(Code.const_1);
 		Code.put(Code.add);
 		
