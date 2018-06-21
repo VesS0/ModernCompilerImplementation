@@ -123,17 +123,17 @@ int x = 2, y;
 		
 		xAr[0]--; //2
 		yAr[1] = yAr[1]-- - zAr[2]++;
-		print(xAr[0]);
-		print(yAr[1]);
-		print(zAr[2]);
+		print(xAr[0]); // 2
+		print(yAr[1]); //-3
+		print(zAr[2]); //8
 		
 		yAr[3] = 1;
 		
-		x = xAr[0];
-		y = xAr[yAr[3]-1];
-		print(y);
-		zAr[xAr[yAr[3]-1]]--;
-		print(zAr[xAr[yAr[3]-1]]);
+		x = xAr[0]; // 2
+		y = xAr[yAr[3]-1]; //2
+		print(y); //2
+		zAr[xAr[yAr[3]-1]]--; // 7
+		print(zAr[xAr[yAr[3]-1]]--); // 7
 	}
 	
 	void main() int k = 2, t;

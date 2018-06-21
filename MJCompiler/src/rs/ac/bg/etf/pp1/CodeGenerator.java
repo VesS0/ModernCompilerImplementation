@@ -256,7 +256,10 @@ public class CodeGenerator extends VisitorAdaptor {
 		}*/
 		
 	}
-	static final int dup_x2 = 0x5B;
+	 // Code should be 0x5B == 91
+	// but for cleaner printing in RunExtendendOperations
+	// I am leaving number 59.
+	static final int dup_x2 = 59;
 	
 	@Override
 	public void visit(DecOperation DecOperation)
@@ -270,7 +273,7 @@ public class CodeGenerator extends VisitorAdaptor {
 			// would be useful but I cannot find it, so I have implemented
 			// new interpreter with this function operation :D
 			
-			Code.put(dup_x2); //  code (91)
+			Code.put(dup_x2);
 			
 			// resulting StackBottom: Val, Adr, Idx, Val
 		} else
@@ -327,7 +330,7 @@ public class CodeGenerator extends VisitorAdaptor {
 			// would be useful but I cannot find it, so I have implemented
 			// new interpreter with this function operation :D
 			
-			Code.put(dup_x2); //  code (91)
+			Code.put(dup_x2);
 			
 			// resulting StackBottom: Val, Adr, Idx, Val
 		} else

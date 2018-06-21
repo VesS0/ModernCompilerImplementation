@@ -80,7 +80,7 @@ public class RunExtendedOperations extends rs.etf.pp1.mj.runtime.Run {
 		bprint      = 56,
 		trap        = 57,
 		invokevirtual = 58,
-		dup_x2 = 91;
+		dup_x2 = 59;
 
 	static final int  // compare operators
 		eq = 0,
@@ -218,7 +218,7 @@ public class RunExtendedOperations extends rs.etf.pp1.mj.runtime.Run {
 
 	static void printInstr () {
 		int op = code[pc - 1];
-		String instr = (op > 0 && op <= invokevirtual) ? opcode[op] : opcode[0];
+		String instr = (op > 0 && op <= dup_x2) ? opcode[op] : opcode[0];
 		printNum(pc - 1, 5);
 		System.out.print(": " + instr + " ");
 	}
