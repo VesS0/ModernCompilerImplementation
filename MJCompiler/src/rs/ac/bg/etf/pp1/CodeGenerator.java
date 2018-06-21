@@ -22,17 +22,11 @@ public class CodeGenerator extends VisitorAdaptor {
 		return mainPc;
 	}
 	
-	Logger log = Logger.getLogger(getClass());
-
-	public void report_error(String message, SyntaxNode info) {
+	private void ErrorDetected()
+	{
 		errorDetected = true;
-		StringBuilder msg = new StringBuilder(message);
-		log.error(msg.toString());
-	}
-
-	public void report_info(String message, SyntaxNode info) {
-		StringBuilder msg = new StringBuilder(message); 
-		log.info(msg.toString());
+		Code.put(Code.trap);
+		Code.put(1);
 	}
 	
 	public boolean isErrorDetected() {
@@ -343,10 +337,7 @@ public class CodeGenerator extends VisitorAdaptor {
 		case "mod":
 			return Code.rem;
 		}
-		report_error("Generating code error, specified mulop operation not found",null);
-		
-		Code.put(Code.trap);
-		Code.put(1);
+		ErrorDetected();
 		return 0;
 	}
 	
@@ -359,10 +350,7 @@ public class CodeGenerator extends VisitorAdaptor {
 		case "sub":
 			return Code.sub;
 		}
-		report_error("Generating code error, specified addop operation not found",null);
-		
-		Code.put(Code.trap);
-		Code.put(1);
+		ErrorDetected();
 		return 0;
 	}
 	
