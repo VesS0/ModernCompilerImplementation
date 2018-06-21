@@ -13,6 +13,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	boolean errorDetected = false;
 	Obj currentMethod = null;
 	Struct currentDeclTypeStruct = null;
+	boolean isCurrentTypeConst = false;
 	boolean returnFound = false;
 	boolean mainFound = false;
 	int nVars;
@@ -283,7 +284,14 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			return;
 		}
 		
-		Var.obj = Tab.insert(Obj.Var, Var.getVarName(), VariableType);
+		Var.obj = Tab.insert(isCurrentTypeConst?Obj.Con:Obj.Var, Var.getVarName(), VariableType);
+	}
+	
+	@Override
+	public void visit(Semi Semi)
+	{
+		currentDeclTypeStruct = null;
+		isCurrentTypeConst = false;
 	}
 	
 	@Override
@@ -552,6 +560,12 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 					StructKindToName(RightFromAssignType.getKind()) + " is not assignable to "+
 					StructKindToName(LeftFromAssignType.getKind()) + ")", AssignmentStmt);
 		}
+		
+		if (AssignmentStmt.getDesignator().obj.getKind() == Obj.Con)
+		{
+			report_error("Semantic Error on line " + AssignmentStmt.getLine() +
+					" : you cannot assign to once const declared variable ",null);
+		}
 	}
 	
 	@Override
@@ -668,9 +682,22 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 
 	@Override
+	public void visit(ConstType ConstType)
+	{
+		ConstType.bool = true;
+	}
+	
+	@Override
+	public void visit(NotConstType NotConstType)
+	{
+		NotConstType.bool = false;
+	}
+	
+	@Override
 	public void visit(VarType VarType) {
-		// Is it const? VarDecl.getOptConst();
+		// Is it const? 
 		// Get list here and insert all at this point? VarDecl.getVarList();
+		isCurrentTypeConst = VarType.getOptConst().bool;
 		currentDeclTypeStruct = VarType.getType().struct;
 		report_info("Type Changed! " + StructKindToName(currentDeclTypeStruct.getKind()),null);
 	}

@@ -2,6 +2,7 @@ program MJProgram
 	int global, globalComma , uniqueGlobal;
 	int globalArray[], glovalInt, globalArray2[];
 	bool uniqueBool = 'c';
+	const int a = 3;
 {
 	
 	int retConstNum()
@@ -223,5 +224,11 @@ program MJProgram
 	void wrongDefaultAssign() int a = true;
 	{
 	
+	}
+	
+	void assigningToConstValue() const int k = 3;
+	{
+		a = 4;
+		k = 8;
 	}
 }
