@@ -2,7 +2,7 @@ program MJProgram
 	int global, globalComma , uniqueGlobal;
 	int globalArray[], glovalInt, globalArray2[];
 	bool uniqueBool = 'c';
-	const int a = 3;
+	const int constA = 3;
 {
 	
 	int retConstNum()
@@ -226,9 +226,10 @@ program MJProgram
 	
 	}
 	
-	void assigningToConstValue() const int k = 3;
+	void assigningToConstValue() const int k = 3, t=3, p=0;
 	{
-		a = 4;
+		constA = 4;
 		k = 8;
+		p = 2;
 	}
 }

@@ -2,6 +2,9 @@ program MJProgram
 	int global, globalComma = 3, uniqueInt;
 	int globalArray[], glovalInt, globalArray2[];
 	bool uniqueBool = true;
+	const char constA = 'a';
+	const bool constB = true;
+	const int constK =2 , constT=3, constP= 3;
 {	
 	int retConstNum()
 	int a,b = 1;
