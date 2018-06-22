@@ -68,11 +68,11 @@ nonterminal Boolean OptArrayBrackets;
 
 /* July 2017/2018 Addition for level A and B xd wasn't actually updating as time passed... */
 nonterminal rs.etf.pp1.symboltable.concepts.Obj MethodDecl, MethodTypeName;
-nonterminal rs.etf.pp1.symboltable.concepts.Struct FormalParamDecl;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct FormalParamDecl, CondOrList, CondAndList, Condition;
 nonterminal OptMethodDeclList/*, FormalParam*/, OptStatementList;
 nonterminal java.util.List OptArgumentParamList, ArgumentParamList, OptFormalParamList, FormalParamList;
 nonterminal VarDeclList;
-nonterminal StatmenetIfElse, IfClauseStmt, CondOrList, CondAndList, Condition, IfErrorClauseStmt;
+nonterminal StatmenetIfElse, IfClauseStmt, IfErrorClauseStmt;
 /* End A  */
 
 precedence left ELSE;

@@ -702,4 +702,34 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		ConstType.struct = typeNode.getType();
 		currentDeclTypeStruct = ConstType.struct;
 	}
+	
+	@Override
+	public void visit(CondExpr CondExpr)
+	{
+		CondExpr.struct = Tab.noType;
+		if (CondExpr.getExpr().struct.getKind() != Struct.Bool)
+		{
+			report_error("Semantic Error on line "+ CondExpr.getLine() + " : expression is not of type bool ("+
+						"it is of type " + StructKindToName(CondExpr.getExpr().struct.getKind()) + ")", CondExpr);
+			return;
+		}
+		
+		CondExpr.struct = CondExpr.getExpr().struct;
+	}
+	
+	@Override
+	public void visit(CondExprComparison CondExprComparison)
+	{
+		CondExprComparison.struct = Tab.noType;
+		if (CondExprComparison.getExpr().struct.getKind() != Struct.Int ||
+				CondExprComparison.getExpr1().struct.getKind() != Struct.Int	)
+		{
+			report_error("Semantic Error on line "+ CondExprComparison.getLine() + " : both expressions need to be of type int in order to compare them ("+
+						" it is of type Expr1: " + StructKindToName(CondExprComparison.getExpr().struct.getKind()) + " and Expr2: "+
+					StructKindToName(CondExprComparison.getExpr1().struct.getKind()) + ")", CondExprComparison);
+			return;
+		}
+		
+		CondExprComparison.struct = new Struct(Struct.Bool);
+	}
 }

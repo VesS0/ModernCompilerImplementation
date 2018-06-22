@@ -152,6 +152,8 @@ program MJProgram
 		if (a && b || c) FunctionCaller();
 		
 		if (3 > 2) FunctionCaller(); 
+		
+		if (a)  a; else b;
 	}
 	
 }

@@ -242,5 +242,15 @@ program MJProgram
 		read(wrongType);
 		return 'a';
 	}
+	
+	void wrongTypeInIfElseExpressions()
+	int aIf, bIf, cIf;
+	bool aElse, bElse, cElse;
+	char aIfEl, bIfEl, cIfEl;
+	{
+		if (aIf) aIf;
+		if (aIf > aElse) aIf;
+		if (aIfEl > bIfEl) aIf; else bIf;
+	}
 
 }
