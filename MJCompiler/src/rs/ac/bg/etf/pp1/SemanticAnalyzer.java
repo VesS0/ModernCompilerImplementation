@@ -283,8 +283,8 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			report_error("Semantic Error on line " + Var.getLine() + " : Variable \"" + Var.getVarName() + "\" is already defined in current scope", null);
 			return;
 		}
-		
-		Var.obj = Tab.insert(isCurrentTypeConst?Obj.Con:Obj.Var, Var.getVarName(), VariableType);
+		//isCurrentTypeConst?Obj.Con:
+		Var.obj = Tab.insert(Obj.Var, Var.getVarName(), VariableType);
 	}
 	
 	@Override

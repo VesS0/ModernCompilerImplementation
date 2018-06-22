@@ -66,8 +66,8 @@ public class Compiler {
 			prog.traverseBottomUp(semanticAnalyzer);
 			
 			Tab.dump();
-			System.out.println(((Program)prog).toString(""));
-			
+			// System.out.println();
+			log.info(((Program)prog).toString(""));
 			if(semanticAnalyzer.isErrorDetected()) {
 		        log.info(" ******************************** \nSemantic Error Detected - further parsing stopped on file: "+ sourceFilePath);
 		        return;
@@ -84,6 +84,7 @@ public class Compiler {
 	        CodeGenerator codeGenerator = new CodeGenerator();
 	        prog.traverseBottomUp(codeGenerator);
 	        Code.dataSize = semanticAnalyzer.nVars;
+	        Code.mainPc = 0;
 	        Code.write(new FileOutputStream(objFile));
 			if(codeGenerator.isErrorDetected()) {
 		        log.info(" ******************************** \nCode Generation Error Detected - parsing failed: "+ sourceFilePath);
