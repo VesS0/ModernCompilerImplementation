@@ -16,11 +16,8 @@ public class CodeGenerator extends VisitorAdaptor {
 	private boolean isMinusPresent = false;
 	private int varCount;
 	private int paramCnt;
-	private int mainPc;
-	
-	public int getMainPc() {
-		return mainPc;
-	}
+	private int mainPlaceholderAddressInBuf = 0;
+
 	
 	private void ErrorDetected()
 	{
@@ -33,6 +30,25 @@ public class CodeGenerator extends VisitorAdaptor {
 		return errorDetected;
 	}
 	
+	@Override
+	public void visit(VarDeclList VarDeclList)
+	{
+		if (VarDeclList.getParent().getClass() == Program.class)
+		{
+			// generate jump instruction 
+			// to main program!
+			{
+				Code.put(Code.jmp);
+				
+				// We don't know where main program is
+				// so this is a placeholder for it.
+				// save location for buffer placeholder
+				mainPlaceholderAddressInBuf = Code.pc;
+				Code.put2(13);
+			}
+		}
+	}
+	
 	 // Code should be 0x5B == 91
 	// but for cleaner printing in RunExtendendOperations
 	// I am leaving number 60, similar to dup_x1.
@@ -41,7 +57,12 @@ public class CodeGenerator extends VisitorAdaptor {
 	@Override
 	public void visit(MethodTypeName MethodTypeName) {
 		if ("main".equalsIgnoreCase(MethodTypeName.getMethodName())) {
-			mainPc = Code.pc;
+			int mainPc = Code.pc;
+			Code.put2(mainPlaceholderAddressInBuf, mainPc - mainPlaceholderAddressInBuf + 1);
+			// Making sure that all instructions for initializing
+			// global variables are in the buffer
+			//for(int i = 0; i < Code.dataSize; i++)
+   			//	Code.put(Code.buf[i]);
 		}
 		MethodTypeName.obj.setAdr(Code.pc);
 		

@@ -84,7 +84,6 @@ public class Compiler {
 	        CodeGenerator codeGenerator = new CodeGenerator();
 	        prog.traverseBottomUp(codeGenerator);
 	        Code.dataSize = semanticAnalyzer.nVars;
-	        Code.mainPc = codeGenerator.getMainPc();
 	        Code.write(new FileOutputStream(objFile));
 			if(codeGenerator.isErrorDetected()) {
 		        log.info(" ******************************** \nCode Generation Error Detected - parsing failed: "+ sourceFilePath);

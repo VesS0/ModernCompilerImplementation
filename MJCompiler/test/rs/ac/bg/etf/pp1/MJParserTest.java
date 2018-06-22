@@ -132,7 +132,7 @@ public class MJParserTest {
 		        CodeGenerator codeGenerator = new CodeGenerator();
 		        prog.traverseBottomUp(codeGenerator);
 		        Code.dataSize = semanticAnalyzer.nVars;
-		        Code.mainPc = codeGenerator.getMainPc();
+		        Code.mainPc = 0; //codeGenerator.getMainPc();
 		        Code.write(new FileOutputStream(objFile));
 				if(codeGenerator.isErrorDetected()) {
 			        log.info(" ******************************** \nCode Generation Error Detected - parsing failed: "+ sourceFilePath[currentParsingFileIndex]);
