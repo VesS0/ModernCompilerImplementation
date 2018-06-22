@@ -59,21 +59,21 @@ terminal Integer NUMBER;
 terminal String IDENT;
 
 nonterminal rs.etf.pp1.symboltable.concepts.Obj Program, ProgramName, Designator, DesigName, Addop, Mulop, Var, DesigWithOptPostfixOperation, Const, OptValueAssign;
-nonterminal rs.etf.pp1.symboltable.concepts.Struct Type, Term, Expr, Factor, OptVarDeclList, TermAddopList, FactorMulopList, FuncCall, OptArray, OptCommaNumber, ExprOrError;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct Type, Term, Expr, Factor, OptDeclList, TermAddopList, FactorMulopList, FuncCall, OptArray, OptCommaNumber, ExprOrError;
 
 nonterminal Statement, DesignatorStatement, AssignExpr;
-nonterminal VarDecl/*, OptBrackExpr*/, VarType;
-nonterminal Boolean OptConst, OptArrayBrackets; 
+nonterminal Decl/*, OptBrackExpr*/;
+nonterminal Boolean OptArrayBrackets; 
 
 /* July 2017/2018 Addition for level A */
 nonterminal rs.etf.pp1.symboltable.concepts.Obj MethodDecl, MethodTypeName;
 nonterminal rs.etf.pp1.symboltable.concepts.Struct FormalParamDecl;
 nonterminal OptMethodDeclList/*, FormalParam*/, OptStatementList;
 nonterminal java.util.List OptArgumentParamList, ArgumentParamList, OptFormalParamList, FormalParamList;
-nonterminal VarList, SemiCommaVarList;
+nonterminal VarDeclList;
 /* End A  */
 
-Program ::= (Program) PROG ProgramName:progName OptVarDeclList LBRACE OptMethodDeclList RBRACE ;
+Program ::= (Program) PROG ProgramName:progName OptDeclList LBRACE OptMethodDeclList RBRACE ;
 
 ProgramName ::= (ProgramName) IDENT:pName;
 
@@ -131,40 +131,36 @@ Addop ::= (AddopAdd) ADD | (AddopSub) SUB ;
 
 Mulop ::= (MulopMul) MUL | (MulopDiv) DIV | (MulopMod) MOD ;
 
-OptVarDeclList ::= (VarDeclList) VarDecl OptVarDeclList | (NoVarDecl) /* epsilon */ ;
+OptDeclList ::= (VarDeclLists) Decl OptDeclList | (NoDecl) /* epsilon */ ;
 
-VarDecl ::= (VarDecl) VarType VarList:list ;
+// VAR DECLARATION
 
-VarType ::= (VarType) OptConst:isConst Type:varType;
+Decl ::= (VarDeclNoErr) Type VarDeclList:list SEMI |
+			(VarDeclError) Type error SEMI ;
 
-OptConst ::= (ConstType) CONST | (NotConstType) /* epsilon */ ;
-
-VarList ::= (Vars) Var SemiCommaVarList:list |
-(ParamDefinitionError) error:err
-{: parser.log.debug("Error successfully recovered in variable definition before \",\" or \";\" on line " + errleft); :}
-SemiCommaVarList ;
-
+VarDeclList ::= (Vars) VarDeclList COMMA Var |
+				(SingleVar) Var |
+				(ErrorCommaVar) error COMMA Var ;
+				
 Var ::= (Var) IDENT:varName OptArrayBrackets:isArray OptValueAssign;
-
-SemiCommaVarList ::= (Semi) SEMI | (CommaVarDecl) COMMA VarList:list ;
 
 OptArrayBrackets ::= (ArrayType) LBRACK RBRACK | (SimpleType) /* epsilon */ ;
 
-Type ::= (NotVoidType) IDENT:typeName | (VoidType) VOID;
+Type ::= (NotVoidType) IDENT:typeName | (ConstType) CONST IDENT:typeName | (VoidType) VOID;
 
 /* July 2017/2018 Addition for level A */
 
 OptMethodDeclList ::= (MethodDeclList) MethodDecl OptMethodDeclList | (NoMethodDecl) /* epsilon */ ;
 
-MethodDecl ::= (MethodDecl) MethodTypeName:signature LPAREN OptFormalParamList:numOfParams RPAREN OptVarDeclList LBRACE OptStatementList RBRACE ;
+MethodDecl ::= (MethodDecl) MethodTypeName:signature LPAREN OptFormalParamList:numOfParams RPAREN OptDeclList LBRACE OptStatementList RBRACE ;
 
-MethodTypeName ::= (MethodTypeName) OptConst:isConst Type:retType OptArrayBrackets:isArray IDENT:methodName ;
+MethodTypeName ::= (MethodTypeName) Type:retType OptArrayBrackets:isArray IDENT:methodName ;
 
 OptFormalParamList ::= (FormalParamListOpt) FormalParamList:formalParams | (NoFormalParam) /* epsilon */ ;
 
 FormalParamList ::= (FormalParamDeclList) FormalParamDecl:param COMMA FormalParamList:formalParams | (SingleFormalParamDecl) FormalParamDecl:param ;
 
-FormalParamDecl ::= (FormalParamDecl) OptConst:isConst Type:paramType IDENT:paramName OptArrayBrackets:isArray ;
+FormalParamDecl ::= (FormalParamDecl) Type:paramType IDENT:paramName OptArrayBrackets:isArray ;
 
 OptStatementList ::= (StatementList) Statement OptStatementList | (NoStatement) /* epsilon */ ;
 

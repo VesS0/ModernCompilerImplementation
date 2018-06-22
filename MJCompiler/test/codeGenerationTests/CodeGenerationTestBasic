@@ -30,6 +30,8 @@ int x = 2, y;
 	int incrementDecrementTestSuccessful()
 	int dec, inc = 3; int kdec=5, kinc;
 	{
+		dec = 0;
+		kinc = dec;
 		dec--; inc++;
 		inc++; inc--;
 		
@@ -183,5 +185,6 @@ int x = 2, y;
 		print(y); // 9
 		print((y + 1 + k)); // 12
 		boolTestFunctionLocalGlobalConst(); //4
+		print(x); // 35
 	}
 }

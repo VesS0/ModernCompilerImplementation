@@ -2,7 +2,7 @@ program MJProgram
 	int staticallyAlocatedArray[3]; // Not expected to work, error recovey
 	int i, 3; // Not expected to work, error recovey
 	int e, 5, p; // Not expected to work, error recovey
-	// int 5;
+	// int 4,a;
 {
 	
 	int k () int c;

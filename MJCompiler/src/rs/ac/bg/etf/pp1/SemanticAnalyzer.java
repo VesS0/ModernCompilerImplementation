@@ -293,7 +293,14 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 	
 	@Override
-	public void visit(Semi Semi)
+	public void visit(VarDeclNoErr VarDeclNoErr)
+	{
+		currentDeclTypeStruct = null;
+		isCurrentTypeConst = false;
+	}
+	
+	@Override
+	public void visit(VarDeclError VarDeclError)
 	{
 		currentDeclTypeStruct = null;
 		isCurrentTypeConst = false;
@@ -671,25 +678,28 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		}
 		
 		NotVoidType.struct = typeNode.getType();
+		isCurrentTypeConst = false;
+		currentDeclTypeStruct = NotVoidType.struct;
 	}
 
 	@Override
 	public void visit(ConstType ConstType)
 	{
-		ConstType.bool = true;
-	}
-	
-	@Override
-	public void visit(NotConstType NotConstType)
-	{
-		NotConstType.bool = false;
-	}
-	
-	@Override
-	public void visit(VarType VarType) {
-		// Get list here and insert all at this point? VarDecl.getVarList();
-		isCurrentTypeConst = VarType.getOptConst().bool;
-		currentDeclTypeStruct = VarType.getType().struct;
-		// report_info("Type Changed! " + StructKindToName(currentDeclTypeStruct.getKind()),null);
+		ConstType.struct = Tab.noType;
+		Obj typeNode = Tab.find(ConstType.getTypename());
+		
+		if (typeNode == null || typeNode == Tab.noObj) {
+			report_error("Semnatic Error on line "+ ConstType.getLine() + " : Type \"" + ConstType.getTypename() + "\" not found in symbol table ", ConstType);
+			return;
+		}
+		
+		if (Obj.Type != typeNode.getKind()) {
+			report_error("Semantic Error on line "+ ConstType.getLine() + " : Name \""+ ConstType.getTypename() + "\" does not represent type", ConstType);
+			return;
+		}
+		
+		isCurrentTypeConst = true;
+		ConstType.struct = typeNode.getType();
+		currentDeclTypeStruct = ConstType.struct;
 	}
 }

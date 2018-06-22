@@ -41,9 +41,9 @@ public class CodeGenerator extends VisitorAdaptor {
 	}
 	
 	@Override
-	public void visit(VarDeclList VarDeclList)
+	public void visit(VarDeclLists VarDeclLists)
 	{
-		if (VarDeclList.getParent().getClass() == Program.class)
+		if (VarDeclLists.getParent().getClass() == Program.class)
 		{
 			// generate jump instruction 
 			// to main program!
@@ -141,7 +141,7 @@ public class CodeGenerator extends VisitorAdaptor {
 	}
 	
 	@Override
-	public void visit(VarDecl VarDecl) {
+	public void visit(Decl Decl) {
 		varCount++;
 	}
 
