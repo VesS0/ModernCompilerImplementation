@@ -134,20 +134,21 @@ Mulop ::= (MulopMul) MUL | (MulopDiv) DIV | (MulopMod) MOD ;
 
 OptVarDeclList ::= (VarDeclList) VarDecl OptVarDeclList | (NoVarDecl) /* epsilon */ ;
 
-VarDecl ::= (VarDecl) VarType VarList:list ;
+VarDecl ::= (VarDeclNoError) VarType VarList:list SEMI |
+			(VarDeclError) VarType error:err 
+			{: parser.log.debug("Error successfully recovered in variable definition before \";\" on line " + errleft); :}
+			SEMI;
 
 VarType ::= (VarType) OptConst:isConst Type:varType;
 
 OptConst ::= (ConstType) CONST | (NotConstType) /* epsilon */ ;
 
-VarList ::= (Vars) Var SemiCommaVarList:list |
-(ParamDefinitionError) error:err
-{: parser.log.debug("Error successfully recovered in variable definition before \",\" or \";\" on line " + errleft); :}
-SemiCommaVarList ;
+VarList ::= (Vars) Var COMMA VarList:list| (SingleVar) Var |
+			(ParamDefinitionError) Var COMMA error:err
+			{: parser.log.debug("Error successfully recovered in variable definition before \",\" or \";\" on line " + errleft); :}
+			;
 
 Var ::= (Var) IDENT:varName OptArrayBrackets:isArray OptValueAssign;
-
-SemiCommaVarList ::= (Semi) SEMI | (CommaVarDecl) COMMA VarList:list ;
 
 OptArrayBrackets ::= (ArrayType) LBRACK RBRACK | (SimpleType) /* epsilon */ ;
 
