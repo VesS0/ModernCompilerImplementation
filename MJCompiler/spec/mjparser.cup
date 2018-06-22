@@ -58,9 +58,8 @@ terminal char CHAR;
 terminal Integer NUMBER;
 terminal String IDENT;
 
-nonterminal rs.etf.pp1.symboltable.concepts.Obj Program, ProgramName, Designator, DesigName, Addop, Mulop, Var, DesigWithOptPostfixOperation, Const;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj Program, ProgramName, Designator, DesigName, Addop, Mulop, Var, DesigWithOptPostfixOperation, Const, OptValueAssign;
 nonterminal rs.etf.pp1.symboltable.concepts.Struct Type, Term, Expr, Factor, OptVarDeclList, TermAddopList, FactorMulopList, FuncCall, OptArray, OptCommaNumber, ExprOrError;
-nonterminal rs.etf.pp1.symboltable.concepts.Struct OptValueAssign;
 
 nonterminal Statement, DesignatorStatement, AssignExpr;
 nonterminal VarDecl/*, OptBrackExpr*/, VarType;

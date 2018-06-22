@@ -92,8 +92,8 @@ public class CodeGenerator extends VisitorAdaptor {
 	
 	@Override
 	public void visit(Var Var)
-	{
-		if (Var.getOptValueAssign().struct != Tab.noType && 
+	{	
+		if (Var.getOptValueAssign().obj != Tab.noObj && 
 				Var.obj.getKind() == Obj.Con)
 		{
 			// if variable is const, it should not stay
@@ -101,7 +101,8 @@ public class CodeGenerator extends VisitorAdaptor {
 			Code.put(Code.pop);
 			return;
 		}
-		if (Var.getOptValueAssign().struct != Tab.noType)
+		
+		if (Var.getOptValueAssign().obj != Tab.noObj)
 		{
 			Code.store(Var.obj);	
 		}

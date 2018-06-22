@@ -1,16 +1,21 @@
 program VesicTest
-const int i = 1;
-int g = 3, p = 1;
-const char c = 'a';
-bool bol = true;
-const bool boool = false;
+bool vlada = true;
+const bool marko = true;
 {
-	void main() int k = 3;
+	void wrongFunction() int k;
 	{
-		print(i);
-		print(g);
-		print(p);
-		print(c);
+	}
+	
+	void main() bool testVlada; const int k = 4; const bool testMarko = true; bool mirko = true;
+	{
+		testVlada = mirko;
+		testVlada = true;
+		testVlada = vlada;
 		print(k);
+		mirko = vlada;
+		mirko = false;
+		mirko = testMarko;
+		mirko = false;
+		mirko = marko;
 	}
 }

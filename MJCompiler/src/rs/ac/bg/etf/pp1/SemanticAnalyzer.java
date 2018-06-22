@@ -244,13 +244,13 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	@Override
 	public void visit(AssignExpression AssignExpression)
 	{
-		AssignExpression.struct = AssignExpression.getConst().obj.getType();
+		AssignExpression.obj = AssignExpression.getConst().obj;
 	}
 	
 	@Override
 	public void visit(NoAssignExpr NoAssignExpr)
 	{
-		NoAssignExpr.struct = Tab.noType;
+		NoAssignExpr.obj = Tab.noObj;
 	}
 	
 	@Override
@@ -268,13 +268,13 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 					" of type " + StructKindToName(currentDeclTypeStruct.getKind()), Var);
 		}
 		
-		if (Var.getOptValueAssign().struct != Tab.noType)
+		if (Var.getOptValueAssign().obj != Tab.noObj)
 		{
-			if (!IsSecondTypeCompatibleWithFirst(VariableType, Var.getOptValueAssign().struct))
+			if (!IsSecondTypeCompatibleWithFirst(VariableType, Var.getOptValueAssign().obj.getType()))
 			{
 				report_error("Semantic Error on line " + Var.getLine() + " : Variable \"" + Var.getVarName() + "\" of type " +
 						StructKindToName(VariableType.getKind())+" has assigned value of type " +
-						StructKindToName(Var.getOptValueAssign().struct.getKind()), null);
+						StructKindToName(Var.getOptValueAssign().obj.getType().getKind()), null);
 			}
 		}
 		
@@ -285,11 +285,11 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		}
 
 		Var.obj = Tab.insert(isCurrentTypeConst?Obj.Con:Obj.Var, Var.getVarName(), VariableType);
-		if (isCurrentTypeConst && Var.getOptValueAssign().struct != Tab.noType)
-		{
-			Var.obj.setAdr(currentAssignObject.getAdr());
-		}
-	
+		
+		if (isCurrentTypeConst && Var.getOptValueAssign().obj != Tab.noObj)
+ 		{
+ 			Var.obj.setAdr(currentAssignObject.getAdr());
+ 		}
 	}
 	
 	@Override
@@ -320,7 +320,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	@Override
 	public void visit(ConstBool ConstBool) {
 		ConstBool.obj = new Obj(Obj.Con, "ConstBool", new Struct(Struct.Bool));;
-		// ConstBool.obj.setAdr(ConstBool.getBooll().get);
+		ConstBool.obj.setAdr(ConstBool.getBooll()?1:0);
 		currentAssignObject = ConstBool.obj;
 	}
 
