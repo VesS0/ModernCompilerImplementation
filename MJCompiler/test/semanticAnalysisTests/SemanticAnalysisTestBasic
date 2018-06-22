@@ -142,4 +142,16 @@ program MJProgram
 		return FunctionCalled(a++, 2, c, d, 2*a, 'c', false, kkk, kkk[2]);
 	}
 	void main(){}
+	
+	void Conditions() bool a, b, c;
+	{
+		a = true; b = false ; c = true;
+		if (a) FunctionCaller(); 
+		if (b) a=false; else FunctionCaller();
+		
+		if (a && b || c) FunctionCaller();
+		
+		if (3 > 2) FunctionCaller(); 
+	}
+	
 }

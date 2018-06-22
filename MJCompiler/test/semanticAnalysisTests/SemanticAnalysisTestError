@@ -87,14 +87,6 @@ program MJProgram
 		return b[2];
 	}
 	
-	int ErrorRecoveryParameter()
-	int t;
-	{
-		t = t + 2 - 4; // recovery
-		t = -3; // recovery
-		return 'c';
-	}
-	
 	void WrongReturnVoidInt()
 	{
 		return 1;

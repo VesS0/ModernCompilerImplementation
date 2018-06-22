@@ -79,4 +79,10 @@ program MJProgram
 	{
 	}
 	
+	void errorRecoveryIfElse()
+	{
+		if (+) errorRecoveryDefinitionOfParameters();
+		
+		if (+) errorRecoveryDefinitionOfParameters(); else errorRecoveryDefinitionOfParameters();
+	}
 }
