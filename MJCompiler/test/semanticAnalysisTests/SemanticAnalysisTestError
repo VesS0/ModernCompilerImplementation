@@ -250,4 +250,20 @@ program MJProgram
 		read(wrongType);
 		return 'a';
 	}
+	
+	void errorRecoveryDefinitionOfParameters() 
+	int ina,3,inc;
+	bool boa, bob, 'k';
+	int 3, inktt;
+	char 3, cha, chc;
+	{
+	} 
+	
+	void errorRecvoveryFromFormalParams(int firstPar, 3, int secPar)
+	{
+	}
+	
+	void errorRecvoveryFromFormalParams(int firstPar, int secPar, 3)
+	{
+	}
 }
