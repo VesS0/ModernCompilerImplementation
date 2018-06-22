@@ -287,8 +287,15 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		Var.obj = Tab.insert(isCurrentTypeConst?Obj.Con:Obj.Var, Var.getVarName(), VariableType);
 	}
 	
+	@Override // will be VarDeclList
+	public void visit(VarDecls VarDecls)
+	{
+		currentDeclTypeStruct = null;
+		isCurrentTypeConst = false;
+	}
+	
 	@Override
-	public void visit(Semi Semi)
+	public void visit(VarDeclErrorSemi VarDeclErrorSemi)
 	{
 		currentDeclTypeStruct = null;
 		isCurrentTypeConst = false;
