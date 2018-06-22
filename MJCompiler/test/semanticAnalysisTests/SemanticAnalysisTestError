@@ -91,6 +91,7 @@ program MJProgram
 	int t;
 	{
 		t = t + 2 - 4; // recovery
+		t = -3; // recovery
 		return 'c';
 	}
 	
@@ -248,10 +249,5 @@ program MJProgram
 	{
 		read(wrongType);
 		return 'a';
-	}
-
-	void errorRecoveryAssign() int assignErrorRecovery;
-	{
-		assignErrorRecovery = +3;
 	}
 }

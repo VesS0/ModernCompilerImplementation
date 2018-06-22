@@ -110,4 +110,4 @@ import java_cup.runtime.Symbol;
 [0-9]+  { return new_symbol(sym.NUMBER, new Integer (yytext()));}  /* O */
 ([a-z]|[A-Z])[a-z|A-Z|0-9|_]* 	{return new_symbol (sym.IDENT, yytext()); }  /* O */
 
-. { System.err.println("Lexical error ("+yytext()+") on line "+(yyline+1) + " and column " +(yycolumn+1)); }  /* O */
+. { System.err.println("Leksicka greska ("+yytext()+") na liniji "+(yyline+1) + " i koloni " +(yycolumn+1)); }  /* O */
