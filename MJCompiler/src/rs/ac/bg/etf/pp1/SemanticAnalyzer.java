@@ -288,14 +288,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 	
 	@Override
-	public void visit(VarDeclNoError VarDeclNoError)
-	{
-		currentDeclTypeStruct = null;
-		isCurrentTypeConst = false;
-	}
-	
-	@Override
-	public void visit(VarDeclError VarDeclError)
+	public void visit(Semi Semi)
 	{
 		currentDeclTypeStruct = null;
 		isCurrentTypeConst = false;
