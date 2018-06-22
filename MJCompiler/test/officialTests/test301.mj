@@ -44,8 +44,6 @@ program test301
 		read(bodovi);
 		bodovi = bodovi + 1;
 		print(bodovi);
-			
-	
 	}
 }
 
