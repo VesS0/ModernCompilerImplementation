@@ -1,10 +1,13 @@
 program VesicTest
-int x , z = 2, y;
+int x , z = 2, y=1;
+char c = 'c';
 {
-	void kaa(){}
 	void bee() int be; {}
 	void main() int terr = 3;
 	{
 		print(z);
+		print(y);
+		print(c);
 	}
+	void kaa(){}
 }
