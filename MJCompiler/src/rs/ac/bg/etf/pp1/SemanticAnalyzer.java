@@ -686,15 +686,15 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	public void visit(ConstType ConstType)
 	{
 		ConstType.struct = Tab.noType;
-		Obj typeNode = Tab.find(ConstType.getTypename());
+		Obj typeNode = Tab.find(ConstType.getTypeName());
 		
 		if (typeNode == null || typeNode == Tab.noObj) {
-			report_error("Semnatic Error on line "+ ConstType.getLine() + " : Type \"" + ConstType.getTypename() + "\" not found in symbol table ", ConstType);
+			report_error("Semnatic Error on line "+ ConstType.getLine() + " : Type \"" + ConstType.getTypeName() + "\" not found in symbol table ", ConstType);
 			return;
 		}
 		
 		if (Obj.Type != typeNode.getKind()) {
-			report_error("Semantic Error on line "+ ConstType.getLine() + " : Name \""+ ConstType.getTypename() + "\" does not represent type", ConstType);
+			report_error("Semantic Error on line "+ ConstType.getLine() + " : Name \""+ ConstType.getTypeName() + "\" does not represent type", ConstType);
 			return;
 		}
 		

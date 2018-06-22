@@ -136,11 +136,13 @@ OptDeclList ::= (VarDeclLists) Decl OptDeclList | (NoDecl) /* epsilon */ ;
 // VAR DECLARATION
 
 Decl ::= (VarDeclNoErr) Type VarDeclList:list SEMI |
-			(VarDeclError) Type error SEMI ;
+			(VarDeclError) Type error:err {: parser.log.debug("Error successfully recovered in variable declarations, before \";\"  on line " + errleft); :}
+				SEMI ;
 
 VarDeclList ::= (Vars) VarDeclList COMMA Var |
 				(SingleVar) Var |
-				(ErrorCommaVar) error COMMA Var ;
+				(ErrorCommaVar) error:err  {: parser.log.debug("Error successfully recovered in variable declarations, before \",\"  on line " + errleft); :}
+				COMMA Var ;
 				
 Var ::= (Var) IDENT:varName OptArrayBrackets:isArray OptValueAssign;
 
@@ -156,9 +158,15 @@ MethodDecl ::= (MethodDecl) MethodTypeName:signature LPAREN OptFormalParamList:n
 
 MethodTypeName ::= (MethodTypeName) Type:retType OptArrayBrackets:isArray IDENT:methodName ;
 
-OptFormalParamList ::= (FormalParamListOpt) FormalParamList:formalParams | (NoFormalParam) /* epsilon */ ;
+OptFormalParamList ::= (FormalParamListOpt) FormalParamList:formalParams | 
+						(FormalParamError) error:err  {: parser.log.debug("Error successfully recovered in formal parameters, before \")\"  on line " + errleft); :}
+						|
+						(NoFormalParam) /* epsilon */ ;
 
-FormalParamList ::= (FormalParamDeclList) FormalParamDecl:param COMMA FormalParamList:formalParams | (SingleFormalParamDecl) FormalParamDecl:param ;
+FormalParamList ::= (FormalParamDeclList) FormalParamList:formalParams COMMA FormalParamDecl:param  |
+					(SingleFormalParamDecl) FormalParamDecl:param |
+					(ErrorInFormalParamDecl) error:err {: parser.log.debug("Error successfully recovered in formal parameters, before \",\"  on line " + errleft); :}
+					COMMA FormalParamDecl ;
 
 FormalParamDecl ::= (FormalParamDecl) Type:paramType IDENT:paramName OptArrayBrackets:isArray ;
 

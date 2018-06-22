@@ -2,7 +2,7 @@ program MJProgram
 	int staticallyAlocatedArray[3]; // Not expected to work, error recovey
 	int i, 3; // Not expected to work, error recovey
 	int e, 5, p; // Not expected to work, error recovey
-	// int 4,a;
+	//int 4,a;
 {
 	
 	int k () int c;
@@ -58,4 +58,24 @@ program MJProgram
 	{
 		a = +;
 	}
+	
+		
+	void errorRecoveryDefinitionOfParameters() 
+	int ina,3,inc;
+	bool boa, bob, 'k';
+	{
+	} 
+	
+	void errorRecoveryBEfore(32)
+	{
+	}
+	
+	void errorRecvoveryFromFormalParams(int firstPar, int secPar, int 3)
+	{
+	}
+	
+	void errorRecvoveryFromFormalParams(int firstPar,  +, int secPar)
+	{
+	}
+	
 }
