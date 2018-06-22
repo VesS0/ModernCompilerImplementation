@@ -11,7 +11,7 @@ import rs.etf.pp1.symboltable.structure.SymbolDataStructure;
 
 public class SemanticAnalyzer extends VisitorAdaptor {
 	boolean errorDetected = false;
-	Obj currentMethod = null;
+	Obj currentMethod = null, currentAssignObject = null;
 	Struct currentDeclTypeStruct = null;
 	boolean isCurrentTypeConst = false;
 	boolean returnFound = false;
@@ -244,7 +244,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	@Override
 	public void visit(AssignExpression AssignExpression)
 	{
-		AssignExpression.struct = AssignExpression.getConst().struct;
+		AssignExpression.struct = AssignExpression.getConst().obj.getType();
 	}
 	
 	@Override
@@ -283,8 +283,13 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			report_error("Semantic Error on line " + Var.getLine() + " : Variable \"" + Var.getVarName() + "\" is already defined in current scope", null);
 			return;
 		}
-		//isCurrentTypeConst?Obj.Con:
-		Var.obj = Tab.insert(Obj.Var, Var.getVarName(), VariableType);
+
+		Var.obj = Tab.insert(isCurrentTypeConst?Obj.Con:Obj.Var, Var.getVarName(), VariableType);
+		if (isCurrentTypeConst && Var.getOptValueAssign().struct != Tab.noType)
+		{
+			Var.obj.setAdr(currentAssignObject.getAdr());
+		}
+	
 	}
 	
 	@Override
@@ -314,17 +319,23 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 	@Override
 	public void visit(ConstBool ConstBool) {
-		ConstBool.struct = new Struct(Struct.Bool);
+		ConstBool.obj = new Obj(Obj.Con, "ConstBool", new Struct(Struct.Bool));;
+		// ConstBool.obj.setAdr(ConstBool.getBooll().get);
+		currentAssignObject = ConstBool.obj;
 	}
 
 	@Override
 	public void visit(ConstChar ConstChar) {
-		ConstChar.struct = Tab.charType;
+		ConstChar.obj = new Obj(Obj.Con, "ConstChar", Tab.charType);
+		ConstChar.obj.setAdr(ConstChar.getCharr());
+		currentAssignObject = ConstChar.obj;
 	}
 
 	@Override
 	public void visit(ConstNum ConstNum) {
-		ConstNum.struct = Tab.intType;
+		ConstNum.obj = new Obj(Obj.Con, "ConstInt", Tab.intType);
+		ConstNum.obj.setAdr(ConstNum.getNumm());
+		currentAssignObject = ConstNum.obj;
 	}
 
 	@Override
@@ -346,7 +357,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 	@Override
 	public void visit(ConstVar ConstVar) {
-		ConstVar.struct = ConstVar.getConst().struct;
+		ConstVar.struct = ConstVar.getConst().obj.getType();
 	}
 
 	@Override
@@ -565,7 +576,8 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		if (AssignmentStmt.getDesignator().obj.getKind() == Obj.Con)
 		{
 			report_error("Semantic Error on line " + AssignmentStmt.getLine() +
-					" : you cannot assign to once const declared variable ("+
+					" : you cannot assign to once const declared variable "+
+					AssignmentStmt.getDesignator().getDesigName().getDesignatorName() + " ("+
 					" Types are however compatible "+StructKindToName(LeftFromAssignType.getKind())+ ")" ,null);
 		}
 	}

@@ -1,14 +1,16 @@
 program VesicTest
-	const int x = 1;
-	const int pet = 5;
- 	
- 	int niz[];
- 	
- 	char nizch[];
+const int i = 1;
+int g = 3, p = 1;
+const char c = 'a';
+bool bol = true;
+const bool boool = false;
 {
-	void main()
+	void main() int k = 3;
 	{
-		print(x);
-		print(pet);
+		print(i);
+		print(g);
+		print(p);
+		print(c);
+		print(k);
 	}
 }

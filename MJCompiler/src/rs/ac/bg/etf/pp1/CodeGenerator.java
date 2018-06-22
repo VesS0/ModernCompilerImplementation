@@ -16,8 +16,18 @@ public class CodeGenerator extends VisitorAdaptor {
 	private boolean isMinusPresent = false;
 	private int varCount;
 	private int paramCnt;
-	private int mainPlaceholderAddressInBuf = 0;
-
+	private int mainPlaceholderAddressInBuf = -1;
+	private int mainPc;
+	
+	public int getStartingPc()
+	{
+		if (mainPlaceholderAddressInBuf != -1)
+		{
+			return 0;
+		}
+		
+		return mainPc;
+	}
 	
 	private void ErrorDetected()
 	{
@@ -57,12 +67,13 @@ public class CodeGenerator extends VisitorAdaptor {
 	@Override
 	public void visit(MethodTypeName MethodTypeName) {
 		if ("main".equalsIgnoreCase(MethodTypeName.getMethodName())) {
-			int mainPc = Code.pc;
-			Code.put2(mainPlaceholderAddressInBuf, mainPc - mainPlaceholderAddressInBuf + 1);
-			// Making sure that all instructions for initializing
-			// global variables are in the buffer
-			//for(int i = 0; i < Code.dataSize; i++)
-   			//	Code.put(Code.buf[i]);
+			mainPc = Code.pc;
+			
+			// If there are some static initialized variables we make sure
+			// that we jump back to Main after initialization
+			if (mainPlaceholderAddressInBuf != -1) {
+				Code.put2(mainPlaceholderAddressInBuf, mainPc - mainPlaceholderAddressInBuf + 1);
+			}
 		}
 		MethodTypeName.obj.setAdr(Code.pc);
 		
@@ -82,9 +93,17 @@ public class CodeGenerator extends VisitorAdaptor {
 	@Override
 	public void visit(Var Var)
 	{
+		if (Var.getOptValueAssign().struct != Tab.noType && 
+				Var.obj.getKind() == Obj.Con)
+		{
+			// if variable is const, it should not stay
+			// on the stack
+			Code.put(Code.pop);
+			return;
+		}
 		if (Var.getOptValueAssign().struct != Tab.noType)
 		{
-			Code.store(Var.obj);
+			Code.store(Var.obj);	
 		}
 	}
 	
