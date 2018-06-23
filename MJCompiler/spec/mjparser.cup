@@ -72,7 +72,7 @@ nonterminal rs.etf.pp1.symboltable.concepts.Struct FormalParamDecl, CondOrList, 
 nonterminal OptMethodDeclList/*, FormalParam*/, OptStatementList;
 nonterminal java.util.List OptArgumentParamList, ArgumentParamList, OptFormalParamList, FormalParamList;
 nonterminal VarDeclList;
-nonterminal StatmenetIfElse, IfClause, IfClauseStmt, IfErrorClause;
+nonterminal StatmenetIfElse, IfClause, IfClauseStmt, IfErrorClause, ParenedCondition, Do;
 /* End A  */
 
 precedence left ELSE;
@@ -87,8 +87,11 @@ Statement ::= 	(DesignatorStmt) DesignatorStatement SEMI |
 				(ReturnVoid) RETURN SEMI |
 				(ReturnExpr) RETURN Expr:returnType SEMI |
 				(IfElseStmt) StatmenetIfElse |
-				(BraceStatement) LBRACE OptStatementList RBRACE 
+				(BraceStatement) LBRACE OptStatementList RBRACE |
+				(DoWhileStmt) Do Statement WHILE ParenedCondition SEMI
 				;
+
+Do ::= (Do) DO ;
 
 // IF-ELSE AND CONDITIONS 
 StatmenetIfElse ::= (IfClausee) IfClauseStmt |
@@ -97,7 +100,9 @@ StatmenetIfElse ::= (IfClausee) IfClauseStmt |
 					(IfElseClauseError) IfErrorClause ELSE Statement
 					;
 					
-IfClause ::= (IfClause) IF LPAREN CondOrListEnd RPAREN ;
+IfClause ::= (IfClause) IF ParenedCondition ;
+
+ParenedCondition ::= (ParenedCondition) LPAREN CondOrListEnd RPAREN ;
 
 IfClauseStmt ::= (IfClauseStmt) IfClause Statement ;
 

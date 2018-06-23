@@ -22,11 +22,12 @@ public class CodeGenerator extends VisitorAdaptor {
 	private int mainPlaceholderAddressInBuf = -1; // Used for initialization of global parameters
 	// private Stack<Integer> IfJumps_PlaceholderAdrs = new Stack<Integer>();
 	private Stack<Integer>
-			falseConditionJumpAddressPlaceholder = new Stack<Integer>(), 
 			endAddrOfElsePlaceholders = new Stack<Integer>(),
 			// endAddrOfIfPlaceholders = new Stack<Integer>(),
 			nextOR_AddrPlaceholders = new Stack<Integer>(),
-			conditionBeginning_AddrPlaceholders = new Stack<Integer>();
+			falseConditionJumpAddressPlaceholder = new Stack<Integer>(), 
+			trueConditionJumpAddressPlaceholders = new Stack<Integer>(),
+			doWhile_DoAddress = new Stack<Integer>();
 	
 	public int getStartingPc()
 	{
@@ -431,30 +432,43 @@ public class CodeGenerator extends VisitorAdaptor {
 	public void visit(CondOrListEnd CondOrListEnd)
 	{
 		// We end up on this instruction (this PC) when
-		// we have not jumped from OR checks, meaning that
-		// it is FALSE, and we need to jump to end of statement list
+		// we have not jumped any of "or groups", meaning that condition
+		// is FALSE, and we need to jump to end of statement list
 		Code.put(Code.jmp);
 		falseConditionJumpAddressPlaceholder.push(Code.pc);
 		Code.put2(0);
 		
-		// We endup on next instruction (this PC) if previous condition
-		// was FALSE (to check next parameter in OR)
-		while(!conditionBeginning_AddrPlaceholders.empty()) {
-			Code.fixup(conditionBeginning_AddrPlaceholders.pop());
+		// We endup on next instruction (this PC) if previous condition was TRUE
+		if (DoWhileStmt.class == CondOrListEnd.getParent().getParent().getClass())
+		{
+			// If we are in "DO WHILE" statement, we want something different from if/else.
+			// each AND should behave same way -> if it is false jump to next OR, but if
+			// some OR is TRUE, as here  we should put their jump to address saved in Do part.
+			// and empty the stack
+			int instructionOnWhichWeShouldJump = doWhile_DoAddress.pop();
+			while(!trueConditionJumpAddressPlaceholders.empty())
+			{
+				int addressOfJumpIfTrueCondition = trueConditionJumpAddressPlaceholders.pop();
+				Code.put2(addressOfJumpIfTrueCondition, instructionOnWhichWeShouldJump - addressOfJumpIfTrueCondition + 1);
+			}
+		} else
+		{
+			while(!trueConditionJumpAddressPlaceholders.empty()) {
+				Code.fixup(trueConditionJumpAddressPlaceholders.pop());
+			}
 		}
 	}
 	
 	@Override
 	public void visit(CondAndListEnd CondAndListEnd)
 	{	
-		// Parent of this node is either single condition
-		// or conditions with OR in between. In either case
-		// if here is true, we should jump to the end of condition
+		// We end up here on first "and group" which ends up
+		// being TRUE, so we should jump accordingly
 		Code.put(Code.jmp);
-		conditionBeginning_AddrPlaceholders.push(Code.pc);
+		trueConditionJumpAddressPlaceholders.push(Code.pc);
 		Code.put2(0);
 		
-		// This is the end of AND list, we should put to all
+		// This is the end of AND group, we should put to all
 		// vars this as their jump point if they are false, in order
 		// to evaluate next OR statement or finish with checking condition
 		while (!nextOR_AddrPlaceholders.empty()) {
@@ -492,6 +506,19 @@ public class CodeGenerator extends VisitorAdaptor {
 	
 	
 	@Override
+	public void visit(Do Do)
+	{
+		doWhile_DoAddress.push(Code.pc);
+	}
+	
+	@Override
+	public void visit(DoWhileStmt DoWhileStmt)
+	{
+		// If condition is FALSE, we should just continue form this PC
+		Code.fixup(falseConditionJumpAddressPlaceholder.pop());
+	}
+	
+	@Override
 	public void visit(IfClause IfClause)
 	{
 		/*
@@ -526,7 +553,7 @@ public class CodeGenerator extends VisitorAdaptor {
 		// we should jump if condition in IF is false.
 		// Code.fixup(endAddrOfIfPlaceholders.pop());
 		
-		// telling condition what to execute next as well
+		// telling condition what to execute next if it is false
 		if (falseConditionJumpAddressPlaceholder.peek() != null)
 		{
 			Code.fixup(falseConditionJumpAddressPlaceholder.pop());
