@@ -22,10 +22,11 @@ public class CodeGenerator extends VisitorAdaptor {
 	private int mainPlaceholderAddressInBuf = -1; // Used for initialization of global parameters
 	// private Stack<Integer> IfJumps_PlaceholderAdrs = new Stack<Integer>();
 	private Stack<Integer>
-			endAdrOfElsePlaceholders = new Stack<Integer>(),
-			endAdrOfIfPlaceholders = new Stack<Integer>(),
-			AndAdrStack = new Stack<Integer>(),
-			OrAdrStack = new Stack<Integer>();
+			falseConditionJumpAddressPlaceholder = new Stack<Integer>(), 
+			endAddrOfElsePlaceholders = new Stack<Integer>(),
+			// endAddrOfIfPlaceholders = new Stack<Integer>(),
+			nextOR_AddrPlaceholders = new Stack<Integer>(),
+			conditionBeginning_AddrPlaceholders = new Stack<Integer>();
 	
 	public int getStartingPc()
 	{
@@ -229,8 +230,14 @@ public class CodeGenerator extends VisitorAdaptor {
 		boolean isFunctionCall = FuncCall.class == parent.getClass();
 		boolean isReadStmt = ReadStmt.class == parent.getClass();
 		
-		if (!isFunctionCall && !isReadStmt &&
-			(!isAssignment || (isElementObjectKind && hasArrayAccessing)))
+		// We don't want to load value if designator is function call
+		// or inside of read statement
+		// or is assignment, unless this is array, then we should
+		// laod the address
+		if (!isFunctionCall && 
+			!isReadStmt &&
+			!isAssignment ||
+			(isElementObjectKind && hasArrayAccessing))
 		{
 			Code.load(DesigName.obj);
 		}
@@ -258,9 +265,12 @@ public class CodeGenerator extends VisitorAdaptor {
 				// after Adr, Idx, Adr, Idx
 				// one used for reading, other one for writing
 			}
-			// if it is not assign operation, we should read value
-			// from provided address (Array)
-			Code.load(Designator.obj);
+			if (ReadStmt.class != Designator.getParent().getClass())
+			{
+				// if it is not assign operation, we should read value
+				// from provided address (Array)
+				Code.load(Designator.obj);
+			}
 		}
 		/*
 		SyntaxNode parent = Designator.getParent();
@@ -418,23 +428,84 @@ public class CodeGenerator extends VisitorAdaptor {
 	}
 	
 	@Override
+	public void visit(CondOrListEnd CondOrListEnd)
+	{
+		// We end up on this instruction (this PC) when
+		// we have not jumped from OR checks, meaning that
+		// it is FALSE, and we need to jump to end of statement list
+		Code.put(Code.jmp);
+		falseConditionJumpAddressPlaceholder.push(Code.pc);
+		Code.put2(0);
+		
+		// We endup on next instruction (this PC) if previous condition
+		// was FALSE (to check next parameter in OR)
+		while(!conditionBeginning_AddrPlaceholders.empty()) {
+			Code.fixup(conditionBeginning_AddrPlaceholders.pop());
+		}
+	}
+	
+	@Override
+	public void visit(CondAndListEnd CondAndListEnd)
+	{	
+		// Parent of this node is either single condition
+		// or conditions with OR in between. In either case
+		// if here is true, we should jump to the end of condition
+		Code.put(Code.jmp);
+		conditionBeginning_AddrPlaceholders.push(Code.pc);
+		Code.put2(0);
+		
+		// This is the end of AND list, we should put to all
+		// vars this as their jump point if they are false, in order
+		// to evaluate next OR statement or finish with checking condition
+		while (!nextOR_AddrPlaceholders.empty()) {
+			Code.fixup(nextOR_AddrPlaceholders.pop());
+		}
+	}
+	
+	@Override
 	public void visit(CondExpr CondExpr)
 	{
-		
+		// Here from expression value has already been loaded
+		// on stack, so we just check if it is false.
+		// In case it is false we can skip all other 'and's
+		Code.put(Code.const_1);
+		Code.put(Code.jcc + Code.ne);
+		nextOR_AddrPlaceholders.push(Code.pc);
+		Code.put2(0);
 	}
+	
+	@Override
+	public void visit(CondExprComparison CondExprComparison)
+	{
+		// Here we have both operands on stack loaded,
+		// we just check if they satisfy criteria defined
+		// by operation
+		int comparisonOperation = GetComparisonInstruction(CondExprComparison.getCompareop().obj);
+		Code.put(Code.jcc + Code.inverse[comparisonOperation]);
+		// if they don't, we should skip all other && checks
+		// and jump to first next OR check here:
+		nextOR_AddrPlaceholders.push(Code.pc);
+		Code.put2(0);
+		// We are doing this in order to stop evaluations of other
+		// parameters in AND since there is no need.
+	}
+	
 	
 	@Override
 	public void visit(IfClause IfClause)
 	{
+		/*
+		 THIS WAS TRUE BEFORE INTRODUCING COMPLEX CONDITIONS XD
 		// Check if condition is true, and jump if needed.
 		// We have on stack value 0 if false, 1 if true.
 		Code.put(Code.const_1);
 		// If last 2 operands on stack are not equal, jump!
 		Code.put(Code.jcc + Code.ne);
-		endAdrOfIfPlaceholders.push(Code.pc);
+		endAddrOfIfPlaceholders.push(Code.pc);
 		// setting zero here, will replace it afterwards
 		// when address of where we want to jump is available (After compiling "Else" part)
 		Code.put2(0);
+		*/
 	}
 	
 	@Override
@@ -446,13 +517,20 @@ public class CodeGenerator extends VisitorAdaptor {
 			// we need to jump after the else part, once we 
 			// determine the end address of this if-else blocks
 			Code.put(Code.jmp);
-			endAdrOfElsePlaceholders.push(Code.pc);
+			endAddrOfElsePlaceholders.push(Code.pc);
 			Code.put2(0);
 		}
 		
+		// ***Was used when only simple conditions were used!!!
 		// Now know that this is the PC where
 		// we should jump if condition in IF is false.
-		Code.fixup(endAdrOfIfPlaceholders.pop());
+		// Code.fixup(endAddrOfIfPlaceholders.pop());
+		
+		// telling condition what to execute next as well
+		if (falseConditionJumpAddressPlaceholder.peek() != null)
+		{
+			Code.fixup(falseConditionJumpAddressPlaceholder.pop());
+		}
 	}
 	
 	@Override
@@ -460,7 +538,7 @@ public class CodeGenerator extends VisitorAdaptor {
 	{
 		// This is the address that we should jump to, in case
 		// that we have finished with "IF" block.
-		Code.fixup(endAdrOfElsePlaceholders.pop());
+		Code.fixup(endAddrOfElsePlaceholders.pop());
 	}
 	
 	@Override

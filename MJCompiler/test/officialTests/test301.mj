@@ -10,6 +10,13 @@ program test301
 	char nizch[];
 	
 {
+	void ispis(int bod) int b;
+	{
+		read(b);
+		b = bod + b;
+		print(b);
+	}
+	
 	void main()	int bodovi;
 	{
 	
@@ -44,6 +51,8 @@ program test301
 		read(bodovi);
 		bodovi = bodovi + 1;
 		print(bodovi);
+		
+		ispis(bodovi);
 	}
 }
 

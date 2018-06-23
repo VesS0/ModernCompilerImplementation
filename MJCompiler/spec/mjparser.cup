@@ -51,7 +51,7 @@ terminal BREAK, STARSTAR, GREATER, ASSIGN_MUL, ASSIGN_MOD, LESS_EQUAL, GREATER_E
 /* Unused */
 
 terminal PROG, LBRACE, RBRACE, LPAREN, RPAREN, LBRACK, RBRACK, DEC, INC, SEMI, COMMA, ASSIGN, VOID;
-terminal ADD, SUB, MUL, DIV, MOD, NEW, CONST;
+terminal ADD, SUB, MUL, DIV, MOD, NEW, CONST, DO, WHILE;
 terminal READ, PRINT, RETURN;
 terminal Boolean BOOL;
 terminal char CHAR;
@@ -68,7 +68,7 @@ nonterminal Boolean OptArrayBrackets;
 
 /* July 2017/2018 Addition for level A and B xd wasn't actually updating as time passed... */
 nonterminal rs.etf.pp1.symboltable.concepts.Obj MethodDecl, MethodTypeName;
-nonterminal rs.etf.pp1.symboltable.concepts.Struct FormalParamDecl, CondOrList, CondAndList, Condition;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct FormalParamDecl, CondOrList, CondAndList, Condition, CondAndListEnd, CondOrListEnd;
 nonterminal OptMethodDeclList/*, FormalParam*/, OptStatementList;
 nonterminal java.util.List OptArgumentParamList, ArgumentParamList, OptFormalParamList, FormalParamList;
 nonterminal VarDeclList;
@@ -97,16 +97,20 @@ StatmenetIfElse ::= (IfClausee) IfClauseStmt |
 					(IfElseClauseError) IfErrorClause ELSE Statement
 					;
 					
-IfClause ::= (IfClause) IF LPAREN CondOrList RPAREN ;
+IfClause ::= (IfClause) IF LPAREN CondOrListEnd RPAREN ;
 
 IfClauseStmt ::= (IfClauseStmt) IfClause Statement ;
 
 IfErrorClause ::= (IfErrorClause) IF LPAREN error:err 
 					{: parser.log.debug("Error successfully recovered in If expression after sign \"(\" and before \")\"  on line " + errleft); :}
 				  RPAREN Statement ;
+				  
+CondOrListEnd ::= (CondOrListEnd) CondOrList ;
 
-CondOrList ::= 	(CondOrLists) CondOrList OR CondAndList |
-				(SingleCondAndList) CondAndList ;
+CondOrList ::= 	(CondOrLists) CondOrList OR CondAndListEnd |
+				(SingleCondAndList) CondAndListEnd ;
+
+CondAndListEnd ::= (CondAndListEnd) CondAndList ;
 
 CondAndList ::= (CondAndLists) CondAndList AND Condition | (SingleCondition) Condition ;
 

@@ -1,0 +1,22 @@
+program complexConds
+{
+	void main() bool vlada= true, vesic = false;
+	{
+		if (vlada || vesic)
+		{
+			print('V');
+		} else
+		{
+			print('I');
+		}
+		print('.');
+		if (vesic && vlada)
+		{
+			print('B');
+		}
+		else
+			print('V');
+			
+		print('.');
+	}
+}

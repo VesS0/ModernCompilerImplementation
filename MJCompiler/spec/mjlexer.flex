@@ -62,6 +62,8 @@ import java_cup.runtime.Symbol;
 "return" 	{ return new_symbol(sym.RETURN, yytext()); }
 "static" 	{ return new_symbol(sym.STATIC, yytext()); }
 "void" 		{ return new_symbol(sym.VOID, yytext()); }
+"do"		{ return new_symbol(sym.DO, yytext()); }
+"while"		{ return new_symbol(sym.WHILE, yytext()); }
 
 "(" 		{ return new_symbol(sym.LPAREN, yytext());			} /* A */
 ")" 		{ return new_symbol(sym.RPAREN, yytext());			} /* A */

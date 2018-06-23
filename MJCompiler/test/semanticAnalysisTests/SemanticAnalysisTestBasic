@@ -168,6 +168,11 @@ program MJProgram
 				b = false;
 			}
 		}
+		
+		if (a && b || c || global < globalComma )
+		{
+			b = false;
+		}
 	}
 	
 }
