@@ -72,7 +72,7 @@ nonterminal rs.etf.pp1.symboltable.concepts.Struct FormalParamDecl, CondOrList, 
 nonterminal OptMethodDeclList/*, FormalParam*/, OptStatementList;
 nonterminal java.util.List OptArgumentParamList, ArgumentParamList, OptFormalParamList, FormalParamList;
 nonterminal VarDeclList;
-nonterminal StatmenetIfElse, IfClause, IfClauseStmt, IfErrorClause, ParenedCondition, Do;
+nonterminal StatmenetIfElse, IfClause, IfClauseStmt, IfErrorClause, ParenedCondition, Do, DoWhile;
 /* End A  */
 
 precedence left ELSE;
@@ -88,8 +88,12 @@ Statement ::= 	(DesignatorStmt) DesignatorStatement SEMI |
 				(ReturnExpr) RETURN Expr:returnType SEMI |
 				(IfElseStmt) StatmenetIfElse |
 				(BraceStatement) LBRACE OptStatementList RBRACE |
-				(DoWhileStmt) Do Statement WHILE ParenedCondition SEMI
+				(DoWhileStmt) DoWhile ParenedCondition SEMI |
+				(ContinueStmt) CONTINUE SEMI |
+				(BreakStmt) BREAK SEMI
 				;
+
+DoWhile ::= (DoWhile) Do Statement WHILE;
 
 Do ::= (Do) DO ;
 

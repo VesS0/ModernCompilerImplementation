@@ -27,7 +27,11 @@ public class CodeGenerator extends VisitorAdaptor {
 			nextOR_AddrPlaceholders = new Stack<Integer>(),
 			falseConditionJumpAddressPlaceholder = new Stack<Integer>(), 
 			trueConditionJumpAddressPlaceholders = new Stack<Integer>(),
-			doWhile_DoAddress = new Stack<Integer>();
+			doWhile_DoAddress = new Stack<Integer>(),
+			continueJumpAddressPlaceholders = new Stack<Integer>(),
+			breakJumpAddressesPlaceholders = new Stack<Integer>(),
+			continueCalledInThisWhileTimes = new Stack<Integer>(),
+			breakCalledInThisWhileTimes = new Stack<Integer>();
 	
 	public int getStartingPc()
 	{
@@ -509,6 +513,21 @@ public class CodeGenerator extends VisitorAdaptor {
 	public void visit(Do Do)
 	{
 		doWhile_DoAddress.push(Code.pc);
+		// in this scope number of calls to continue
+		continueCalledInThisWhileTimes.push(0);
+		breakCalledInThisWhileTimes.push(0);
+	}
+	
+	@Override
+	public void visit(DoWhile DoWhile)
+	{
+		int numOfContinueCallsInThisLoopScope = continueCalledInThisWhileTimes.pop();
+		
+		while (!continueJumpAddressPlaceholders.empty() && numOfContinueCallsInThisLoopScope > 0)
+		{
+			--numOfContinueCallsInThisLoopScope;
+			Code.fixup(continueJumpAddressPlaceholders.pop());
+		}
 	}
 	
 	@Override
@@ -516,6 +535,32 @@ public class CodeGenerator extends VisitorAdaptor {
 	{
 		// If condition is FALSE, we should just continue form this PC
 		Code.fixup(falseConditionJumpAddressPlaceholder.pop());
+		
+		int numberOfBreaksCalled = breakCalledInThisWhileTimes.pop();
+		// We should also get here on break
+		while (!breakJumpAddressesPlaceholders.empty() && numberOfBreaksCalled>0)
+		{
+			--numberOfBreaksCalled;
+			Code.fixup(breakJumpAddressesPlaceholders.pop());
+		}
+	}
+	
+	@Override
+	public void visit(ContinueStmt ContinueStmt)
+	{
+		continueCalledInThisWhileTimes.push(continueCalledInThisWhileTimes.pop() + 1);
+		Code.put(Code.jmp);
+		continueJumpAddressPlaceholders.push(Code.pc);
+		Code.put2(0);
+	}
+	
+	@Override
+	public void visit(BreakStmt BreakStmt)
+	{
+		breakCalledInThisWhileTimes.push(breakCalledInThisWhileTimes.pop()+1);
+		Code.put(Code.jmp);
+		breakJumpAddressesPlaceholders.push(Code.pc);
+		Code.put2(0);
 	}
 	
 	@Override
