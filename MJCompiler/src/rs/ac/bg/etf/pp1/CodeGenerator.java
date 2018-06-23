@@ -1,5 +1,7 @@
 package rs.ac.bg.etf.pp1;
 
+import java.util.Stack;
+
 import org.apache.log4j.Logger;
 
 import rs.ac.bg.etf.pp1.CounterVisitor.FormParamCounter;
@@ -16,8 +18,14 @@ public class CodeGenerator extends VisitorAdaptor {
 	private boolean isMinusPresent = false;
 	private int varCount;
 	private int paramCnt;
-	private int mainPlaceholderAddressInBuf = -1;
 	private int mainPc;
+	private int mainPlaceholderAddressInBuf = -1; // Used for initialization of global parameters
+	// private Stack<Integer> IfJumps_PlaceholderAdrs = new Stack<Integer>();
+	private Stack<Integer>
+			endAdrOfElsePlaceholders = new Stack<Integer>(),
+			endAdrOfIfPlaceholders = new Stack<Integer>(),
+			AndAdrStack = new Stack<Integer>(),
+			OrAdrStack = new Stack<Integer>();
 	
 	public int getStartingPc()
 	{
@@ -54,7 +62,7 @@ public class CodeGenerator extends VisitorAdaptor {
 				// so this is a placeholder for it.
 				// save location for buffer placeholder
 				mainPlaceholderAddressInBuf = Code.pc;
-				Code.put2(13);
+				Code.put2(0);
 			}
 		}
 	}
@@ -387,6 +395,74 @@ public class CodeGenerator extends VisitorAdaptor {
 		return 0;
 	}
 	
+	int GetComparisonInstruction(Obj ComparisonObj)
+	{
+		switch(ComparisonObj.getName())
+		{
+		case "eq":
+			return Code.eq;
+		case "ne":
+			return Code.ne;
+		case "lt":
+			return Code.lt;
+		case "le":
+			return Code.le;
+		case "gt":
+			return Code.gt;
+		case "ge":
+			return Code.ge;
+		}
+		
+		ErrorDetected();
+		return 0;
+	}
+	
+	@Override
+	public void visit(CondExpr CondExpr)
+	{
+		
+	}
+	
+	@Override
+	public void visit(IfClause IfClause)
+	{
+		// Check if condition is true, and jump if needed.
+		// We have on stack value 0 if false, 1 if true.
+		Code.put(Code.const_1);
+		// If last 2 operands on stack are not equal, jump!
+		Code.put(Code.jcc + Code.ne);
+		endAdrOfIfPlaceholders.push(Code.pc);
+		// setting zero here, will replace it afterwards
+		// when address of where we want to jump is available (After compiling "Else" part)
+		Code.put2(0);
+	}
+	
+	@Override
+	public void visit(IfClauseStmt IfClauseStmt)
+	{
+		if (IfElseClause.class == IfClauseStmt.getParent().getClass())
+		{
+			// If IF condition was true, we have finished with execution and
+			// we need to jump after the else part, once we 
+			// determine the end address of this if-else blocks
+			Code.put(Code.jmp);
+			endAdrOfElsePlaceholders.push(Code.pc);
+			Code.put2(0);
+		}
+		
+		// Now know that this is the PC where
+		// we should jump if condition in IF is false.
+		Code.fixup(endAdrOfIfPlaceholders.pop());
+	}
+	
+	@Override
+	public void visit(IfElseClause IfElseClause)
+	{
+		// This is the address that we should jump to, in case
+		// that we have finished with "IF" block.
+		Code.fixup(endAdrOfElsePlaceholders.pop());
+	}
+	
 	@Override
 	public void visit(AddopAdd AddopAdd)
 	{
@@ -412,7 +488,36 @@ public class CodeGenerator extends VisitorAdaptor {
 	{
 		MulopMod.obj = new Obj(Obj.NO_VALUE, "mod", Tab.noType);
 	}
-	
+	@Override
+	public void visit(Equal Equal)
+	{
+		Equal.obj = new Obj(Obj.NO_VALUE, "eq", Tab.noType);
+	}
+	@Override
+	public void visit(NotEqual NotEqual)
+	{
+		NotEqual.obj = new Obj(Obj.NO_VALUE, "ne", Tab.noType);
+	}
+	@Override
+	public void visit(Greater Greater)
+	{
+		Greater.obj = new Obj(Obj.NO_VALUE, "gt", Tab.noType);
+	}
+	@Override
+	public void visit(GreaterEqual GreaterEqual)
+	{
+		GreaterEqual.obj = new Obj(Obj.NO_VALUE, "ge", Tab.noType);
+	}
+	@Override
+	public void visit(Less Less)
+	{
+		Less.obj = new Obj(Obj.NO_VALUE, "lt", Tab.noType);
+	}
+	@Override
+	public void visit(LessEqual LessEqual)
+	{
+		LessEqual.obj = new Obj(Obj.NO_VALUE, "le", Tab.noType);
+	}
 	@Override
 	public void visit(ConstNum ConstNum)
 	{

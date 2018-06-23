@@ -72,7 +72,7 @@ nonterminal rs.etf.pp1.symboltable.concepts.Struct FormalParamDecl, CondOrList, 
 nonterminal OptMethodDeclList/*, FormalParam*/, OptStatementList;
 nonterminal java.util.List OptArgumentParamList, ArgumentParamList, OptFormalParamList, FormalParamList;
 nonterminal VarDeclList;
-nonterminal StatmenetIfElse, IfClauseStmt, IfErrorClauseStmt;
+nonterminal StatmenetIfElse, IfClause, IfClauseStmt, IfErrorClause;
 /* End A  */
 
 precedence left ELSE;
@@ -86,21 +86,24 @@ Statement ::= 	(DesignatorStmt) DesignatorStatement SEMI |
 				(PrintStmt) PRINT LPAREN Expr:expr OptCommaNumber:width RPAREN SEMI |
 				(ReturnVoid) RETURN SEMI |
 				(ReturnExpr) RETURN Expr:returnType SEMI |
-				(IfElseStmt) StatmenetIfElse 
+				(IfElseStmt) StatmenetIfElse |
+				(BraceStatement) LBRACE OptStatementList RBRACE 
 				;
 
 // IF-ELSE AND CONDITIONS 
-StatmenetIfElse ::= (IfClause) IfClauseStmt |
+StatmenetIfElse ::= (IfClausee) IfClauseStmt |
 					(IfElseClause) IfClauseStmt ELSE Statement |
-					(IfClauseError) IfErrorClauseStmt |
-					(IfElseClauseError) IfErrorClauseStmt ELSE Statement
+					(IfClauseError) IfErrorClause |
+					(IfElseClauseError) IfErrorClause ELSE Statement
 					;
 					
-IfClauseStmt ::= (IfClauseStmt) IF LPAREN CondOrList RPAREN Statement;
+IfClause ::= (IfClause) IF LPAREN CondOrList RPAREN ;
 
-IfErrorClauseStmt ::= (IfErrorClauseStatement) IF LPAREN error:err 
-{: parser.log.debug("Error successfully recovered in If expression after sign \"(\" and before \")\"  on line " + errleft); :}
-												RPAREN Statement ;
+IfClauseStmt ::= (IfClauseStmt) IfClause Statement ;
+
+IfErrorClause ::= (IfErrorClause) IF LPAREN error:err 
+					{: parser.log.debug("Error successfully recovered in If expression after sign \"(\" and before \")\"  on line " + errleft); :}
+				  RPAREN Statement ;
 
 CondOrList ::= 	(CondOrLists) CondOrList OR CondAndList |
 				(SingleCondAndList) CondAndList ;

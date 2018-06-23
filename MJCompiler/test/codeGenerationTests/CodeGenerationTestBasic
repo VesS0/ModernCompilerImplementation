@@ -187,4 +187,89 @@ int x = 2, y;
 		boolTestFunctionLocalGlobalConst(); //4
 		print(x); // 35
 	}
+	
+	void testIfElse() bool vlada= true;	int x = 3;
+	int y = 2;
+	{
+		if (vlada)
+			print(x);
+		else
+			print(y);
+		
+		vlada = false;
+		
+		if (vlada)
+		{
+			x = 10;
+		}
+		
+		if (vlada)
+		{
+			print(-1);
+			print(x - 1);
+		}
+		else
+		{
+			print(y - 1);
+		}
+	}
+	
+	void moreSimpleIfElseConditions() bool vlada= true, vesic = false;
+	{
+		if (vlada)
+		{
+			print('v');
+			if (vlada)
+			{
+				print('l');
+				if (vlada)
+				{
+					vlada = false;
+					print('a');
+				}
+				print('d');
+				if (vlada)
+				{
+					vlada = false;
+				}
+				else
+				{
+					print('a');
+					if (vlada)
+					{
+						vlada = false;
+					}
+					else
+					{
+						print(' ');
+						vlada = true;
+					}
+					print('v');
+				}
+			print('e');
+			}
+			else
+			{
+				vesic = true;
+			}
+			print('s');
+		}
+		else
+		{
+			if (vesic)
+			{
+				vlada = true;
+			}
+		}
+		vesic = true;
+		print('i');
+		if (vesic)
+			if (vesic)
+				if (vesic)
+					if (false) print('K');
+					else print('c');
+		print('d');
+		if (true)
+			print('a');
+	}
 }

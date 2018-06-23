@@ -153,7 +153,21 @@ program MJProgram
 		
 		if (3 > 2) FunctionCaller(); 
 		
-		if (a)  a; else b;
+		if (a)  a; else {b;}
+		
+		if (2 > 3) 
+		{
+			a = false;
+			b = true;
+		}
+		else
+		{
+			a = true;
+			if (a)
+			{
+				b = false;
+			}
+		}
 	}
 	
 }
