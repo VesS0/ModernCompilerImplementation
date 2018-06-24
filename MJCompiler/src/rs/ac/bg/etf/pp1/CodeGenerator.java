@@ -180,11 +180,19 @@ public class CodeGenerator extends VisitorAdaptor {
 	public void visit(PrintStmt PrintStmt) {
 		if(PrintStmt.getExpr().struct == Tab.intType)
 		{
-			Code.put(Code.const_5);
+			if (PrintStmt.getOptCommaNumber().struct== Tab.noType)
+			{
+				Code.put(Code.const_5);
+			}
+			
 			Code.put(Code.print);
 		} else if (PrintStmt.getExpr().struct == Tab.charType)
 		{
-			Code.put(Code.const_1);
+			if (PrintStmt.getOptCommaNumber().struct== Tab.noType)
+			{
+				Code.put(Code.const_1);
+			}
+			
 			Code.put(Code.bprint);
 		}
 	}
