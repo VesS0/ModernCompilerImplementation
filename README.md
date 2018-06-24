@@ -1,6 +1,6 @@
 # ModernCompilerImplementation
 
-Switch vlvesic/ProgramCompilers1/June2018 in order to see final project
+Switch to vlvesic/ProgramCompilers1/June2018 in order to see final project
 
 Modern compiler implementation in Java, done as a project on faculty.
 This includes 4 parts:
