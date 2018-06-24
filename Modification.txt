@@ -1,0 +1,6 @@
+Modifications:
+A:	a#b => 3*a+b
+B:	a#b => 3*a^2+b^2
+C:	Sealed class
+
+I did for B
