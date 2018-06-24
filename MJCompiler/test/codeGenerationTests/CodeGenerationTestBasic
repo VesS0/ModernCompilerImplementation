@@ -448,6 +448,19 @@ bool marko = false;
 		}
 	}
 	
+
+// Inputs: c, 3, 1, 2, 5, 1, 2, 3
+// Outputs:	
+// 	c
+//	c    93
+//	1
+//	2
+//    3    4    7    2   -3    8    2    7    1    2    2c5
+//    5    5    1    5adaVESIC   -2  -29    4  -11   -6    9   35    2cabc   13    9   12    4   35    3    1vlada vesicdaY    0    41
+//	2
+//	3
+//    7    1    1V.V.    0    1    2    3    4    5    6    7F    0i    2t    1t    0t    1iM    2i    1t    0t    3iM    4i    1t    0t    5iM    6i    1t    0t    7iMEND    0CB    1CCB    2CCCB    3A    0DB    1DDCDDB    2A    1
+
 	void main() int k = 2, t; char c;
 	{
 		read(c);
@@ -475,6 +488,6 @@ bool marko = false;
 		doWhileComplexTest(); //0i    2t    1t    0t    1iM    2i    1t    0t    3iM    4i    1t    0t    5iM    6i    1t    0t    7iMEND
 		testComplexContinue(); // 0CB    1CCB    2CCCB    3A
 		testComplexBreak();  // 0DB 2DDCDDB 2A
-		boolArrayTests();
+		boolArrayTests(); // 1
 	}
 }
