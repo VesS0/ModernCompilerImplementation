@@ -1,6 +1,9 @@
+/MJCompiler/.metadata/*
+!/MJCompiler/.metadata/.plugins
+/MJCompiler/.metadata/.plugins/*
+!/MJCompiler/.metadata/.plugins/org.eclipse.debug.core
 /MJCompiler/bin/
 /MJCompiler/logs/
-/MJCompiler/.metadata/
 /.metadata/
 /MJCompiler/src/rs/ac/bg/etf/pp1/ast/
 /MJCompiler/src/rs/ac/bg/etf/pp1/sym.java
